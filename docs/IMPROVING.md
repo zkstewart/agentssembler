@@ -1,4 +1,11 @@
-# Ideas not yet tried
+# Ideas
+
+## Tried on Busk, and adopted
+
+- **Connectors:** dropped unitigs that are the graph path between chain ends. 60 gaps to 8. See [LESSONS](LESSONS.md). **Not yet applied to WatsonsChoice or 13Q010:** 28 of 71 and 28 of 63 of their gaps have such a path. Rebuilding is the user's decision, since it changes adopted assemblies.
+- **Tails past a gap edge and unplaced components:** `review/gap_tails.py`, `review/unplaced_components.py`. They find what is behind a gap; they do not place it.
+
+## Not yet tried
 
 What has not been squeezed from the unitigs, reads and Hi-C. **None of these has been tested**, so each is a hypothesis with a test, ranked by the value of what the test would tell you for its cost.
 
@@ -29,6 +36,8 @@ Raw depth falls from about 32x to 4x at gap edges, with ordinary GC and complexi
 Extract the flanks too, and look for inverted repeats within about 100 kb of the edge.
 
 **This decides whether the answer is more analysis or a different library,** so run it before spending on anything else at gaps.
+
+**First data from Busk, not a test of this idea:** of 7 remaining gaps, 4 have at most 2 q20 tails per gap, so reads simply stop. Two q20 tails at chr8_h2 map back across their own gap on both strands, which fits a foldback or inverted repeat. One read at chr6_h2 (`674e9354`) runs 97 kb forward and then back over the same stretch.
 
 ## 3. Telomere-bearing raw reads at bare ends
 
@@ -63,6 +72,6 @@ Both builds used the processed `p_utg` graph. hifiasm's `r_utg` graph keeps bubb
 ## Not worth repeating
 
 - **Loosening `readfill.py`:** `--minIdentity 0.95 --maxTrim 15000` gained 1 gap and lost 2.
-- **More hops on 13Q010:** 8 hops give the same 33 bridges as 3.
+- **More hops on 13Q010:** 8 hops give the same 33 bridges as 3. That is before connectors: on Busk, with connectors, 12 hops are needed.
 - **Raw reads to place 13Q010 unplaced sequence:** one q20 link in total. The evidence there is Hi-C or nothing.
 - **A reference synteny term in ordering:** no effect over four rounds, and it breaks the evidence order anyway.

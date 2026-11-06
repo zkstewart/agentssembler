@@ -1,0 +1,12 @@
+# D05, D06, D14. chain<TAB>action<TAB>value<TAB>reason. Actions: group gNN|with:chain, unassigned ., shared cN|with:chain
+chain0082	group	with:chain0013	Graph link to chain0013's satellite end (24 kb overlap); Hi-C to g06 8.4/Mb, next 4.2; telomere, and g06 has one telomeric end
+chain0086	group	with:chain0016	Hi-C to g16 12.3/Mb, next 5.8; telomere, and g16 has one telomeric end
+chain0050	group	with:chain0020	g03 already had 3 telomeric ends, with this satellite chain the extra. Hi-C to g14 21/Mb, g03 16, next 14: chromosome supported, haplotype only by density and free end. Low confidence
+chain0262	unassigned	.	Depth 1120x, 20 kb; high copy, in g07 only by density
+chain0092	unassigned	.	Repeat fraction 0.56, depth about 100x, 709 trans pairs, 2.0/Mb against 1.2 for other chromosomes: too thin to call shared
+chain0109	shared	with:chain0021	Interior depth about 130x, median 82x because of 65-131 kb overlaps; degree 2,2; Hi-C tied g18 53 g17 48, next 14
+chain0111	shared	with:chain0021	Interior depth about 120x, overlaps 71-112 kb; degree 2,2; Hi-C tied g18 52 g17 52, next 14
+chain0121	shared	with:chain0021	Interior depth about 125x, overlaps 60-131 kb; degree 2,2; Hi-C tied g17 26 g18 23, next 6
+chain0113	shared	with:chain0006	Interior depth about 125x, overlaps 60-108 kb; degree 2,2; Hi-C tied g01 30 g02 29, next 11
+chain0153	shared	with:chain0001	Interior depth about 130x, overlaps 54-87 kb; degree 2,2; Hi-C tied g10 11 g13 10, next 4
+chain0061b	shared	with:chain0005	Hub split from chain0061: 2x depth (120-140x), Hi-C tied g04 about 1000 and g06 about 950 per 100 kb, graph links from both homologs; genes missing from one haplotype without it

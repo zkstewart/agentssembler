@@ -1,6 +1,6 @@
 # The process, stage by stage
 
-Each stage is a bash script in `stages/`. Each writes `reports/STAGE.md` and logs to `logs/STAGE.log`. Outputs go in numbered directories in the work directory. The check under each stage is the question to ask; the numbers are from the two genomes tried, so expect yours to differ.
+Each stage is a bash script in `stages/`. Each writes `reports/STAGE.md` and logs to `logs/STAGE.log`. Outputs go in numbered directories in the work directory. The check under each stage is the question to ask; the numbers are from the genomes tried, so expect yours to differ.
 
 Steps skip when their output exists, and costly mappings write to `.part` until complete. **To map elsewhere, such as an HPC,** run `agentssembler env WORK` to get the environment, run the stage script there or just its mappings, then put the outputs in place.
 
@@ -68,7 +68,7 @@ Writes scaffolds, junctions, placements and unplaced sequence. Chains with too l
 
 **Freeze the order first: this mapping is costly.** Reads across gaps with unique anchors in both flanks, agreeing with each other. If collapsed: two masked targets, since reads cannot anchor over sequence present twice, a fill per haplotype, and no `--target`, since excision would treat true shared copies as false duplication.
 
-**Check:** sum of AGP sequence and gaps equals FASTA length. Most gaps stay open, and that is correct: most gaps have no spanning read.
+**Check:** sum of AGP sequence and gaps equals FASTA length. Most gaps stay open, and that is correct: most gaps have no spanning read. Compare homolog lengths: a large difference with a gap on the short side means looking behind the gap ([D11](decisions/D11_gap_closures.md)).
 
 ## 13_rawreads, then D18 (1-2 h; optional)
 

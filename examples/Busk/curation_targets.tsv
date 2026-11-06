@@ -1,0 +1,6 @@
+#scaffold	start	end	note
+chr7_h2	28317993	28318092	Gap facing a 27-chain, 7.24 Mb unplaced component. 14 of 14 q20 read tails at the right edge enter chain0099 about 6.4 kb in; graph path utg000426l-, utg000881l- or utg001279l-, utg000088l-. Option for the user: place chain0099 (456 kb). Closes no gap.
+chr4_h1	4631638	4631737	Bubble between chain0042 and chain0051 through utg000738l. Adjacent by graph; no read spans. Closure would mean dropping chain0051's arm utg000619l/utg001393l.
+chr4_h1	16591602	16591701	GFA overlap of 3490 bp and one q20 raw read (utg000420l+/utg000018l+). Left open: under 2 reads.
+chr6_h2	24075600	24075699	Tandem array. 306 raw spanners, 37 at q20, confirm chain0053/chain0086 adjacent; lengths disagree by 8-14 kb, so left open.
+chr2_h2	0	7500000	Repeat-rich arm that aligns poorly to chr2_h1. Check in Juicebox.

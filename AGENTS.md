@@ -31,7 +31,8 @@ agentssembler run WORK                 # continue
 - Leave sequence unplaced when the data do not support a position. Unplaced is a result, not a failure.
 - Every hand edit goes in an `edits/` file with its reason, and is applied by re-running a stage. Never edit an output by hand.
 - A claim about biology must survive a direct test before it is written down. See [D12](docs/decisions/D12_sv_calls.md).
-- Do not stop at numbers that look good. Every significant fix on the two genomes tried began with a result that looked wrong while every command had succeeded.
+- A value that is exactly 0, or exactly 100%, is a question about the test before it is a result.
+- Do not stop at numbers that look good. Every significant fix on the three genomes tried began with a result that looked wrong while every command had succeeded.
 
 ## What only you can do
 

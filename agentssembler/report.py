@@ -170,7 +170,7 @@ def r_validate(w, c, s):
     ct = f"{V}/maps/specific/crosstalk.tsv"
     if os.path.exists(ct):
         i = o = 0
-        for r in rows(ct, "c"):
+        for r in rows(ct):
             try: i += float(r[2]); o += float(r[3])
             except (ValueError, IndexError): pass
         out.append(f"Specific-pair homolog fraction: {o / max(i + o, 1):.4f}")

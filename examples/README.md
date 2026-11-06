@@ -1,6 +1,6 @@
 # Worked examples
 
-Real hand decisions from the two genomes, to show the form and the depth of reasoning expected. **Chain names apply to one run only: never copy these into another sample.**
+Real hand decisions from the three genomes, to show the form and the depth of reasoning expected. **Chain names apply to one run only: never copy these into another sample.**
 
 ## 13Q010 (triploid, 9 chromosomes, 27x per haplotype)
 
@@ -28,3 +28,7 @@ Real hand decisions from the two genomes, to show the form and the depth of reas
 | D18 | 7 closures kept, 1 rejected, 2 earlier closures reopened | `WatsonsChoice/rejected_joins.tsv` |
 | D12 | SV calls, including ones withdrawn | `WatsonsChoice/sv_calls.tsv` |
 | | Sites for the human review | `WatsonsChoice/curation_targets.tsv` |
+
+## Busk (diploid, 9 chromosomes, 62x per haplotype)
+
+The first genome decided by following the guides. [`Busk/what_changed.md`](Busk/what_changed.md) lists each decision and every place the process had to change.

@@ -19,7 +19,9 @@
 
 - A raw-read fill keeps about 1% error, with no polishing here. Say so for each.
 - Low-quality raw reads can look like disagreement: at chr7_h1:11467902 two reads at 80% identity looked like an 83% conflict, and the fill was correct.
-- Do not read pooled depth ratios: use medians per flank. Two arrays inflated the pooled figure from about 50% to 17-23% in my first report.
+- Do not read pooled depth ratios: use medians per flank. Two arrays inflated the pooled figure from about 50% to 17-23% in my first report. Pooled spanner counts mislead too: on Busk, 37 of 40 q20 raw spanners were at one array.
+- Many spanners with disagreeing lengths mean an array, and they still confirm the adjacency. Say that, and leave the gap (Busk chr6_h2, 306 spanners, 8-14 kb of disagreement).
+- `15_validate` writes `join_reads.tsv` for merged joins, which this audit does not cover. `no_q20` with many reads at low MAPQ is usually near-identical alleles: the read shows the join is possible, not which haplotype it belongs to.
 
 **Correction behaviour to expect:** it loses and shortens reads near gaps, and it does not move reads between haplotypes. See [LESSONS](../LESSONS.md).
 
