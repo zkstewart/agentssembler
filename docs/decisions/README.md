@@ -19,7 +19,7 @@ Decisions are recorded in `WORK/decisions/`, with a checksum of every edit file 
 | [D07](D07_telomere_tips.md) | Should a telomeric tip be attached? | `08_bridges` | Medium |
 | [D09](D09_order.md) | Is an odd order real or a search artefact? | `09_order` | High |
 | [D10](D10_curation.md) | Should a junction be set by hand? | `09_order` | High, and rarely yes |
-| [D17](D17_phase_switches.md) | Is a gap end a phase switch? | `09_order` | Medium, collapsed samples only |
+| [D17](D17_phase_switches.md) | Is a gap end a phase switch? | `10_arms_tails` | Medium, collapsed samples only |
 | [D15](D15_arm_phase.md) | Which arm goes where? | `10_arms_tails` | Reporting, mostly |
 | [D16](D16_tails.md) | Should a tail be placed? | `10_arms_tails` | High |
 | [D11](D11_gap_closures.md) | Which gaps need more than the automatic fill? | `12_fill` | Low |
