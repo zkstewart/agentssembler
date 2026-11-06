@@ -9,7 +9,7 @@
 1. **Is the search stuck?** Multi-start search is the default (40 starts). If it does not improve, the objective itself prefers this order.
 2. **Test explicit alternatives** with `scripts/score_orders.py`.
 3. **Are weak chains driving it?** Hundreds of satellite pairs can outweigh megabases of good chains. Two-stage ordering (`--stats`) fixed this once. Check `min_within`.
-4. **Was a path missed?** `hops: 8` is the default because 3 hops missed a 4 Mb hub path on WatsonsChoice and reversed a block. On 13Q010 it made no difference.
+4. **Was a path missed?** `hops: 12` is the default. 3 hops missed a 4 Mb hub path on WatsonsChoice and reversed a block; 8 missed a Busk allele path once connectors were in the graph (see `SETTINGS.md`).
 5. **Check the orientation of hub chains with gene evidence.** Run compleasm on the unplaced sequence later (`15_validate`): genes missing from both haplotypes but in unplaced sequence mean something is wrong with order or placement. That is how the WatsonsChoice chr3 error was found.
 
 **Tried and dropped:** a reference synteny term (`synteny_links.py`) changed nothing over four rounds, and using it would break the evidence rules.

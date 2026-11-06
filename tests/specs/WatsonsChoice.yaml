@@ -20,7 +20,7 @@ config:
     filter_bam: /home/stewarz2/bio/HapHiC/utils/filter_bam
     plot_python: /home/stewarz2/anaconda3/envs/haphic/bin/python
     juicer_tools: /home/stewarz2/bio/HapHiC/utils/juicer_tools.1.9.9_jcuda.0.8.jar
-  settings: {restore_connectors: false}
+  settings: {restore_connectors: false, hops: 8}
   compute: {min_free_gb: 40, guard_path: /mnt/d}
 seed:
   02_ont_map/ont_vs_unitigs.paf.gz: 02_ont_map/ont_vs_unitigs.paf.gz

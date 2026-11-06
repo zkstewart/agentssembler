@@ -5,7 +5,7 @@ from .stages import STAGES, BY_ID, GUIDES
 from . import report
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DEFAULTS = dict(telomere_motif="CCCTAAA", min_within=700, link_bonus=20000, hops=8, restore_connectors=True)
+DEFAULTS = dict(telomere_motif="CCCTAAA", min_within=700, link_bonus=20000, hops=12, restore_connectors=True)
 TOOLS = dict(minimap2="minimap2", samtools="samtools", seqkit="seqkit", bwa="bwa", samblaster="samblaster", filter_bam="filter_bam", juicer_tools="", compleasm="", plot_python="")
 
 def now(): return datetime.datetime.now().isoformat(timespec="seconds")
