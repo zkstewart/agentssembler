@@ -9,7 +9,7 @@ Everything goes in the config (`config/sample.example.yaml`), except the values 
 | `chromosomes`, `ploidy` | 9, 3 | 9, 2 | Known biology. Ask the user if unsure |
 | `hap_depth` | 27 | 28 | Main histogram peak (D01) |
 | `repeat_depth` | 120 | 123 | About 4.4 x `hap_depth` (D01) |
-| `collapsed` | false | true | Peak near 2x in long unitigs (D01) |
+| `collapsed` | false | true | Long unitigs near 2x, with or without a visible peak (D01) |
 | `hap_first` | false | true | Defaults to true at ploidy 2. Pairing of groups into chromosomes is implemented for ploidy 2 only |
 | `telomere_motif` | `CCCTAAA` | `CCCTAAA` | Plant default; `CCCTAA` is the vertebrate type. Confirm for other taxa |
 

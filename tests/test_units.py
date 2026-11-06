@@ -20,6 +20,22 @@ class T(unittest.TestCase):
         for s, flags in (("copy_number.py", ["--hap", "--repeat", "--fai"]), ("round2.py", ["--hap", "--repeat"]), ("make_tails.py", ["--twoX", "--maxDepth"]), ("assign_arms2.py", ["--twoX", "--minAllele", "--maxPair"]), ("restore_arms.py", ["--lo", "--hi"]), ("dosage.py", ["--ploidy"])):
             r = run(s); self.assertNotEqual(r.returncode, 0, s)
             for x in flags: self.assertIn(x, r.stderr, f"{s}: {x} should be required")
+    def test_overlap_longer_than_unitig(self):
+        # Chain A = G[0:100], chain B = G[70:85] + G[80:200]. A's overlap with B is 30, longer than B's first unitig. Either walk direction must give G[0:200].
+        import random; random.seed(1); G = "".join(random.choice("ACGT") for _ in range(200))
+        rc = lambda x: x[::-1].translate(str.maketrans("ACGT", "TGCA"))
+        U = {"u1": G[0:100], "u2": G[70:85], "u3": G[80:200]}
+        for keep in (["u1", "u2", "u3"], ["u3", "u2", "u1"]):
+            with tempfile.TemporaryDirectory() as d:
+                open(f"{d}/k", "w").write("\n".join(keep) + "\n")
+                open(f"{d}/f", "w").write("".join(f"{u}\t{len(x)}\n" for u, x in U.items()))
+                open(f"{d}/g", "w").write("L\tu1\t+\tu2\t+\t30M\nL\tu2\t+\tu3\t+\t5M\n")
+                r = run("build_chains.py", "--keep", f"{d}/k", "--gfa", f"{d}/g", "--fai", f"{d}/f", "--out", f"{d}/c"); self.assertEqual(r.returncode, 0, r.stderr)
+                seq = ""
+                for l in open(f"{d}/c.agp"):
+                    if l[0] == "#": continue
+                    x = l.split(); part = U[x[5]][int(x[6]) - 1:int(x[7])]; seq += part if x[8] == "+" else rc(part)
+                self.assertIn(seq, (G, rc(G)), keep)
     def test_mask_shared_any_ploidy(self):
         with tempfile.TemporaryDirectory() as d:
             open(f"{d}/a.agp", "w").write("".join(f"{s}\t{x}\t{y}\t{i}\tW\t{u}\t1\t{y-x+1}\t+\n" for s, x, y, i, u in [("c_h1",1,4,1,"u1"),("c_h1",5,8,2,"u2"),("c_h2",1,4,1,"u1"),("c_h2",5,8,2,"u3"),("c_h3",1,4,1,"u4"),("c_h3",5,8,2,"u2")]))

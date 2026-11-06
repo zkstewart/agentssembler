@@ -8,7 +8,8 @@ A link is used only if each of its two ends has exactly one link to another allo
 Ends: u+ = u's 3' end, u- = u's 5' end.
 
 Usage: build_chains.py --keep kept.txt --gfa unitigs.gfa --fai unitigs.fai --out prefix [--breaks f]
-Writes prefix.agp (components are unitig ranges, no gaps), prefix.joins.tsv, prefix.circular.txt
+Writes prefix.agp (components are unitig ranges, no gaps), prefix.joins.tsv, prefix.circular.txt, and
+prefix.contained.tsv, listing unitigs wholly inside an overlap longer than themselves, which add no sequence
 '''
 import argparse, collections
 p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -57,16 +58,23 @@ for u in keep: # what is left is circular
         p_ = walk(u, "+"); chains.append(p_); circ.append(p_)
 chains.sort(key=lambda c: -sum(L[x[0]] - x[2] for x in c))
 agp = open(a.out + ".agp", "w"); jt = open(a.out + ".joins.tsv", "w"); agp.write("##agp-version 2.1\n")
-jt.write("#chain\tpos\tleft\tright\toverlap\n"); tot = 0
+jt.write("#chain\tpos\tleft\tright\toverlap\n"); tot = 0; contained = []
 for i, c in enumerate(chains, 1):
-    name = f"chain{i:04d}"; pos = 0
-    for part, (u, st, ov) in enumerate(c, 1):
-        cs, ce = (ov + 1, L[u]) if st == "+" else (1, L[u] - ov)
-        if ce < cs: raise SystemExit(f"overlap exceeds unitig {u}")
-        if part > 1: jt.write(f"{name}\t{pos}\t{c[part-2][0]}{c[part-2][1]}\t{u}{st}\t{ov}\n")
+    name = f"chain{i:04d}"; pos = 0; carry = 0; part = 0
+    for k, (u, st, ov) in enumerate(c):
+        # An overlap can be longer than the unitig it enters. That unitig is then wholly inside sequence
+        # already written, and what is left of the overlap carries into the next one, which overlaps this unitig's tail.
+        if k: jt.write(f"{name}\t{pos}\t{c[k-1][0]}{c[k-1][1]}\t{u}{st}\t{ov}\n")
+        t = ov + carry
+        if t >= L[u]: carry = t - L[u]; contained.append((name, u, L[u], ov)); continue
+        carry = 0; part += 1
+        cs, ce = (t + 1, L[u]) if st == "+" else (1, L[u] - t)
         n = ce - cs + 1
         agp.write(f"{name}\t{pos+1}\t{pos+n}\t{part}\tW\t{u}\t{cs}\t{ce}\t{st}\n"); pos += n
     tot += pos
+with open(a.out + ".contained.tsv", "w") as o:
+    o.write("#chain\tunitig\tlength\toverlap\n")
+    for x in contained: o.write("\t".join(map(str, x)) + "\n")
 with open(a.out + ".circular.txt", "w") as o:
     for c in circ: o.write(",".join(x[0] + x[1] for x in c) + "\n")
 print(f"{len(chains)} chains from {len(keep)} unitigs, {tot/1e6:.1f} Mb; {sum(len(c)>1 for c in chains)} with joins, {len(circ)} circular; largest {max(sum(L[x[0]]-x[2] for x in c) for c in chains)/1e6:.2f} Mb")

@@ -18,18 +18,37 @@ def n50(v):
 def r_inputs(w, c, s):
     L = fai(f"{w}/00_inputs/unitigs.fasta.fai"); return [f"Unitigs: {len(L)}, {Mb(sum(L.values()))}, N50 {Mb(n50(L.values()))}", f"Chromosomes {c['chromosomes']}, ploidy {c['ploidy']}."], []
 def r_depth(w, c, s):
-    W = collections.Counter(); tot = 0
-    for r in rows(f"{w}/04_copynumber/class_depth.tsv"):
-        d = float(r[2]); b = int(d // 4) * 4; n = int(r[1]) ; W[min(b, 200)] += 10000; tot += 10000
-    # own primary depth histogram, weighted by window
-    O = collections.Counter()
-    for r in rows(f"{w}/04_copynumber/depth.windows.tsv"): O[min(int(float(r[3]) // 4) * 4, 200)] += int(r[2]) - int(r[1])
-    t = sum(O.values()) or 1
-    top = sorted(O, key=lambda k: -O[k])[:4]
-    out = ["Primary depth, percentage of bases per 4x bin:", "```"]
-    for k in sorted(O):
-        if O[k] / t >= 0.002: out.append(f"{k:4d}x {100 * O[k] / t:5.1f}% {'#' * int(100 * O[k] / t)}")
-    out += ["```", f"Largest bins start at: {top}.", "Set hap_depth, repeat_depth (about 4.4 x hap_depth) and collapsed: is there a peak at about twice the haplotype depth in long unitigs?"]
+    L = fai(f"{w}/00_inputs/unitigs.fasta.fai")
+    def hist(title, pairs):
+        H = collections.Counter()
+        for d, n in pairs: H[min(int(d // 4) * 4, 200)] += n
+        t = sum(H.values()) or 1; o = [f"{title} ({Mb(t)}), percentage per 4x bin:", "```"]
+        o += [f"{k:4d}x {100 * H[k] / t:5.1f}% {'#' * int(100 * H[k] / t)}" for k in sorted(H) if H[k] / t >= 0.002]
+        return o + ["```"], max(H, key=H.get) if H else 0
+    C = [(r[0], float(r[2]), float(r[6])) for r in rows(f"{w}/04_copynumber/class_depth.tsv")]
+    out = []
+    o, _ = hist("Primary depth, all unitigs", [(p, 10000) for _, p, _c in C]); out += o
+    o, peak = hist("Primary depth, unitigs of 1 Mb or more", [(p, 10000) for u, p, _c in C if L.get(u, 0) >= 1000000]); out += o
+    o, _ = hist("Class depth, adding near-identical copies, all unitigs", [(k, 10000) for _, _p, k in C]); out += o
+    # Everything below uses the main peak in long unitigs, and only describes. The peak is a candidate for hap_depth, not a decision.
+    h = peak + 2 if peak else 0
+    by = collections.defaultdict(list)
+    for u, p, k in C: by[u].append((p, k))
+    M = {u: (st.median(x[0] for x in v), st.median(x[1] for x in v)) for u, v in by.items()}
+    deg = collections.Counter()
+    if os.path.exists(f"{w}/00_inputs/unitigs.gfa"):
+        for l in open(f"{w}/00_inputs/unitigs.gfa"):
+            if l[0] == "L": x = l.split("\t"); deg[(x[1], x[2])] += 1
+    if h:
+        twin = sum(L[u] for u, (p, k) in M.items() if p < 0.64 * h and 0.64 * h <= k < 1.54 * h)
+        low = sum(L[u] for u, (p, k) in M.items() if k < 0.64 * h)
+        two = sorted(((L[u], u, p) for u, (p, k) in M.items() if 1.54 * h <= p <= 2.68 * h and k <= 2.68 * h), reverse=True)
+        out += [f"Taking {h}x as a candidate haplotype depth (main bin in long unitigs; check it):",
+                f"- Below 0.64x alone but 1x as a class, one haplotype represented more than once: {Mb(twin)}.",
+                f"- Below 0.64x even as a class, truly low depth: {Mb(low)}.",
+                f"- About 2x in both primary and class depth, candidates for collapse: {len(two)} unitigs, {Mb(sum(x[0] for x in two))}, of which graph degree at least 2 at both ends: {Mb(sum(x[0] for x in two if deg[(x[1], '+')] >= 2 and deg[(x[1], '-')] >= 2))}."]
+        out += [f"  - {u} {Mb(n)} at {p:.0f}x, degree {deg[(u, '+')]},{deg[(u, '-')]}" for n, u, p in two[:8]]
+    out.append("Set hap_depth, repeat_depth (about 4.4 x hap_depth) and collapsed. See D01.")
     return out, []
 def r_chains(w, c, s):
     out = []; al = []
