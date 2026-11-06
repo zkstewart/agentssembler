@@ -8,6 +8,12 @@
 - A group far larger than its siblings. On 13Q010, satellite chains chain0056 and chain0091 stacked on one chr8 group (48.2 Mb against 39.1 and 34.1).
 - A high-copy chain passing because its density to one group is still highest. WatsonsChoice chain0184 (262x) had 26,032 pairs inside g03 and 97,601 outside it. **Read pairs outside the group as well as the best group, and check class `high` chains before ordering.**
 
+**Subtelomeric satellite blocks.** Busk has seven chains, 0.8-8 Mb, with repeat fraction 0.57-0.77 and most of them with a telomere at one end; they align to several chromosomes at 3-7% divergence, so their allele conflicts are ignored and their reference hits mean little. Hi-C reaches them only thinly, and a group can look right by density while holding a false member. Work through the ends:
+
+1. List telomeric ends per group, and unassigned chains with a telomere (the report does this).
+2. For each such chain compare Hi-C per Mb of group, not raw counts, across all groups. Busk ratios ran from 2.5 (clear) to 1.2 (thin).
+3. A group has only two ends. Use a free end to choose between candidates and the graph where it exists: chain0082 had a link to chain0013's satellite end. This is the only group decision where counting ends is the deciding evidence, so say so in the reason, and call it low confidence if Hi-C alone would not decide.
+
 **Decide from** Hi-C, allele conflicts and graph links. The reference may only prompt the look.
 
 **When evidence is thin, unassign.** Unplaced is a legitimate outcome. Reasons used:

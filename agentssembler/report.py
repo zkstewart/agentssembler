@@ -62,8 +62,20 @@ def r_chains(w, c, s):
     if os.path.exists(f"{w}/07_chains2/restored_arms.tsv"): out.append(f"Restored arms: {sum(1 for _ in rows(f'{w}/07_chains2/restored_arms.tsv'))}.")
     return out, al
 def r_hic(w, c, s):
-    p = f"{w}/10_groups/chain_breaks.tsv"; V = list(rows(p))
-    return [f"Candidate positions in {p}: {len(V)}. A break needs two signals: different Hi-C partners each side and weak reads across the join."], []
+    p = f"{w}/10_groups/chain_breaks.tsv"; V = list(rows(p)); inv = lambda x: x[:-1] + ("-" if x[-1] == "+" else "+")
+    J = {}
+    for r in rows(f"{w}/07_chains2/joins.verify.tsv"): J[(r[2], r[3])] = r; J[(inv(r[3]), inv(r[2]))] = r
+    def cand(r):
+        j = J.get((r[3], r[4]));
+        if not j: return None
+        return f"- {r[1]} at {int(r[2]):,}: partner_cos {r[7]}, trans {r[8]}/{r[9]}, cross_ratio {r[0]}; reads {j[5]}, at MAPQ>=20 {j[6]}, overlap {int(j[4]):,}"
+    both = [x for r in V if min(int(r[8]), int(r[9])) >= 200 and float(r[7]) < 0.8 and J.get((r[3], r[4])) and int(J[(r[3], r[4])][6]) < 10 for x in [cand(r)]]
+    hic = [x for r in V if min(int(r[8]), int(r[9])) >= 200 and float(r[7]) < 0.6 for x in [cand(r)] if x]
+    out = [f"Candidate positions in {p}: {len(V)}. A break needs two signals: different Hi-C partners each side and weak reads across the join."]
+    out += [f"Both signals (trans >= 200 on both sides, partner_cos < 0.8, under 10 reads at MAPQ>=20): {len(both)}."] + both
+    out += [f"Different partners alone (partner_cos < 0.6, enough trans), usually overruled by reads: {len(hic)}."] + hic
+    out.append("This table only lists. Weak reads with little Hi-C on one side are mostly near-identical sequence, not chimeras.")
+    return out, []
 def r_evidence(w, c, s):
     L = fai(f"{w}/12_broken/chains.fasta.fai"); K = collections.Counter(r[6] for r in rows(f"{w}/11_ont_chains/chain_class.tsv")); B = collections.Counter()
     for r in rows(f"{w}/11_ont_chains/chain_class.tsv"): B[r[6]] += int(r[1])
@@ -81,6 +93,17 @@ def r_group(w, c, s):
         if re.match(r"g\d+$", r[2]): T[r[2]] += tel.get(r[0], "--").count("T")
     over = [k for k, v in T.items() if v > 2]
     if over: al.append(f"More than 2 telomeric ends in {over}: a false member or two chromosomes merged (D06, D07).")
+    if T: out.append("Telomeric ends by group: " + ", ".join(f"{k} {T[k]}" for k in gs) + ".")
+    Un = [r[0] for r in rows(f"{w}/10_groups/groups.tsv") if r[2] == "unassigned"]
+    ut = [f"{u} ({tel[u]})" for u in Un if "T" in tel.get(u, "--")]
+    if ut and any(T[k] < 2 for k in gs): al.append(f"Groups with under 2 telomeric ends, and unassigned chains with a telomere: {', '.join(ut)}. Test them against those groups (D06).")
+    # Long overlaps pull a hub chain's median depth down, so its class can read 1x. The middle third is the fairer figure.
+    h = float(s.get("hap_depth", 0)) if isinstance(s, dict) else 0
+    if h:
+        W = collections.defaultdict(list)
+        for r in rows(f"{w}/11_ont_chains/depth.windows.tsv"): W[r[0]].append(float(r[3]))
+        hub = [f"{u} ({st.median(W[u][len(W[u]) // 3:2 * len(W[u]) // 3]):.0f}x)" for u in Un if len(W[u]) >= 6 and 1.54 * h <= st.median(W[u][len(W[u]) // 3:2 * len(W[u]) // 3]) <= 2.68 * h]
+        if hub: out.append(f"Unassigned with 2x depth in their middle third, candidates for shared (D14): {', '.join(hub)}.")
     if os.path.exists(f"{w}/10_groups/eval_groups.txt"): out.append("Reference alarm table: 10_groups/eval_groups.txt. It says where to look, never what to change.")
     return out, al
 def r_bridges(w, c, s):
