@@ -14,6 +14,8 @@
 2. For each such chain compare Hi-C per Mb of group, not raw counts, across all groups. Busk ratios ran from 2.5 (clear) to 1.2 (thin).
 3. A group has only two ends. Use a free end to choose between candidates and the graph where it exists: chain0082 had a link to chain0013's satellite end. This is the only group decision where counting ends is the deciding evidence, so say so in the reason, and call it low confidence if Hi-C alone would not decide.
 
+**Run `scripts/review/chain_forks.py`, and read the `HUB` rows.** Each is a 2x unitig inside a chain, whose other exit reaches a chain on the homolog. See D04: a break needs `reset 06_evidence --remap`, which costs a read mapping, so do this before spending time on order. Also look at embedded 2x runs in `11_ont_chains/depth.windows.tsv` for assigned chains; one with Hi-C tied between homologs is the same fault.
+
 **Decide from** Hi-C, allele conflicts and graph links. The reference may only prompt the look.
 
 **When evidence is thin, unassign.** Unplaced is a legitimate outcome. Reasons used:
