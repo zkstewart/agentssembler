@@ -25,3 +25,5 @@ step 10_groups/chain_repeat.tsv python3 "$S/chain_repeat.py" 12_broken/chains.fa
 [ -s 16_validate/telomeres.chains.tsv ] || python3 "$S/telomeres.py" 12_broken/chains.fasta --motif "$AS_MOTIF" > 16_validate/telomeres.chains.tsv
 step 10_groups/end_links.tsv python3 "$S/chain_end_links.py" 12_broken/chains.agp 00_inputs/unitigs.gfa 11_ont_chains/ont_vs_chains.paf.gz 12_broken/chains.fasta.fai 10_groups/end_links.tsv
 step 11_ont_chains/chain_class.tsv python3 "$S/chain_class.py" 11_ont_chains/depth.windows.tsv 12_broken/chains.fasta.fai 10_groups/chain_repeat.tsv 11_ont_chains/chain_class.tsv --oneLo "$AS_ONE_LO" --sharedLo "$AS_SHARED_LO" --sharedHi "$AS_SHARED_HI" --sharedOut 10_groups/shared.candidates.txt
+# Connectors are candidates for bridges only. Their depth can look shared, and they have no Hi-C.
+if [ -s 12_broken/connector_chains.tsv ]; then { grep -vwFf <(cut -f1 12_broken/connector_chains.tsv) 10_groups/shared.candidates.txt || true; } > 10_groups/shared.candidates.txt.tmp; mv 10_groups/shared.candidates.txt.tmp 10_groups/shared.candidates.txt; fi
