@@ -55,6 +55,8 @@ def r_chains(w, c, s):
     for d in ("06_chains", "07_chains2", "08_final_chains"):
         L = fai(f"{w}/{d}/chains.fasta.fai")
         if L: out.append(f"{d}: {len(L)} chains, {Mb(sum(L.values()))}, N50 {Mb(n50(L.values()))}")
+    a, b = (sum(fai(f"{w}/{d}/chains.fasta.fai").values()) for d in ("07_chains2", "08_final_chains"))
+    if a and b and abs(a - b) > 0.05 * max(a, b): al.append(f"07_chains2 ({Mb(a)}) and 08_final_chains ({Mb(b)}) should hold nearly the same sequence: join verification may have run on incomplete chains.")
     V = list(rows(f"{w}/07_chains2/joins.verify.tsv")); low = [r for r in V if int(r[5]) < 10]; br = [r for r in V if int(r[5]) < 3]
     out.append(f"Joins {len(V)}; under 3 reads {len(br)} (broken by rule); under 10 reads {len(low)} (review in joins.verify.tsv).")
     if os.path.exists(f"{w}/07_chains2/restored_arms.tsv"): out.append(f"Restored arms: {sum(1 for _ in rows(f'{w}/07_chains2/restored_arms.tsv'))}.")

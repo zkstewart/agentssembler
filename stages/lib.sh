@@ -9,7 +9,14 @@ need() { for f in "$@"; do [ -s "$f" ] || { echo "ERROR: missing $f" >&2; exit 1
 guard() { local f; f=$(df -B1G "$AS_GUARD_PATH" | awk 'NR==2{print $4}'); [ "$f" -ge "$AS_MIN_FREE_GB" ] || { echo "ERROR: only $f GB free on $AS_GUARD_PATH (limit $AS_MIN_FREE_GB)" >&2; exit 3; }; }
 # step OUTPUT command...: skip when OUTPUT exists. Long mappings write to .part and rename, so a partial file never counts.
 # To use outputs mapped elsewhere (an HPC, say), put them in place and the step is skipped.
-step() { local o="$1"; shift; if [ -s "$o" ]; then log "skip, exists: $o"; else log "run: $o"; "$@"; need "$o"; fi; }
+# A failed command's partial output is moved to OUTPUT.failed: left in place, the next run would skip the step and build on it.
+step() {
+  local o="$1"; shift
+  if [ -s "$o" ]; then log "skip, exists: $o"; return 0; fi
+  log "run: $o"; local rc=0; "$@" || rc=$?
+  if [ "$rc" -ne 0 ]; then [ -e "$o" ] && mv "$o" "$o.failed"; echo "ERROR: step failed with exit $rc: $o" >&2; exit "$rc"; fi
+  need "$o"
+}
 # map_paf OUT.paf.gz minimap2-args...: a guarded mapping that writes OUT only when complete
 map_paf() {
   local o="$1"; shift
@@ -24,7 +31,7 @@ map_paf() {
   done
   wait $p; gzip -t "$o.part"; mv "$o.part" "$o"
 }
-agp2fa() { python3 "$S/agp_to_fasta.py" "$1" "$2" "$3"; "$AS_SAMTOOLS" faidx "$3"; }
+agp2fa() { python3 "$S/agp_to_fasta.py" "$1" "$2" "$3.part"; mv "$3.part" "$3"; "$AS_SAMTOOLS" faidx "$3"; }
 # has_rows FILE: true when an edit file holds more than comments
 has_rows() { [ -s "$1" ] && grep -qv '^#' "$1"; }
 collapsed() { [ "$AS_COLLAPSED" = "true" ]; }
