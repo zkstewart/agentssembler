@@ -37,7 +37,7 @@ Extract the flanks too, and look for inverted repeats within about 100 kb of the
 
 **This decides whether the answer is more analysis or a different library,** so run it before spending on anything else at gaps.
 
-**First data from Busk, not a test of this idea:** of 7 remaining gaps, 4 have at most 2 q20 tails per gap, so reads simply stop. Two q20 tails at chr8_h2 map back across their own gap on both strands, which fits a foldback or inverted repeat. One read at chr6_h2 (`674e9354`) runs 97 kb forward and then back over the same stretch.
+**First data from Busk, not a test of this idea:** of 7 remaining gaps, 5 have at most 2 q20 tails per gap, so reads simply stop. Two q20 tails at chr8_h2 map back across their own gap on both strands, which fits a foldback or inverted repeat. One read at chr6_h2 (`674e9354`) runs 97 kb forward and then back over the same stretch.
 
 ## 3. Telomere-bearing raw reads at bare ends
 

@@ -27,4 +27,4 @@
 
 **After:** `run` continues, as `08_bridges` applies the edits. If you find this later, edit and `reset 08_bridges`.
 
-**A low-confidence chain: walk the graph from its gap end first.** Busk chain0042 (4.6 Mb, 85% repeat) had 1,144 links to its scaffold against 874 to another, and Hi-C was flat at its end, as at a control gap. The graph settled it: its end unitig and the next chain's arm converge on one unitig. Do not leave such a note open until validation, as I did.
+**A low-confidence chain: walk the graph from its gap end first.** Busk chain0042 (4.6 Mb, repeat fraction 0.77) had 1,144 links to its scaffold against 874 to another, and Hi-C was flat at its end, as at a control gap. The graph settled it: its end unitig and the next chain's arm converge on one unitig. Do not leave such a note open until validation, as I did.

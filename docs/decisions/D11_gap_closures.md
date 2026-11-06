@@ -21,4 +21,4 @@
 
 **Look behind the gap, above all where a homolog is much longer.** `scripts/review/gap_tails.py` lists where reads go past each gap edge. `scripts/review/unplaced_components.py` lists connected unplaced tangles and the scaffolds they touch. On Busk chr7_h2, 14 of 14 q20 tails entered unplaced chain0099 at about 6.4 kb, along a graph path through dropped unitigs, in a 7.24 Mb tangle touching only chr7_h2.
 
-**What to do with it:** report it. Nothing there closes a gap, since a tangle cannot be ordered, and placing the first chain trades risk for completeness: put it to the user at [D13](D13_user_decisions.md). Exclude the largest Hi-C contributor before reading a component's Hi-C: one 95% repeat chain carried 77% of the links and pointed at the wrong chromosome.
+**What to do with it:** report it. Nothing there closes a gap, since a tangle cannot be ordered, and placing the first chain trades risk for completeness: put it to the user at [D13](D13_user_decisions.md). Exclude the largest Hi-C contributor before reading a component's Hi-C: one chain with a repeat fraction of 0.90 carried 77% of the links and pointed at the wrong chromosome.

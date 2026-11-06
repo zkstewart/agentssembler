@@ -24,7 +24,7 @@ A unitig is redundant when another copy covers its sequence, but it may still be
 
 ## A short haplotype can mean a tangle in unplaced sequence
 
-chr7_h2 is 4.85 Mb shorter than chr7_h1. Both gap edges open into a connected component of 27 unplaced chains (7.24 Mb, mostly repeats), which touches no other scaffold in the graph, and read tails enter it. No single chain has enough Hi-C to place. Summed Hi-C was misleading at first: one 95% repeat chain gave 77% of its links and pointed to chr4. Without it, chr7 leads, though barely separating haplotypes (347 against 281). Compare homolog lengths, and look at what lies behind the gap of the shorter one.
+chr7_h2 is 4.85 Mb shorter than chr7_h1. Both gap edges open into a connected component of 27 unplaced chains (7.24 Mb, mostly repeats), which touches no other scaffold in the graph, and read tails enter it. No single chain has enough Hi-C to place. Summed Hi-C was misleading at first: one chain with a repeat fraction of 0.90 gave 77% of its links and pointed to chr4. Without it, chr7 leads, though barely separating haplotypes (347 against 281). Compare homolog lengths, and look at what lies behind the gap of the shorter one.
 
 ## Read correction
 
