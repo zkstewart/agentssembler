@@ -9,8 +9,8 @@ flowchart TD
   A[01 inputs] --> B[02 map unitigs] --> C[03 depth] --> D01{{D01}}
   D01 --> E[04 chains] --> D03{{D03}} --> F[05 Hi-C to chains] --> D04{{D04}}
   D04 --> G[06 evidence] --> H[07 group] --> D05{{D05 D06 D14}}
-  D05 --> I[08 bridges] --> D07{{D07}} --> J[09 order] --> D09{{D09 D10 D17}}
-  D09 --> K[10 arms and tails] --> D16{{D15 D16}} --> L[11 build] --> M[12 fill] --> D11{{D11}}
+  D05 --> I[08 bridges] --> D07{{D07}} --> J[09 order] --> D09{{D09 D10}}
+  D09 --> K[10 arms and tails] --> D16{{D15 D16 D17}} --> L[11 build] --> M[12 fill] --> D11{{D11}}
   D11 --> N[13 raw reads] --> D18{{D18}} --> O[14 apply joins] --> P[15 validate] --> D12{{D12 D13}}
 ```
 
@@ -52,11 +52,11 @@ Hi-C clustering under the allele-conflict constraint: two chains that are allele
 
 Applies group edits. If collapsed, writes one copy of each shared chain per haplotype and rewrites groups, AGP, pairs, links, stats and telomeres. Finds graph paths between group ends, up to 8 hops, and ranks them with read support.
 
-## 09_order, then D09, D10, D17 (minutes to 70 min)
+## 09_order, then D09, D10 (minutes to 70 min)
 
 Orders each chromosome's groups in parallel. Hi-C sets the base score. Graph and read links, and telomeres, carry a bonus large enough to act as near-hard constraints, which follows from the evidence order. The reference check is an alarm, and `unhonoured.py` tests order without a reference.
 
-## 10_arms_tails, then D15, D16
+## 10_arms_tails, then D15, D16, D17
 
 Sets names, chooses arms at bridges (jointly if collapsed), builds once, then lists one-sided tails and tests them. Names are conventions: `<chrom>_h<k>`, with arbitrary haplotype numbers, and `flip` writes a scaffold in the reference's direction only. **Nothing here changes layout except accepted tails.**
 

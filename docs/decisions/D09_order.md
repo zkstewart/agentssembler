@@ -19,4 +19,6 @@
 - `edits/order_edits.tsv` to unplace or add a chain at a group's end, with a reason. Then `reset 09_order --keepDecision`.
 - A changed link needs [D10](D10_curation.md).
 
+**A link can be real and still outside the search.** `make_order_links.py` rewards only overlaps of 5 kb or more, or 3 or more reads, and `unhonoured.py` lists all same-group graph links. Busk chain0194 (146 kb) had overlaps of 2.6 and 3.5 kb to chain0080 and chain0011, consistent in orientation, but was placed by a noisy Hi-C score 9 ranks away, at a cost of 342 of 685,000. Its contacts were densest with those neighbours (`review/weak_placed.py`, `top_density_ranks`) and it was allelic to chain0034. Check each line of `unhonoured.txt` this way; curate under D10 when the signals agree. Check alleles on the homolog too: chain0081's orientation was a tie in Hi-C, and fixed by its alleles' order.
+
 **Do not reorder toward the reference.** A disagreement with collinear support from reads or Hi-C is an SV candidate.

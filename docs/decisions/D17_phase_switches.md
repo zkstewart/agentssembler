@@ -1,6 +1,6 @@
 # D17. Is a gap end a phase switch?
 
-**Only for `collapsed: true`.**
+**Only for `collapsed: true`. Asked after `10_arms_tails`,** because `cross_links.py` needs the junction table written there.
 
 **Read:** `scripts/review/cross_links.py`, then `scripts/validate/phase_scan.py` (`15_validate` writes `phase_scan.txt`).
 
