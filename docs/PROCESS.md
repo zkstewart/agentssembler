@@ -42,7 +42,7 @@ Hi-C to the final chains, keeping pairs at MAPQ >= 1 and NM < 3. Mapping to chai
 
 ## 06_evidence (about 40 min)
 
-Applies D04 breaks without remapping Hi-C. Then gathers everything grouping needs: reads to the broken chains, allele table, Hi-C density, repeat fraction, telomeres, graph and read links at chain ends, and depth class.
+Applies D04 breaks without remapping Hi-C. Restores **connectors**: dropped unitigs that are the graph path between two chain ends (`restore_connectors: true`). Unused ones are dropped again at `11_build`. Then gathers everything grouping needs: reads to the broken chains, allele table, Hi-C density, repeat fraction, telomeres, graph and read links at chain ends, and depth class.
 
 ## 07_group, then D05, D06, D14
 
@@ -50,7 +50,7 @@ Hi-C clustering under the allele-conflict constraint: two chains that are allele
 
 ## 08_bridges, then D07
 
-Applies group edits. If collapsed, writes one copy of each shared chain per haplotype and rewrites groups, AGP, pairs, links, stats and telomeres. Finds graph paths between group ends, up to 8 hops, and ranks them with read support.
+Applies group edits. If collapsed, writes one copy of each shared chain per haplotype and rewrites groups, AGP, pairs, links, stats and telomeres. Finds graph paths between group ends, up to `hops` steps (12 by default), and ranks them with read support.
 
 ## 09_order, then D09, D10 (minutes to 70 min)
 

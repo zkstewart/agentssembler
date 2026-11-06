@@ -2,7 +2,7 @@
 
 **Only for `collapsed: true`. Asked after `10_arms_tails`,** because `cross_links.py` needs the junction table written there.
 
-**Read:** `scripts/review/cross_links.py`, then `scripts/validate/phase_scan.py` (`15_validate` writes `phase_scan.txt`).
+**Read:** `scripts/review/cross_links.py 12_shared/order.tsv 12_shared/pre/SAMPLE.junctions.tsv 12_shared/end_links.tsv 10_groups/final.chroms.tsv 12_broken/links.tsv` (the last is the Hi-C link table, not read pairs), then `scripts/validate/phase_scan.py` (`15_validate` writes `phase_scan.txt`).
 
 **Links between homologs are normally overlap at divergent ends,** not phase switches. On WatsonsChoice `cross_links.py` found 21 such links, and Hi-C to current neighbours usually beat the alternative by 5x or more.
 
