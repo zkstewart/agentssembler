@@ -103,7 +103,7 @@ def r_group(w, c, s):
         W = collections.defaultdict(list)
         for r in rows(f"{w}/11_ont_chains/depth.windows.tsv"): W[r[0]].append(float(r[3]))
         hub = [f"{u} ({st.median(W[u][len(W[u]) // 3:2 * len(W[u]) // 3]):.0f}x)" for u in Un if len(W[u]) >= 6 and 1.54 * h <= st.median(W[u][len(W[u]) // 3:2 * len(W[u]) // 3]) <= 2.68 * h]
-        if hub: out.append(f"Unassigned with 2x depth in their middle third, candidates for shared (D14): {', '.join(hub)}.")
+        if hub: out.append(f"Unassigned with 2x depth in their middle third, candidates only; test each with review/hub_depth.py (D14): {', '.join(hub)}.")
     if os.path.exists(f"{w}/10_groups/eval_groups.txt"): out.append("Reference alarm table: 10_groups/eval_groups.txt. It says where to look, never what to change.")
     return out, al
 def r_bridges(w, c, s):
