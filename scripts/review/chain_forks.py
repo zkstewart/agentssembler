@@ -22,10 +22,10 @@ term = {}
 for c, v in parts.items():
     if c not in restored: term[(v[-1][0], v[-1][1])] = c; term[(v[0][0], inv[v[0][1]])] = c
 drop = lambda u: u not in U or U[u] in restored
-adj = collections.defaultdict(list)
+adj = collections.defaultdict(set)
 for l in open(a.gfa):
     if l[0] == "L":
-        s = l.split("\t"); e1, e2 = (s[1], s[2]), (s[3], inv[s[4]]); adj[e1].append(e2); adj[e2].append(e1)
+        s = l.split("\t"); e1, e2 = (s[1], s[2]), (s[3], inv[s[4]]); adj[e1].add(e2); adj[e2].add(e1)
 G = {l.split("\t")[0]: l.rstrip("\n").split("\t")[2] for l in open(a.groups) if l[0] != "#"}
 C = {l.split("\t")[0]: l.rstrip("\n").split("\t")[1] for l in open(a.chroms) if l[0] != "#"}
 out = []
