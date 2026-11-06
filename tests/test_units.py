@@ -36,6 +36,16 @@ class T(unittest.TestCase):
                     if l[0] == "#": continue
                     x = l.split(); part = U[x[5]][int(x[6]) - 1:int(x[7])]; seq += part if x[8] == "+" else rc(part)
                 self.assertIn(seq, (G, rc(G)), keep)
+    def test_connectors(self):
+        # a and b end at d1, a dropped unitig. c also touches d2, which leads nowhere; r is repeat class and must not count.
+        with tempfile.TemporaryDirectory() as t:
+            open(f"{t}/agp", "w").write("".join(f"{c}\t1\t10\t1\tW\t{u}\t1\t10\t+\n" for c, u in [("ca", "a"), ("cb", "b"), ("cc", "c")]))
+            open(f"{t}/gfa", "w").write("L\ta\t+\td1\t+\t5M\nL\td1\t+\tb\t+\t5M\nL\tc\t+\td2\t+\t5M\nL\tc\t-\tr\t+\t5M\nL\tr\t+\tb\t-\t5M\n".replace("L\tc\t-\tr\t+", "L\tc\t-\tr\t+"))
+            open(f"{t}/cn", "w").write("".join(f"{u}\t10\t30\t0\t0\t{k}\t1\t1\tnormal\tredundant\n" for u, k in [("d1", 60), ("d2", 60), ("r", 900)]))
+            open(f"{t}/rep", "w").write("")
+            r = run("restore_connectors.py", f"{t}/agp", f"{t}/gfa", f"{t}/cn", f"{t}/rep", f"{t}/out", "--repeat", "270"); self.assertEqual(r.returncode, 0, r.stderr)
+            got = {l.split("\t")[0] for l in open(f"{t}/out") if l[0] != "#"}
+            self.assertEqual(got, {"d1"})
     def test_mask_shared_any_ploidy(self):
         with tempfile.TemporaryDirectory() as d:
             open(f"{d}/a.agp", "w").write("".join(f"{s}\t{x}\t{y}\t{i}\tW\t{u}\t1\t{y-x+1}\t+\n" for s, x, y, i, u in [("c_h1",1,4,1,"u1"),("c_h1",5,8,2,"u2"),("c_h2",1,4,1,"u1"),("c_h2",5,8,2,"u3"),("c_h3",1,4,1,"u4"),("c_h3",5,8,2,"u2")]))

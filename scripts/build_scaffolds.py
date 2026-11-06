@@ -28,6 +28,7 @@ p.add_argument("--minWithin", type=float, default=700); p.add_argument("--minLLR
 p.add_argument("--minOverlap", type=int, default=5000); p.add_argument("--minReads", type=int, default=3)
 p.add_argument("--gap", type=int, default=100)
 p.add_argument("--telomeres", help="telomeres.py output for the chains")
+p.add_argument("--connectors", help="connector_chains.tsv: chains restored only as bridge paths; unused ones are not written anywhere")
 p.add_argument("--extraUnplaced", help="FASTA of further unplaced sequence, copied as is")
 p.add_argument("--tails", help="make_tails.py output: end, group, path written outward from the end")
 a = p.parse_args()
@@ -184,17 +185,19 @@ for g in sorted(plan, key=lambda g: names[g]):
 fa.close(); agp.close(); jt.close()
 
 placed = {x["c"] for xs in plan.values() for x in xs}
+connectors = {l.split("\t")[0] for l in open(a.connectors)} if a.connectors else set()
 with open(a.out + ".unplaced.fasta", "w") as o, open(a.out + ".placement.tsv", "w") as t:
     t.write("#chain\tlength\tgroup\tname\tstatus\n")
     for c in clen:
         g = group_of.get(c, "unassigned")
         if c in placed: st = "placed"
         elif c in used_in_bridge: st = "placed:bridge"
+        elif c in connectors: st = "dropped:unused_connector"
         else: st = status.get(c, "unplaced:no_group")
         nm = names.get(g, ".") if st.startswith("placed") else (names.get(g, ".") + "?" if g in names else ".")
         if c in used_in_bridge: nm = used_in_bridge[c]
         t.write(f"{c}\t{clen[c]}\t{g}\t{nm}\t{st}\n")
-        if not st.startswith("placed"):
+        if not st.startswith(("placed", "dropped")):
             q = []
             for r in rows[c]:
                 x = U[r[0]][r[1] - 1:r[2]]; q.append(x if r[3] == "+" else rc(x))

@@ -20,11 +20,12 @@ Usage: make_tails.py --order order.tsv --junctions pre.junctions.tsv --placement
          --groups groups.tsv --chroms chroms.tsv --choices choices.tsv --telomeres telomeres.tsv --hic links.tsv
          --class chain_class.tsv --agp chains.agp --gfa unitigs.gfa --paf ont_vs_chains.paf.gz --out tails.tsv --report report.tsv
 '''
-import argparse, collections, gzip, itertools
+import os, argparse, collections, gzip, itertools
 ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
 for x in ("order", "junctions", "placement", "links", "groups", "chroms", "choices", "telomeres", "hic", "class", "agp", "gfa", "paf", "out", "report"):
     ap.add_argument("--" + x, required=True)
 ap.add_argument("--twoX", type=float, required=True, help="1.5 x haplotype depth"); ap.add_argument("--maxDepth", type=float, required=True, help="3 x haplotype depth")
+ap.add_argument("--exclude", help="chains, first column, not to walk through: connectors have no sequence of their own to offer")
 ap.add_argument("--minOverlap", type=int, default=5000); ap.add_argument("--maxHops", type=int, default=8)
 ap.add_argument("--minPairs", type=int, default=20); ap.add_argument("--ratio", type=float, default=2.0)
 ap.add_argument("--minObs", type=int, default=5); ap.add_argument("--maxCombos", type=int, default=200000)
@@ -55,10 +56,11 @@ for l in open(a.__dict__["class"]):
         s = l.rstrip("\n").split("\t"); cls[s[0]] = s[-1]
 
 adj = collections.defaultdict(dict)
+excl = {l.split("\t")[0] for l in open(a.exclude)} if a.exclude and os.path.exists(a.exclude) else set()
 for l in open(a.links):
     if l[0] == "#": continue
     x, y, r, q, o = l.rstrip("\n").split("\t"); o = int(o)
-    if o >= a.minOverlap: adj[x][y] = o; adj[y][x] = o
+    if o >= a.minOverlap and x[:-1] not in excl and y[:-1] not in excl: adj[x][y] = o; adj[y][x] = o
 
 # chains kept by the scaffold builder, and the ends that face a gap or a scaffold end
 placed = {}

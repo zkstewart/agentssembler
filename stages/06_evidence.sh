@@ -10,6 +10,11 @@ if [ ! -s 12_broken/chains.agp ]; then
     python3 "$S/add_restored_arms.py" 07_chains2/restored_arms.tsv "$F" 12_broken/chains.agp 12_broken/restored_chains.tsv
     agp2fa 12_broken/chains.agp "$U" 12_broken/chains.fasta
   fi
+  if [ "$AS_CONNECTORS" = "true" ]; then
+    python3 "$S/restore_connectors.py" 12_broken/chains.agp 00_inputs/unitigs.gfa 04_copynumber/copy_number.tsv 07_chains2/repeat_chains.txt 12_broken/connectors.tsv --repeat "$AS_REPEAT"
+    python3 "$S/add_restored_arms.py" 12_broken/connectors.tsv "$F" 12_broken/chains.agp 12_broken/connector_chains.tsv chain8
+    agp2fa 12_broken/chains.agp "$U" 12_broken/chains.fasta
+  fi
 fi
 [ -s 12_broken/chains.fasta.fai ] || "$AS_SAMTOOLS" faidx 12_broken/chains.fasta
 map_paf 11_ont_chains/ont_vs_chains.paf.gz -x lr:hq -t "$AS_THREADS" --secondary=no 12_broken/chains.fasta 00_inputs/ont_corrected_reads.fasta

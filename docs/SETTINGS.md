@@ -19,6 +19,7 @@ Everything goes in the config (`config/sample.example.yaml`), except the values 
 |---|---|---|
 | `min_within` | 700 | Hi-C pairs/Mb within a chain below which it carries no placement information. Look at `10_groups/chain_stats.tsv` for a low-density class |
 | `link_bonus` | 20000 | Order score for honouring a link. Set above the Hi-C differences between orders, so a confirmed link is effectively a hard constraint. This follows from the evidence order, not from tuning: a collinearity audit by bonus (none 88.7%, 200 89.9%, 2000 91.7%, 20000 92.7%) only confirmed it |
+| `restore_connectors` | true | Restore dropped unitigs that are the graph path between chain ends (stage 06) |
 | `hops` | 8 | Longest bridge path. 3 hops reversed a block on WatsonsChoice |
 
 ## Derived from `hap_depth`

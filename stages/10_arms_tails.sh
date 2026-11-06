@@ -15,9 +15,10 @@ else
   [ -s $D/choices.tsv ] || cp $T/bridges/choices.tsv $D/choices.tsv
 fi
 BA=(--order "$O" --agp $D/chains.agp --links $D/end_links.tsv --choices $D/choices.tsv --stats $D/chain_stats.tsv --names $T/names.tsv --telomeres $D/telomeres.tsv --unitigs 00_inputs/unitigs.fasta --extraUnplaced $T/repeat_chains.fasta --minWithin "$AS_MIN_WITHIN")
+[ -s 12_broken/connector_chains.tsv ] && BA+=(--connectors 12_broken/connector_chains.tsv)
 printf '%s\n' "${BA[@]}" > $D/build_args.txt
 step $D/pre/$AS_SAMPLE.junctions.tsv python3 "$S/build_scaffolds.py" "${BA[@]}" --out $D/pre/$AS_SAMPLE
-step $D/tails.tsv python3 "$S/make_tails.py" --order "$O" --junctions $D/pre/$AS_SAMPLE.junctions.tsv --placement $D/pre/$AS_SAMPLE.placement.tsv --links $D/end_links.tsv --groups "$GRP" --chroms 10_groups/final.chroms.tsv --choices $D/choices.tsv --telomeres $D/telomeres.tsv --hic 12_broken/links.tsv --class 11_ont_chains/chain_class.tsv --agp 12_broken/chains.agp --gfa 00_inputs/unitigs.gfa --paf 11_ont_chains/ont_vs_chains.paf.gz --out $D/tails.tsv --report $D/tail_report.tsv --twoX "$AS_TWO_X" --maxDepth "$AS_MAX_DEPTH"
+step $D/tails.tsv python3 "$S/make_tails.py" --order "$O" --junctions $D/pre/$AS_SAMPLE.junctions.tsv --placement $D/pre/$AS_SAMPLE.placement.tsv --links $D/end_links.tsv --groups "$GRP" --chroms 10_groups/final.chroms.tsv --choices $D/choices.tsv --telomeres $D/telomeres.tsv --hic 12_broken/links.tsv --class 11_ont_chains/chain_class.tsv --agp 12_broken/chains.agp --gfa 00_inputs/unitigs.gfa --paf 11_ont_chains/ont_vs_chains.paf.gz --exclude 12_broken/connector_chains.tsv --out $D/tails.tsv --report $D/tail_report.tsv --twoX "$AS_TWO_X" --maxDepth "$AS_MAX_DEPTH"
 [ -s $D/pre/target.fasta ] || cat $D/pre/$AS_SAMPLE.fasta $D/pre/$AS_SAMPLE.unplaced.fasta > $D/pre/target.fasta
 if [ -s $D/tails.tsv ] && [ "$(grep -vc '^#' $D/tails.tsv)" -gt 0 ]; then
   step $D/tail_checks.tsv python3 "$S/rawreads/tail_checks.py" --tails $D/tails.tsv --chains 12_broken/chains.fasta --target $D/pre/target.fasta --names $T/names.tsv --class 11_ont_chains/chain_class.tsv --report $D/tail_report.tsv --hapDepth "$AS_HAP" --ploidy "$AS_PLOIDY" --minimap2 "$AS_MINIMAP2" --threads "$AS_THREADS" --out $D/tail_checks.tsv

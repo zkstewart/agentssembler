@@ -94,7 +94,9 @@ def r_group(w, c, s):
     over = [k for k, v in T.items() if v > 2]
     if over: al.append(f"More than 2 telomeric ends in {over}: a false member or two chromosomes merged (D06, D07).")
     if T: out.append("Telomeric ends by group: " + ", ".join(f"{k} {T[k]}" for k in gs) + ".")
-    Un = [r[0] for r in rows(f"{w}/10_groups/groups.tsv") if r[2] == "unassigned"]
+    conn = {r[0] for r in rows(f"{w}/12_broken/connector_chains.tsv")}
+    Un = [r[0] for r in rows(f"{w}/10_groups/groups.tsv") if r[2] == "unassigned" and r[0] not in conn]
+    if conn: out.append(f"Connector chains (restored as possible bridge paths, not in any group): {len(conn)}.")
     ut = [f"{u} ({tel[u]})" for u in Un if "T" in tel.get(u, "--")]
     if ut and any(T[k] < 2 for k in gs): al.append(f"Groups with under 2 telomeric ends, and unassigned chains with a telomere: {', '.join(ut)}. Test them against those groups (D06).")
     # Long overlaps pull a hub chain's median depth down, so its class can read 1x. The middle third is the fairer figure.
