@@ -1,0 +1,43 @@
+# Copy this, fill it in, and give it to `agentssembler init`. Relative paths resolve from where you run the command.
+sample: MySample        # used in file names
+chromosomes: 9          # haploid number
+ploidy: 2
+
+inputs:
+  unitigs_fasta: /data/sample/p_utg.fasta     # hifiasm unitigs
+  unitigs_gfa: /data/sample/p_utg.gfa         # the same unitigs, with graph links
+  corrected_reads: /data/sample/corrected.fasta
+  hic_r1: /data/sample/hic_R1.fq.gz
+  hic_r2: /data/sample/hic_R2.fq.gz
+  # Optional. Names chromosomes and raises alarms. Never places sequence.
+  reference: /data/related/reference.fasta
+  # Optional. Reads an earlier assembly's AGP into the group alarm table.
+  # baseline_agp: /data/sample/earlier.agp
+  # Optional. Raw basecalled reads, unaligned or aligned. Turns on stages 13 and 14.
+  raw_bams: []
+
+# hap_depth, repeat_depth and collapsed are set at decision D01. See docs/SETTINGS.md.
+settings:
+  telomere_motif: CCCTAAA
+  # hap_first: true     # defaults to true at ploidy 2
+
+# Full paths, or names on PATH. juicer_tools, compleasm and plot_python are optional; steps using them are skipped when unset.
+tools:
+  minimap2: minimap2
+  samtools: samtools
+  seqkit: seqkit
+  bwa: bwa
+  samblaster: samblaster
+  filter_bam: /path/to/HapHiC/utils/filter_bam
+  juicer_tools: /path/to/HapHiC/utils/juicer_tools.1.9.9_jcuda.0.8.jar
+  compleasm: /path/to/envs/compleasm/bin/compleasm
+  plot_python: python3    # a Python with matplotlib
+
+compleasm:
+  library: /path/to/mb_downloads
+  lineage: eudicotyledons_odb12
+
+compute:
+  threads: 16
+  min_free_gb: 40
+  guard_path: .           # the drive that fills first. Under WSL, the host drive, such as /mnt/d

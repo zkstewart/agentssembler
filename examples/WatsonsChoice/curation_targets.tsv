@@ -1,0 +1,14 @@
+#scaffold	start	end	note
+chr1_h1	19479732	23149914	block between Hi-C-only gaps, orientation low confidence; see sv_calls
+chr1_h2	17514633	21481849	same block as chr1_h1
+chr5_h1	11198331	11731555	chain0275/0350 direction unresolved; Hi-C flat, no reads
+chr5_h2	11114198	11647422	same block as chr5_h1, opposite direction as written
+chr5_h1	27481340	29143158	complex rearrangement against chr5_h2; see sv_calls
+chr8_h1	22080000	22120000	inversion breakpoint beside the raw-read closure at 22.11 Mb; 1 read at the weakest point within 25 kb
+chr1_h1	5800000	6100000	about 51x in unique sequence with Hi-C to the homolog; likely also belongs at the chr1_h2 gap near 5.31 Mb
+chr6_h2	11900000	12100000	about 54x in unique sequence with Hi-C to the homolog; likely also belongs at the chr6_h1 gap near 12.40 Mb
+chr8_h2	32807969	32952345	chain0302 Hi-C equal to both haplotypes (5.3 and 5.7 pairs/Mb), both ends link to both, and phase_scan flags it; it may belong on or also on chr8_h1, at the gap near 34.76 Mb between chain0016 and chain0164
+chr8_h1	15660000	15770000	gap reopened in v3; tandem array about 600 reads deep whose length is unknown
+chr8_h2	14150000	14260000	gap reopened in v3; tandem array whose length is unknown
+chr8_h2	5690000	5800000	gap left open; raw-read closure rejected, overlap only 96.6% identical
+chr5_h1	37280000	37296000	raw-read closure, the weakest kept; 3 of 5 reads through it show a deletion of about 180 bp nearby

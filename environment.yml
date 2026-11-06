@@ -1,0 +1,17 @@
+# conda env create -f environment.yml
+name: agentssembler
+channels: [conda-forge, bioconda]
+dependencies:
+  - python>=3.10
+  - numpy
+  - pyyaml
+  - matplotlib            # contact maps
+  - minimap2>=2.27        # lr:hq preset; 2.31 was used
+  - samtools>=1.12        # view -N
+  - seqkit
+  - bwa
+  - samblaster
+  - openjdk               # juicer_tools
+  # Separately:
+  #   HapHiC, for utils/filter_bam and juicer_tools: https://github.com/zengxiaofei/HapHiC
+  #   compleasm in its own environment, with a lineage library

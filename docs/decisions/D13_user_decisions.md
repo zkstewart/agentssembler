@@ -1,0 +1,14 @@
+# D13. What belongs to the user?
+
+An agent stops here and asks. Do not record D13 yourself until the user has answered, and quote their answer in the reason.
+
+**Hand over:** `16_validate/juicebox/out_JBAT.hic` and `.assembly`, `16_validate/sv/sv_calls.tsv`, `16_validate/curation_targets.tsv` (you write this one), and the reports.
+
+**The user decides:**
+
+- Which assembly to adopt, when a change trades contiguity against placed sequence or risk.
+- How much risk to accept for completeness. Tails are the clearest case ([D16](D16_tails.md)). On 13Q010 and WatsonsChoice the user chose to err toward minimising assembly risk.
+- Whether medium-confidence SVs stay as assembled after inspection.
+- Juicebox edits. **This route has not been exercised:** bring edits back as breaks, links or group edits with reasons, and re-run from the earliest affected stage. Do not paste a Juicebox export over the AGP.
+
+**Declare this limit in any report:** the reference was used as an alarm during development. It shaped where people looked, so "reference-free" is true of the evidence behind each decision, not of the whole process.

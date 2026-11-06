@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.DS_Store
+# work directories hold large data and never belong here
+work/
+*.paf.gz
+*.bam
+*.fastq.gz
+*.fq.gz
+*.hic

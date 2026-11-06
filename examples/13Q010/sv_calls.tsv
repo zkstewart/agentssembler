@@ -1,0 +1,15 @@
+#scaffold	start_Mb	end_Mb	type	busk_interval	homolog_evidence	breakpoint_evidence	confidence
+chr5_h1	0	7.84	translocation	chr4:22.3-30.2 (-)	aligns chr4_h2,chr4_h1; chr4_h3 lacks it	7.84 inside utg000095l: 15 spanning reads, Hi-C 40th pct	high
+chr4_h3	26.86	33.51	translocation	chr5:0-6.5 (-)	aligns chr5_h3,chr5_h2; chr5_h1 lacks it	26.86 inside utg000308l: 13 spanning reads, Hi-C 4th pct	high
+chr5_h2	0.02	1.94	translocation	chr7:0-1.8 (+)	aligns chr7_h1,chr7_h2; chr7_h3 lacks it	1.94 inside utg000245l: 16 spanning reads, Hi-C 18th pct	high
+chr7_h3	0.02	2.11	translocation	chr5:0.2-2.3 (+)	aligns chr5_h3,chr4_h3; chr5_h2 lacks it	2.11 inside utg000301l: 22 spanning reads, Hi-C 25th pct	high
+chr5_h2	29.21	41.30	translocation	chr2:26.5-38.2 (+)	aligns chr2_h3,chr2_h1; chr2_h2 lacks it	29.21 inside utg001244l: 21 spanning reads, Hi-C 4th pct	high
+chr2_h2	24.86	40.81	translocation	chr5:30.1-45.8 (+)	aligns chr5_h1,chr5_h3; chr5_h2 lacks it	24.86 is a Hi-C-only gap: no spanning reads, right flank too weak in Hi-C to test	medium
+chr3_h2	4.66	12.58	translocation	chr2:7.8-21.5 (+)	aligns chr2_h2,chr2_h3; chr2_h1 lacks it	4.66 inside utg000381l: 17 reads, left flank satellite; 12.58 inside utg000934l: 8 reads at 9x depth, Hi-C 2nd pct; unfilled read_conflict gap at 9.81	medium
+chr8_h3	8.01	9.94	inversion	chr8:2.3-4.2 (-)	(-) against chr8_h1 and chr8_h2, (+) either side	both inside utg000063l: 15-25 spanning reads; Hi-C near/far 121:31, 192:35	high
+chr1_h3	18.20	18.82	inversion	chr1:18.1-18.7 (-)	(-) against chr1_h1 and chr1_h2, (+) either side	both inside utg000439l: 12-22 spanning reads; Hi-C near/far 99:37, 254:55	high
+chr7_h3	17.68	29.3	inversion	chr7:16.7-28.6 (-)	(-) against chr7_h1 and chr7_h2, (+) either side	17.68 inside utg000576l: 5 reads across the exact transition, Hi-C 0.6th pct, near/far 16:3; right end in satellite, not testable	medium
+chr5_h1	48.62	49.39	unresolved	chr5:45.70-45.79 (-)	half aligns chr5_h3 (-); no alignment to chr5_h2; repeat-rich	right edge not spanned by reads	low
+chr2_h1	6.38	7.06	not_supported	chr2:22.1-22.6 (-)	colinear with chr2_h3 at scaffold level: not specific to chr2_h1	reads continuous; inverted against Busk only	not_supported
+chr4_h1	0.15	4.40	not_supported	chr7:31.2-36.6 (-)	no coherent homolog alignment; 1.05 of 4.25 Mb aligns to Busk	no MAPQ>=20 reads: satellite	not_supported
+chr8_h2	21.56	26.77	withdrawn	colinear with Busk	colinear with chr8_h1 and chr8_h3	claimed earlier as a 5 Mb inversion; no such inversion exists	withdrawn

@@ -1,0 +1,3 @@
+#gap	action	evidence
+chr9_h2:13701780	closed by overlap	Flanks share 27.6 kb at 100% identity; 22 raw reads through the join at q20, read/target length 0.9997
+chr2_h3:25630988	not applied	readfill would trim 29.7 kb but only 12.9 kb of it matches the kept flank, at 89.8%; 3 q20 reads run contiguously through the trimmed sequence
