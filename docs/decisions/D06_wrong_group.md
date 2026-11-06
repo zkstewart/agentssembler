@@ -23,6 +23,6 @@
 - `Depth 262x; Hi-C spread over all groups` (high copy)
 - `No graph link; 102 pairs to g01, none to its order neighbours` (no evidence for a position)
 
-**Edit:** `edits/group_edits.tsv`, columns `chain, action, value, reason`. Actions are `group gNN`, `unassigned .`, `shared cN`.
+**Edit:** `edits/group_edits.tsv`, columns `chain, action, value, reason`. Actions are `group`, `unassigned .`, `shared`. For `group` and `shared`, write the value as `with:chain0013`, meaning that chain's group or chromosome. A bare `g06` or `c4` also works, but labels are numbered by size and shift when anything upstream changes: on Busk a chain break swapped g06 with g07 and c4 with c5, and old labels would have put a chr2 hub on chr3.
 
 **After:** `run` continues, as `08_bridges` applies the edits. If you find this later, edit and `reset 08_bridges`.

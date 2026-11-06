@@ -72,6 +72,15 @@ class T(unittest.TestCase):
             g = dict(l.split("\t")[0::2] for l in open(f"{d}/o.tsv").read().splitlines() if l[0] != "#")
             self.assertEqual(g, {"c1": "shared", "c2": "g02", "c3": "g02"})
             self.assertIn("c1\t10\tc0", open(f"{d}/o.shared.tsv").read()); self.assertNotIn("c3", open(f"{d}/o.shared.tsv").read())
+    def test_group_edit_with_chain(self):
+        with tempfile.TemporaryDirectory() as d:
+            open(f"{d}/g.tsv", "w").write("#chain\tlength\tgroup\na\t5\tg01\nb\t5\tg02\nx\t5\tunassigned\ny\t5\tunassigned\n")
+            open(f"{d}/g.chroms.tsv", "w").write("g01\tc1\ng02\tc0\n")
+            open(f"{d}/e", "w").write("x\tgroup\twith:b\tr\ny\tshared\twith:a\tr\n")
+            r = run("apply_group_edits.py", f"{d}/g", f"{d}/e", f"{d}/o"); self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertIn("x\t5\tg02", open(f"{d}/o.tsv").read()); self.assertIn("y\t5\tc1", open(f"{d}/o.shared.tsv").read())
+            open(f"{d}/e", "w").write("x\tgroup\twith:y\tr\n")
+            self.assertNotEqual(run("apply_group_edits.py", f"{d}/g", f"{d}/e", f"{d}/o").returncode, 0)
     def test_join_reversal(self):
         with tempfile.TemporaryDirectory() as d:
             # pre: a(1-100) gap b(1-100,-) gap c(1-100). cand closes both gaps with trims. reverse the first only: a and b's facing ends return; b's other trim stays

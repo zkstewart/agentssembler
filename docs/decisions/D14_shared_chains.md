@@ -20,4 +20,4 @@ On Busk five short hubs (190-340 kb) had medians of 71-84x, depth class `specifi
 
 **Candidate list:** by default it comes from depth class. To replace it, write `edits/shared.txt` (one chain per line, no comments) before `07_group` runs, or reset that stage.
 
-**Edit:** `edits/group_edits.tsv`, action `shared` with the chromosome label from `10_groups/groups.chroms.tsv`.
+**Edit:** `edits/group_edits.tsv`, action `shared`, value `with:<a chain on that chromosome>`.
