@@ -21,3 +21,4 @@ Each of these cost real time.
 | T15 | `chain_breaks.tsv`'s `cross_ratio` is 0 at satellites | Require two signals (D04) |
 | T16 | `build_chains.py` numbering changes with any change upstream | Chain names apply to one run only. Never copy an edit file between samples, or across a change upstream |
 | T17 | A step that crashed could leave a partial output, and the next run skipped it as finished. On Busk a crash in `build_chains.py` left 21 of 266 chains, and join verification ran on them, wasting a 70-minute mapping | `step` now moves it to `.failed`. If a run was interrupted by something other than a failed command, such as a kill or a crash of the machine, check the newest outputs before resuming |
+| T18 | compleasm needs `miniprot` and `hmmsearch` on PATH, and a pipeline that only prints a message on failure hides it | The driver adds compleasm's directory to PATH, `check_tools` tests both, and stage 15 now stops on failure |

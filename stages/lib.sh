@@ -3,6 +3,8 @@ set -euo pipefail
 cd "$AS_WORK"
 S="$AS_REPO/scripts"
 export PATH="$(dirname "$AS_MINIMAP2"):$(dirname "$AS_SAMTOOLS"):$(dirname "$AS_SEQKIT"):$PATH"
+# compleasm finds miniprot and hmmsearch on PATH, so its own environment has to be there too.
+if [ -n "${AS_COMPLEASM:-}" ]; then export PATH="$PATH:$(dirname "$AS_COMPLEASM")"; fi
 log() { echo "[$(date +%H:%M:%S)] $*"; }
 need() { for f in "$@"; do [ -s "$f" ] || { echo "ERROR: missing $f" >&2; exit 1; }; done; }
 # Stops the stage when free space where the work lives falls below the limit. A full disk can crash a machine.
