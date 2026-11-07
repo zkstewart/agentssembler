@@ -26,6 +26,10 @@ A unitig is redundant when another copy covers its sequence, but it may still be
 
 chr7_h2 is 4.85 Mb shorter than chr7_h1. Both gap edges open into a connected component of 27 unplaced chains (7.24 Mb, mostly repeats), which touches no other scaffold in the graph, and read tails enter it. No single chain has enough Hi-C to place. Summed Hi-C was misleading at first: one chain with a repeat fraction of 0.90 gave 77% of its links and pointed to chr4. Without it, chr7 leads, though barely separating haplotypes (347 against 281). Compare homolog lengths, and look at what lies behind the gap of the shorter one.
 
+## A low per-haplotype gene score can be numbering
+
+13Q010's h1 and h3 looked far less complete than any diploid, and 917 gene copies appeared lost from their chromosome's homolog set. In 784 of 843 two-copy genes the third copy lay on another chromosome, in blocks matching the translocations already called. Haplotype numbers are arbitrary across chromosomes, so "all h1 scaffolds" need not be one set. Choosing the numbering per chromosome that completes the most genes gave 99.32, 99.50 and 98.82%, from 91.84, 98.18 and 93.73%. The real shortfall is 65 gene copies of 8,415 (0.77%; Busk 0.21%). This holds only if the translocations are real, and the sets are not shown to be parental genomes. `validate/complement_genes.py` reports it.
+
 ## Read correction
 
 Raw SUP reads against corrected reads, at reads of 5 kb or more:

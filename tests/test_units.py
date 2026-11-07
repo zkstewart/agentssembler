@@ -128,4 +128,16 @@ class T(unittest.TestCase):
             self.assertEqual(x.returncode, 0, x.stderr)
             F = [l.split("\t") for l in open(f"{d}/o.tsv") if l[0] != "#"]
             self.assertEqual(len(F), 1); self.assertEqual(F[0][:6], ["s", "20000", "right", "1", "un", "1"])
+    def test_complement_genes(self):
+        # c1_h1 lacks gene b, carried by c2_h2: numbering decides whether a set is complete. Genes a and d have all copies; gene e has one copy short.
+        rows = {"h1": [("a", "c1_h1"), ("d", "c2_h1"), ("e", "c1_h1")], "h2": [("a", "c1_h2"), ("b", "c1_h2"), ("b", "c2_h2"), ("d", "c2_h2")]}
+        with tempfile.TemporaryDirectory() as d:
+            for h, v in rows.items():
+                with open(f"{d}/{h}.tsv", "w") as o:
+                    for g, s in v: o.write(f"{g}\tComplete\t{s}\t1\t2\t+\t1\t1\n")
+            x = run("validate/complement_genes.py", "2", f"{d}/h1.tsv", f"{d}/h2.tsv")
+            self.assertEqual(x.returncode, 0, x.stderr)
+            self.assertIn("not complete in all sets 2.", x.stdout.splitlines()[0])
+            self.assertIn("not complete in all sets 1.", x.stdout.splitlines()[1])
+            self.assertIn("Gene copies short of 2 per gene, on any scaffold: 1 of 8", x.stdout)
 if __name__ == "__main__": unittest.main(verbosity=1)

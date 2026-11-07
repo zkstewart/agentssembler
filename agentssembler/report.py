@@ -204,6 +204,8 @@ def r_validate(w, c, s):
     out.append(f"Telomeric ends {sum(r[4].count('T') for r in T)} of {2 * len(T)}; telomere to telomere {sum(r[4] == 'TT' for r in T)} of {len(T)}.")
     for x in sorted(glob.glob(f"{V}/compleasm/*/summary.txt")):
         name = x.split("/")[-2]; z = [l.strip() for l in open(x) if re.match(r"^[SDFIMN]:", l)]; out.append(f"compleasm {name}: {' '.join(z)}")
+    cg = f"{V}/compleasm/complement.txt"
+    if os.path.exists(cg): out.append(open(cg).read().strip().replace("\n", "\n\n"))
     ct = f"{V}/maps/specific/crosstalk.tsv"
     if os.path.exists(ct):
         i = o = 0

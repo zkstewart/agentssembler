@@ -63,3 +63,6 @@ if [ -n "${AS_COMPLEASM:-}" ]; then
    for h in $(haps_of "$AS_WORK/$AGP"); do [ -e $h/summary.txt ] && continue; "$AS_SEQKIT" grep -r -p "_$h\$" "$AS_WORK/$FA" > $h.fasta 2>/dev/null; "$AS_COMPLEASM" run -a $h.fasta -o $h -l "$AS_LINEAGE" -L "$AS_BUSCO_LIB" -t "$AS_THREADS" > $h.log 2>&1 || { echo "ERROR: compleasm failed for $h: see $V/compleasm/$h.log" >&2; exit 1; }; rm -f $h.fasta; done
    [ -e unplaced/summary.txt ] || "$AS_COMPLEASM" run -a "$AS_WORK/$UN" -o unplaced -l "$AS_LINEAGE" -L "$AS_BUSCO_LIB" -t "$AS_THREADS" > unplaced.log 2>&1 || { echo "ERROR: compleasm failed for unplaced: see $V/compleasm/unplaced.log" >&2; exit 1; } ) || exit 1
 fi
+if [ -n "${AS_COMPLEASM:-}" ]; then
+  python3 "$S/validate/complement_genes.py" "$AS_PLOIDY" $(for h in $(haps_of $AGP); do echo $V/compleasm/$h/"$AS_LINEAGE"/full_table_busco_format.tsv; done) --unplaced $V/compleasm/unplaced/"$AS_LINEAGE"/full_table_busco_format.tsv > $V/compleasm/complement.txt
+fi
