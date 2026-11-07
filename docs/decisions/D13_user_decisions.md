@@ -7,7 +7,7 @@ An agent stops here and asks. Do not record D13 yourself until the user has answ
 **The user decides:**
 
 - Which assembly to adopt, when a change trades contiguity against placed sequence or risk.
-- How much risk to accept for completeness. Tails ([D16](D16_tails.md)) and chains behind a gap ([D11](D11_gap_closures.md)) are the clearest cases. On 13Q010 and WatsonsChoice the user chose to err toward minimising assembly risk.
+- How much risk to accept for completeness. Tails ([D16](D16_tails.md)) and chains behind a gap ([D11](D11_gap_closures.md)) are the clearest cases. On all three genomes so far the user chose to err toward minimising assembly risk, including leaving Busk's chain0099 unplaced.
 - Whether medium-confidence SVs stay as assembled after inspection.
 - Juicebox edits. **This route has not been exercised:** bring edits back as breaks, links or group edits with reasons, and re-run from the earliest affected stage. Do not paste a Juicebox export over the AGP.
 

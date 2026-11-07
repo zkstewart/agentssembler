@@ -16,7 +16,7 @@ Results that shaped the process. They come from one triploid and two diploid cit
 | compleasm complete | see `examples/` | 99.43%, 99.64% | 99.68%, 99.71% |
 | Connectors restored | no | no | yes |
 
-The final Juicebox review had not been done on any at the time of writing. **Do not read Busk's lead as the method alone:** it has over twice the depth, as well as connectors. Counted but not built: 28 of 71 WatsonsChoice gaps and 28 of 63 13Q010 gaps have a graph path through unused unitigs, against 40 of 60 on Busk.
+No Juicebox review had been done on any at the time of writing. The user adopted Busk as it stands. **Do not read Busk's lead as the method alone:** it has over twice the depth, as well as connectors. Counted but not built: 28 of 71 WatsonsChoice gaps and 28 of 63 13Q010 gaps have a graph path through unused unitigs, against 40 of 60 on Busk.
 
 ## Dropped does not mean useless
 

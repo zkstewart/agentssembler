@@ -1,5 +1,5 @@
 #!/bin/bash
-# Apply group edits, write shared copies when collapsed, find graph bridges (8 hops) and rank them. Stops for D07.
+# Apply group edits, write shared copies when collapsed, find graph bridges (up to `hops` steps) and rank them. Stops for D07.
 source "$AS_REPO/stages/lib.sh"
 D=12_shared; mkdir -p "$D" 13_scaffold/bridges
 if has_rows edits/group_edits.tsv; then python3 "$S/apply_group_edits.py" 10_groups/groups edits/group_edits.tsv 10_groups/final; else for x in tsv chroms.tsv; do cp 10_groups/groups.$x 10_groups/final.$x; done; [ -s 10_groups/groups.shared.tsv ] && cp 10_groups/groups.shared.tsv 10_groups/final.shared.tsv || true; fi

@@ -95,8 +95,19 @@ def run_stage(w, st):
     report.write(w, st.id, cfg(w), settings(w), lambda cond: active(w, cond))
     json.dump(dict(finished=now(), settings=settings(w)), open(f"{w}/state/{st.id}.done", "w"), default=str)
 
+def check_inputs(w):
+    """Inputs can vanish between stages when disk space is freed. Stop now, not hours later at the stage that needs them."""
+    i = cfg(w)["inputs"]; miss = []
+    for k, v in i.items():
+        for p in (v if isinstance(v, list) else [v]):
+            if not p: continue
+            q = os.path.abspath(p)
+            if not os.path.exists(q): miss.append(f"{k}: {q}")
+            elif os.path.getsize(q) == 0: print(f"WARNING: input {k} is empty: {q}", file=sys.stderr)
+    if miss: sys.exit("Inputs missing. Restore them, or correct the paths in config.yaml:\n  " + "\n  ".join(miss))
+
 def cmd_run(a):
-    w = wd(a); ids = [s.id for s in STAGES]
+    w = wd(a); ids = [s.id for s in STAGES]; check_inputs(w)
     if a.to and a.to not in ids: sys.exit(f"unknown stage {a.to}")
     if a.only and a.only not in ids: sys.exit(f"unknown stage {a.only}")
     for st in STAGES:

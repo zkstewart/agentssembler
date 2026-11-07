@@ -39,3 +39,4 @@ Busk was the first genome run by following the guides and making each decision, 
 | D16 | 4 candidates, none placed |
 | D11, D18 | 0 fills from corrected reads; 1 raw overlap closure, passing audit |
 | D12 | No inverted block over 400 kb; 2 translocation candidates and 1 dosage run not supported, `sv_calls.tsv` |
+| D13 | The user adopted the assembly as it stands, and left chain0099 unplaced |

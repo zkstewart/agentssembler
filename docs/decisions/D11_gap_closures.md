@@ -6,7 +6,7 @@
 |---|---|---|
 | `reads` | Filled from reads | Accepted; audited in D18 if raw reads exist |
 | `reads_overlap` | Flanks overlap; one trimmed | Accepted; audited in D18. **Can be wrong in tandem arrays** |
-| `no_span` | No spanning read | Leave. On both genomes most gaps are this |
+| `no_span` | No spanning read | Leave. On all three genomes most gaps are this |
 | `too_few_reads` | One read | Leave |
 | `inconsistent` | Reads disagree | Leave |
 | `local_realign_failed` | Reads leave a flank more than `--maxTrim` from its end | Leave. Raising the limit gained 1 gap and lost 2 on WatsonsChoice |

@@ -5,25 +5,24 @@
 - **Connectors:** dropped unitigs that are the graph path between chain ends. 60 gaps to 8. See [LESSONS](LESSONS.md). **Not yet applied to WatsonsChoice or 13Q010:** 28 of 71 and 28 of 63 of their gaps have such a path. Rebuilding is the user's decision, since it changes adopted assemblies.
 - **Tails past a gap edge and unplaced components:** `review/gap_tails.py` (stages 12, 13), `review/unplaced_components.py` (stage 15), with alarms in the reports. They find what is behind a gap; they do not place it.
 
+## Out of scope
+
+The user's decisions, so that nobody re-proposes them as next steps:
+
+- **Base accuracy and polishing.** Beyond what this process should cover. Assemblies here are structural, so say that QV was not measured.
+- **Telomere-bearing raw reads at bare ends.** Refinement best left to manual effort after the assembly. Note the bare ends in the hand-over.
+
 ## Not yet tried
 
-What has not been squeezed from the unitigs, reads and Hi-C. **None of these has been tested**, so each is a hypothesis with a test, ranked by the value of what the test would tell you for its cost.
+What has not been squeezed from the unitigs, reads and Hi-C. **None of these has been tested**, so each is a hypothesis with a test. **The process is already large: an idea joins it only if a test shows a gain worth the added size.** A test that says no is a good result, and it goes under "Not worth repeating".
 
 | # | Idea | Would improve | Cost |
 |---|---|---|---|
-| 1 | Measure base accuracy, then polish | Base-level quality, never measured | Low to medium |
 | 2 | Find why reads stop at gaps | Whether any gap can close with this library | Low |
-| 3 | Telomere-bearing raw reads at bare ends | Telomeric ends | Low |
-| 4 | Phase arms through collapsed flanks with long raw reads and Hi-C | Fewer arbitrary arms, less mosaicism | Medium |
-| 5 | Allele-aware Hi-C for hard unplaced chains | Placement of chains such as 13Q010 chain0135 | Medium |
+| 4 | Phase arms through collapsed flanks with long raw reads and Hi-C | Fewer arbitrary arms, less mosaicism | Count first: low. Building it: medium, plus permanent size |
+| 5 | Allele-aware Hi-C for hard unplaced chains | Placement of chains such as 13Q010 chain0135 | Count first: low. Building it: medium, plus permanent size |
 | 6 | Reads under 5 kb, and local assembly at gaps | A few more closures | Medium |
 | 7 | hifiasm's `r_utg` graph at gap ends | A few more closures | Low |
-
-## 1. Measure base accuracy, then polish
-
-Neither assembly has a k-mer QV. Everything so far measures structure and gene content. The Hi-C reads are an independent short-read set, so Merqury can give a QV and a per-scaffold error map from data in hand. Hi-C's k-mer spectrum is uneven, so read it as a floor. The raw reads (dorado 1.3.0 SUP, 5.2.0 and 5.0.0 models) can then polish, with the masked targets already built for reads over shared sequence.
-
-**Test:** QV before and after, on one chromosome first. Keep a polish only if QV and compleasm frameshifts both improve. The one fill taken from a raw read (WatsonsChoice `chr5_h1:10518828`, about 1% error) gets fixed at the same time.
 
 ## 2. Find why reads stop at gaps
 
@@ -38,12 +37,6 @@ Extract the flanks too, and look for inverted repeats within about 100 kb of the
 **This decides whether the answer is more analysis or a different library,** so run it before spending on anything else at gaps.
 
 **First data from Busk, not a test of this idea:** of 7 remaining gaps, 5 have at most 2 q20 tails per gap, so reads simply stop. Two q20 tails at chr8_h2 map back across their own gap on both strands, which fits a foldback or inverted repeat. One read at chr6_h2 (`674e9354`) runs 97 kb forward and then back over the same stretch.
-
-## 3. Telomere-bearing raw reads at bare ends
-
-WatsonsChoice lacks 6 telomeric ends of 36. 13Q010 lacks them on `chr5_h1`, `chr5_h3`, `chr6_h1`, `chr6_h3` and `chr7_h3`. Telomeres are at a read's very end, where correction trims hardest. Search raw reads directly for the motif at their ends, align the rest, and look for reads anchoring uniquely to a bare scaffold end. No search of raw reads for the motif has been done.
-
-**Test:** at least 3 reads per end, unique anchors of at least 10 kb, and agreement in how far the sequence extends. Subtelomeric repeats are shared among ends (13Q010 chain0182), so MAPQ must carry the weight. Only corrected reads and unitigs have been searched.
 
 ## 4. Phase arms through collapsed flanks
 

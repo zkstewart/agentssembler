@@ -100,7 +100,7 @@ class T(unittest.TestCase):
             open(f"{d}/f.fai", "w").write("c1_h1\t30000000\t0\t60\t61\nc1_h2\t25000000\t0\t60\t61\nc2_h1\t30000000\t0\t60\t61\nc2_h2\t29500000\t0\t60\t61\n")
             open(f"{d}/a.agp", "w").write("c1_h2\t1\t100\t1\tW\tu\t1\t100\t+\nc1_h2\t101\t200\t2\tN\t100\tscaffold\tyes\tna\n")
             A = r.homolog_lengths(f"{d}/f.fai", f"{d}/a.agp")
-            self.assertEqual(len(A), 1); self.assertIn("c1_h2", A[0]); self.assertIn("1 gaps", A[0])
+            self.assertEqual(len(A), 1); self.assertIn("c1_h2", A[0]); self.assertIn("1 gap:", A[0])
             open(f"{d}/t.tsv", "w").write("#h\nc1_h2\t9\tright\t14\tunplaced_a\t14\t1\t1\t2\t+\t60\nc1_h2\t9\tleft\t10\tunplaced_b\t2\t1\t1\t2\t+\t60\nc1_h2\t9\tleft\t4\tc1_h2\t4\t1\t1\t2\t+\t60\nc1_h2\t7\tleft\t4\tc1_h1\t4\t1\t1\t2\t+\t60\nc2_h1\t5\tleft\t3\t.\t0\t0\t.\t.\t.\t.\n")
             T = r.tail_alarms(f"{d}/t.tsv")
             self.assertEqual(len(T), 2); self.assertIn("14 of 14", T[0]); self.assertIn("1 gap edges", T[1])

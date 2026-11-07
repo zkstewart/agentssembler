@@ -148,7 +148,7 @@ def homolog_lengths(fa_fai, agp, minBp=1000000, minFrac=0.05):
     for k, v in sorted(H.items()):
         top = max(v.values())
         for n, L in sorted(v.items()):
-            if top - L >= minBp and (top - L) / top >= minFrac: out.append(f"{n} is {Mb(top - L)} ({100 * (top - L) / top:.0f}%) shorter than its longest homolog, " + (f"with {gaps[n]} gaps: look behind them, or say why not (D11)." if gaps[n] else "with no gaps: check its telomeres before calling the difference real (D11)."))
+            if top - L >= minBp and (top - L) / top >= minFrac: out.append(f"{n} is {Mb(top - L)} ({100 * (top - L) / top:.0f}%) shorter than its longest homolog, " + (f"with {gaps[n]} gap{'s' if gaps[n] > 1 else ''}: look behind, or say why not (D11)." if gaps[n] else "with no gaps: check its telomeres before calling the difference real (D11)."))
     return out
 def tail_alarms(p):
     """Gap edges where at least 2 reads, and at least half of them, continue into one unplaced sequence. Tails entering a scaffold are mostly homologs at divergent ends, or repeats: counted, not listed."""
@@ -187,9 +187,6 @@ def r_raw(w, c, s):
     a = f"{w}/17_raw_reads/audit.tsv"; V = list(rows(a)); al = []; ok = [r for r in V if r[-1] == "pass"]; out = [f"Joins audited: {len(V)}; suggested pass {len(ok)}. Table: 17_raw_reads/audit.tsv."]
     for r in V:
         if r[-1] != "pass": al.append(f"{r[0]} ({r[1]}, {r[2]}): {r[-1]}")
-    C = collections.defaultdict(lambda: [0, 0, 0, 0])
-    for r in rows(f"{w}/17_raw_reads/cmp.sites.tsv", "kind"):
-        pass
     cmp = f"{w}/17_raw_reads/cmp.sites.tsv"
     if os.path.exists(cmp):
         H = open(cmp).readline().rstrip("\n").split("\t"); S = [dict(zip(H, l.rstrip("\n").split("\t"))) for l in open(cmp).readlines()[1:]]

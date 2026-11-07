@@ -1,17 +1,17 @@
 # Settings
 
-Everything goes in the config (`config/sample.example.yaml`), except the values set by D01. These are the values that worked on the two genomes tried: treat them as starting points.
+Everything goes in the config (`config/sample.example.yaml`), except the values set by D01. These are the values that worked on the genomes tried: treat them as starting points.
 
 ## From the sample
 
-| Setting | 13Q010 | WatsonsChoice | How to set it |
-|---|---|---|---|
-| `chromosomes`, `ploidy` | 9, 3 | 9, 2 | Known biology. Ask the user if unsure |
-| `hap_depth` | 27 | 28 | Main histogram peak (D01) |
-| `repeat_depth` | 120 | 123 | About 4.4 x `hap_depth` (D01) |
-| `collapsed` | false | true | Long unitigs near 2x, with or without a visible peak (D01) |
-| `hap_first` | false | true | Defaults to true at ploidy 2. Pairing of groups into chromosomes is implemented for ploidy 2 only |
-| `telomere_motif` | `CCCTAAA` | `CCCTAAA` | Plant default; `CCCTAA` is the vertebrate type. Confirm for other taxa |
+| Setting | 13Q010 | WatsonsChoice | Busk | How to set it |
+|---|---|---|---|---|
+| `chromosomes`, `ploidy` | 9, 3 | 9, 2 | 9, 2 | Known biology. Ask the user if unsure |
+| `hap_depth` | 27 | 28 | 62 | Main histogram peak (D01) |
+| `repeat_depth` | 120 | 123 | 273 | About 4.4 x `hap_depth` (D01) |
+| `collapsed` | false | true | true | Long unitigs near 2x, with or without a visible peak (D01) |
+| `hap_first` | false | true | true | Defaults to true at ploidy 2. Pairing of groups into chromosomes is implemented for ploidy 2 only |
+| `telomere_motif` | `CCCTAAA` | `CCCTAAA` | `CCCTAAA` | Plant default; `CCCTAA` is the vertebrate type. Confirm for other taxa |
 
 ## Defaults
 
@@ -39,6 +39,6 @@ Set automatically, so the scripts have no sample-specific defaults. Rounded to w
 
 | Setting | Meaning |
 |---|---|
-| `compute.threads` | Threads per job. About 16 cores and 30 GB RAM were enough for both genomes, excluding the HPC mappings of stage 02, which used 12 cores and up to 50 GB |
+| `compute.threads` | Threads per job. About 16 cores and 30 GB RAM were enough for all three genomes, excluding the HPC mappings of stage 02, which used 12 cores and up to 50 GB |
 | `compute.min_free_gb` | Mappings stop below this. Default 40 |
 | `compute.guard_path` | Path whose free space counts. **Under WSL use the host drive**, such as `/mnt/d`, because `df /` overstates it |

@@ -4,7 +4,7 @@ Each of these cost real time.
 
 | # | Trap | What to do |
 |---|---|---|
-| T1 | `pkill -f pattern` from a command containing that pattern kills your own shell | `pgrep`, then kill by PID |
+| T1 | `pkill -f pattern` from a command containing that pattern kills your own shell, and a `while pgrep -f pattern` loop in that command never ends, because it finds itself | Bracket a letter, as in `pgrep -f "[r]egress.py"`, then kill by PID |
 | T2 | A failed command can leave a stale output that you read as new. This happened with crosstalk and with an SV table | Check timestamps, and never suppress errors on a metric step |
 | T3 | `contact_map.py` groups file is one line per chromosome: `chr1<TAB>chr1_h1,chr1_h2`. Other layouts crash or overwrite | `15_validate` writes it for you. `--out` must exist |
 | T4 | A chain in `-` orientation reverses coordinates: position x sits at scaffold `start + length - x` | Lift through the AGP; do not do it mentally |
@@ -23,3 +23,4 @@ Each of these cost real time.
 | T17 | A step that crashed could leave a partial output, and the next run skipped it as finished. On Busk a crash in `build_chains.py` left 21 of 266 chains, and join verification ran on them, wasting a 70-minute mapping | `step` now moves it to `.failed`. If a run was interrupted by something other than a failed command, such as a kill or a crash of the machine, check the newest outputs before resuming |
 | T18 | compleasm needs `miniprot` and `hmmsearch` on PATH, and a pipeline that only prints a message on failure hides it | The driver adds compleasm's directory to PATH, `check_tools` tests both, and stage 15 now stops on failure |
 | T19 | Group and chromosome labels are numbered by size. A change upstream renumbers them, and an edit written against an old label silently moves a chain to another chromosome | Write `with:<chain>` in `group_edits.tsv`. After any reset above stage 07, compare groups by chain with the archived run |
+| T20 | Inputs can vanish between stages, when someone frees disk space. An empty stand-in for missing reads ran without error up to stage 11, and changed the scaffolds, because stage 08 chooses bridges with reads | `run` now stops if an input is missing and warns if one is empty. Tell the user which read sets must stay. Treat a surprise in the results as a question about the inputs first |
