@@ -28,7 +28,7 @@ chr7_h2 is 4.85 Mb shorter than chr7_h1. Both gap edges open into a connected co
 
 ## A low per-haplotype gene score can be numbering
 
-13Q010's h1 and h3 looked far less complete than any diploid, and 917 gene copies appeared lost from their chromosome's homolog set. In 784 of 843 two-copy genes the third copy lay on another chromosome, in blocks matching the translocations already called. Haplotype numbers are arbitrary across chromosomes, so "all h1 scaffolds" need not be one set. Choosing the numbering per chromosome that completes the most genes gave 99.32, 99.50 and 98.82%, from 91.84, 98.18 and 93.73%. The real shortfall is 65 gene copies of 8,415 (0.77%; Busk 0.21%). This holds only if the translocations are real, and the sets are not shown to be parental genomes. `validate/complement_genes.py` reports it.
+13Q010's h1 and h3 looked far less complete than any diploid, and 917 gene copies appeared lost from their chromosome's homolog set. In 784 of 843 two-copy genes the third copy lay on another chromosome, in blocks matching the translocations already called. Haplotype numbers are arbitrary across chromosomes, so "all h1 scaffolds" need not be one set. Choosing the numbering per chromosome that completes the most genes gave 99.32, 99.50 and 98.82%, from 91.84, 98.18 and 93.73%. The real shortfall is 65 gene copies of 8,415 (0.77%; Busk 17 of 5,610, 0.30%). This holds only if the translocations are real, and the sets are not shown to be parental genomes. `validate/complement_genes.py` reports it.
 
 ## Read correction
 

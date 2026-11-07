@@ -84,4 +84,9 @@ python3 "$S/rawreads/audit_joins.py" --agp $A/fill/candidate.agp --paf "${AUD[@]
 # Raw reads past each gap edge: correction loses reads near gaps, so these often say more than 14_readfill/gap_tails.tsv
 if collapsed; then TP=($A/fill/raw.h*.paf.gz); else TP=($A/fill/raw.paf.gz); fi
 step $A/gap_tails.tsv python3 "$S/review/gap_tails.py" $F/$AS_SAMPLE.final.agp $A/neargap.fasta $A/fill/in.fasta $A/gap_tails.tsv --paf "${TP[@]}" --minimap2 "$MM" --threads "$AS_THREADS"
+# Do raw reads phase the arms labelled arbitrary (D15)? Same mapping, so this costs minutes.
+if collapsed; then
+  HS=$(haps_of $AGP); PP=(); SF=(); for h in $HS; do PP+=($A/raw_vs_target.$h.paf.gz); SF+=(_$h); done
+  step $A/phase_reads.tsv python3 "$S/review/phase_reads.py" $AGP 12_shared/chains.agp $T/$AS_SAMPLE.graph.junctions.tsv 12_shared/groups.tsv $A/phase_reads.tsv --paf "${PP[@]}" --suffix "${SF[@]}"
+fi
 rm -f $A/fill/target.h*.fasta* $A/fill/audit.h*.fasta* $A/fill/audit.fasta

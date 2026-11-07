@@ -194,6 +194,10 @@ def r_raw(w, c, s):
             x = [g for g in S if g["kind"] == k]; R = sum(int(g["raw_spanq20"]) for g in x); O = sum(int(g["corr_spanq20"]) for g in x)
             out.append(f"{k}: q20 spanning reads raw {R}, corrected {O}, kept {100 * O / max(R, 1):.0f}%.")
     al += tail_alarms(f"{w}/17_raw_reads/gap_tails.tsv")
+    ph = list(rows(f"{w}/17_raw_reads/phase_reads.tsv", "scaffold"))
+    if ph:
+        K = collections.Counter(r[-1] for r in ph); out.append(f"Arbitrary arms, by raw reads (phase_reads.tsv): " + ", ".join(f"{k} {v}" for k, v in K.most_common()) + ".")
+        al += [f"{r[0]}:{r[1]}: {r[-1]}, reads to specific sequence here {int(r[8]) + int(r[9])}, on the homolog {r[11]} (D15)." for r in ph if r[-1] == "conflict"]
     return out, al
 def r_apply(w, c, s):
     f = f"{w}/15_final_raw/stats.txt"; return [open(f).read().strip()] if os.path.exists(f) else ["Final files unchanged."], []

@@ -4,7 +4,7 @@ Each of these cost real time.
 
 | # | Trap | What to do |
 |---|---|---|
-| T1 | `pkill -f pattern` from a command containing that pattern kills your own shell, and a `while pgrep -f pattern` loop in that command never ends, because it finds itself | Bracket a letter, as in `pgrep -f "[r]egress.py"`, then kill by PID |
+| T1 | `pkill -f pattern` from a command containing that pattern kills your own shell, and a `while pgrep -f pattern` loop in that command never ends, because it finds itself. Bracketing a letter does not help if the plain name appears elsewhere in the command: that killed my shell mid-edit, and the next call restarted a stalled job | Kill by PID, in a command of its own |
 | T2 | A failed command can leave a stale output that you read as new. This happened with crosstalk and with an SV table | Check timestamps, and never suppress errors on a metric step |
 | T3 | `contact_map.py` groups file is one line per chromosome: `chr1<TAB>chr1_h1,chr1_h2`. Other layouts crash or overwrite | `15_validate` writes it for you. `--out` must exist |
 | T4 | A chain in `-` orientation reverses coordinates: position x sits at scaffold `start + length - x` | Lift through the AGP; do not do it mentally |
