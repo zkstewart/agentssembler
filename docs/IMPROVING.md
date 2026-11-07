@@ -18,33 +18,34 @@ What has not been squeezed from the unitigs, reads and Hi-C. **None of these has
 
 | # | Idea | Would improve | Cost |
 |---|---|---|---|
-| 2 | Find why reads stop at gaps | Whether any gap can close with this library | Low |
-| 4 | Phase arms through collapsed flanks with long raw reads and Hi-C | Fewer arbitrary arms, less mosaicism | Count first: low. Building it: medium, plus permanent size |
-| 5 | Allele-aware Hi-C for hard unplaced chains | Placement of chains such as 13Q010 chain0135 | Count first: low. Building it: medium, plus permanent size |
+| 5 | Allele-aware Hi-C for hard unplaced chains | Placement of chains such as 13Q010 chain0135 | Being tested on chain0135; ruled out for arms |
 | 6 | Reads under 5 kb, and local assembly at gaps | A few more closures | Medium |
 | 7 | hifiasm's `r_utg` graph at gap ends | A few more closures | Low |
 
-## 2. Find why reads stop at gaps
+## 2. Why reads stop at gaps: tested
 
-Raw depth falls from about 32x to 4x at gap edges, with ordinary GC and complexity, and 48 of 83 WatsonsChoice gaps have no spanning raw read. Whether more sequencing could help depends on the cause. Existing PAFs can separate three of them:
+**Result, on three genomes: nothing physically stops reads there.** Use `review/edge_reads.py` and `review/edge_seq_depth.py` to repeat it on a new genome.
 
-- **Read ends pile up at one coordinate, on one strand:** a sequence the pore or polymerase cannot pass, such as a hairpin or a damage site. Compare strand-specific read-end positions at each edge with control sites.
-- **Reads continue but stop aligning:** look at clipped tails, including alignments under 5 kb. So far only overhangs of at least 2 kb with an anchor of at least 5 kb were counted.
-- **Sequence is missing from the graph:** map the tails of reads ending there to each other.
+| Test | Result | So |
+|---|---|---|
+| Read ends and read starts at edges, against controls | No excess in the median, and starts rise with ends: WatsonsChoice 2.05 and 1.57 per kb at the edge, in the mean | Not a block on one strand, which could not produce read starts |
+| Depth with distance | Fades over about 100 kb, q20 depth first: 31 at 100-200 kb to 2 at the edge, any MAPQ 34 to 5 | Not a hard edge. The flank becomes repetitive |
+| Reads carrying 5 kb of flank, alone as target, at least 90% cover and 97% identity | Median 1.43-1.85 x haplotype depth against 1.25-1.56 at controls. Under 0.5 x at 2-14% of edges against 4-7% | Reads carrying this sequence exist at a normal rate. Windows over 10 x were left out as repeats |
+| Where those reads are placed, WatsonsChoice | Here at q20 4.8% (controls 62.6%), here at low MAPQ 12.4% (5.8%), homolog 53.6% (30.1%), same scaffold elsewhere 19.2% (1.3%), unplaced 8.3% (0%) | Gap flanks have copies at 97% or more: on the homolog, nearby on the scaffold, and in unplaced sequence |
 
-Extract the flanks too, and look for inverted repeats within about 100 kb of the edge.
+**What this means for more data:** the sequence is readable, so a different chemistry is not obviously needed. A read must anchor beyond a duplicated flank, and depth fades over about 100 kb, so read length is the likely limit. That is an inference: no longer library has been tried.
 
-**This decides whether the answer is more analysis or a different library,** so run it before spending on anything else at gaps.
+**Not settled:** whether reads from the gap locus itself are rare, or exist and go to a cleaner sibling copy. Depth at the homolog copy (median 1.88 x) barely differs from controls (1.75 x), and that control figure is inflated by shared sequence, so this test could not tell.
 
-**First data from Busk, not a test of this idea:** of 7 remaining gaps, 5 have at most 2 q20 tails per gap, so reads simply stop. Two q20 tails at chr8_h2 map back across their own gap on both strands, which fits a foldback or inverted repeat. One read at chr6_h2 (`674e9354`) runs 97 kb forward and then back over the same stretch.
+**My errors on the way:** a loose criterion counted transposon fragments and gave 0 of 259 low-depth edges as depleted, which could not have come out otherwise. Busk has only 7 edges left in the strict table.
 
-## 4. Phase arms through collapsed flanks
+## 4. Phase arms: tested
 
-102 of 139 WatsonsChoice bridge junctions and 27 of 47 tails have arbitrary phase. Reads of 100 kb or more are the ones correction lost most (21% of their bases kept), and they have never been used to phase. Next to a collapsed flank, a long raw read reaching a heterozygous site beyond the flank links an arm to the haplotype, where Hi-C has too little to say. Hi-C pairs carrying heterozygous sites can extend the same evidence, as in SNP-level phasers such as WhatsHap and HapCUT2.
+**Reads can say something at a minority of junctions, and it is built, as a report.** `review/phase_reads.py` runs in stage 13 with no new mapping. Busk: of 32 arbitrary junctions, 14 confirmed, 2 conflict, 16 no reads or thin. WatsonsChoice: of 102, 27 confirmed, 1 mixed, 74 no reads or thin. Specific sequence is typically hundreds of kb from the arm, and reads of that length are rare (WatsonsChoice: 1,435 of at least 250 kb). The conflicts have 2 reads each, and no arm has been swapped.
 
-**Test:** count, per arbitrary junction, the raw reads carrying a heterozygous site on both sides. If most junctions have at least 2 reads, `assign_arms2.py` gains an evidence term for those. If few do, this is settled, and the labels stand.
+**Calling heterozygous sites is not needed for this,** though I first described it that way: reads across the arm into specific sequence already carry the signal.
 
-**This would also bear on the tail decision,** since an arbitrary tail with phase evidence is no longer arbitrary.
+**Hi-C cannot phase arms,** at least on Busk. Hi-C does separate homologs when pairs exist: chains it grouped favour their own scaffold by a median of 6.8-8.4 x. But arms get under 20 pairs at 31 of 32 Busk and 89 of 102 WatsonsChoice junctions, and the cause is not the filter. Of 3.17 M Busk records on arm chains, 99.6% tie exactly between copies, 293 show any margin, and 388 are lost to `NM`.
 
 ## 5. Allele-aware Hi-C for hard unplaced chains
 

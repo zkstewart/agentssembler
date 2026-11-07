@@ -45,7 +45,7 @@ Raw SUP reads against corrected reads, at reads of 5 kb or more:
 
 - **Correction loses and shortens reads near gaps.** At the same quality, reads near a WatsonsChoice gap are kept about half as often (34% against 63% at mean Q20-25). Of 151 raw spanning reads at q20, 50 had no corrected version and 45 no longer spanned, 34 of them shortened by more than 10%.
 - **It does not move reads between haplotypes** on any scale measured.
-- **It is not the main cause of gaps.** Raw depth also falls, from 31.6x at 20-50 kb to 4.4x at the edge, and 48 of 83 WatsonsChoice gaps have no spanning raw read. Why reads stop there is unknown: GC and complexity are ordinary.
+- **It is not the main cause of gaps.** Raw depth also falls, from 31.6x at 20-50 kb to 4.4x at the edge, and 48 of 83 WatsonsChoice gaps have no spanning raw read. Reads carrying the flank's sequence exist at a normal rate, but most are placed on other copies at 97% identity or more: see [IMPROVING](IMPROVING.md).
 - **Neither read set is enough alone.** Raw alone closed 11 WatsonsChoice gaps against 6 corrected, with 3 in common. On 13Q010 raw alone closed 15 against 19, and raw reads were inconsistent at 5 gaps that corrected reads filled.
 
 ## Automated labels that were wrong
@@ -73,7 +73,7 @@ Raw SUP reads against corrected reads, at reads of 5 kb or more:
 
 ## Open questions
 
-- **Why do reads stop at gaps?** See [IMPROVING](IMPROVING.md).
+- **Are a gap locus's own reads rare, or do they go to a cleaner sibling copy?** See [IMPROVING](IMPROVING.md).
 - **What is chain0192, 0205, 0212, 0222 on Busk?** About 1,500x, 514 kb, with evenly spread Hi-C. Organelle is the obvious guess, and it is untested.
 - **Is collapsed handling sound above ploidy 2?** It is generalised in code, but only ploidy 2 has been run.
 - **Juicebox edits:** the route back into the AGP has not been exercised.
