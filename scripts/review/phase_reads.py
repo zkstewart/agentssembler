@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 '''Do raw reads phase arms labelled arbitrary? No new mapping. For each such junction, finds the arm on the scaffold and the nearest haplotype-specific chain on each side, then counts reads linking them.
 cis: one alignment (MAPQ >= 20) overlaps the arm and runs at least minAnchor into specific sequence of this scaffold. trans: an alignment overlaps the arm here, and another alignment of the same read lies in specific sequence of a homolog.
-confirmed: cis >= 2 and at least 5 x trans. conflict: trans >= 2 and over cis. mixed: other cases with at least 2 of either. thin or no_reads: reads cannot say. On Busk and WatsonsChoice most arms lie too far from specific sequence for reads.
-Hi-C cannot do this: on Busk 99.6% of Hi-C records on arm chains tie between copies. A conflict is a prompt, and no arm has been swapped on this evidence.
+confirmed: cis >= 2 and at least 5 x trans. conflict: trans >= 2 and over cis. mixed: other cases with at least 2 of either. thin or no_reads: reads cannot say. Most arms can lie too far from specific sequence for reads to reach.
+Hi-C cannot do this (see the D15 guide). A conflict is a prompt, and no arm has been swapped on this evidence.
 Usage: phase_reads.py graph.agp chains.agp junctions.tsv groups.tsv out.tsv --paf a.paf.gz [b.paf.gz] [--suffix _h1 _h2]'''
 import argparse, collections, gzip, re
 p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
