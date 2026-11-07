@@ -10,7 +10,7 @@
 |---|---|---|
 | `under_2_clean_q20_reads` | Reads through at MAPQ >= 20 with no indel over 50 bp | Unsupported joins. Use judgement with shared flanks, where MAPQ is low for good reason |
 | `array_depth` | Alignment depth within 20 kb is over 4 x haplotype | A tandem array. Anchors inside it pass MAPQ and agreement but say nothing about its length. **Reopen.** WatsonsChoice chr8_h1:15713522 and chr8_h2:14209070, both accepted by the corrected fill |
-| `trim_has_no_copy_in_kept_flank` | The trimmed sequence has a copy of at least 99% identity over at least 90% of its length in the kept flank | A trim that discards real sequence. 13Q010 chr2_h3 (12.9 of 29.7 kb at 89.8%), WatsonsChoice chr8_h2:5743770 (96.6%). **Reject** |
+| `trim_has_no_copy_in_kept_flank` | The trimmed sequence has a copy of at least 99% identity over at least 90% of its length in the kept flank | A trim that discards real sequence. WatsonsChoice chr8_h2:5743770 (96.6%). **Reject.** Check by aligning the trim to the flank's end yourself (`minimap2 -x asm20 -c`): the adopted 13Q010 build rejected chr2_h3:25630988 on "12.9 of 29.7 kb at 89.8%", and in the rebuild the whole trim aligned at 99.3% and 10 clean q20 reads crossed the join, so it was kept |
 | `length_ratio_off` | Read/target length within 2% of 1 | Collapse or a kept duplication |
 | `reads_break_here` | Many reads stop aligning at the join | A bad join |
 | `low_identity_at_join` | Identity at the join under 95% | Wrong sequence, or low-quality reads. Compare with `id_flank` |
