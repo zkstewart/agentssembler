@@ -18,7 +18,6 @@ What has not been squeezed from the unitigs, reads and Hi-C. **None of these has
 
 | # | Idea | Would improve | Cost |
 |---|---|---|---|
-| 5 | Allele-aware Hi-C for hard unplaced chains | Placement of chains such as 13Q010 chain0135 | Being tested on chain0135; ruled out for arms |
 | 6 | Reads under 5 kb, and local assembly at gaps | A few more closures | Medium |
 | 7 | hifiasm's `r_utg` graph at gap ends | A few more closures | Low |
 
@@ -47,11 +46,18 @@ What has not been squeezed from the unitigs, reads and Hi-C. **None of these has
 
 **Hi-C cannot phase arms,** at least on Busk. Hi-C does separate homologs when pairs exist: chains it grouped favour their own scaffold by a median of 6.8-8.4 x. But arms get under 20 pairs at 31 of 32 Busk and 89 of 102 WatsonsChoice junctions, and the cause is not the filter. Of 3.17 M Busk records on arm chains, 99.6% tie exactly between copies, 293 show any margin, and 388 are lost to `NM`.
 
-## 5. Allele-aware Hi-C for hard unplaced chains
+## 5. Allele-aware Hi-C for hard unplaced chains: tested, no
 
-Chains with a near-identical copy get MAPQ 0 Hi-C, and the pipeline's filters drop those pairs. That is why 13Q010 chain0135 (958 kb, 21 genes, 18 of them missing from both h1 and h2) has so little evidence. It differs from its copy by about 3%, so many pairs do carry a difference. Competitive mapping to the two copies with a score margin, in place of MAPQ, would recover pairs that are currently discarded.
+**Result: it cannot place 13Q010's 958 kb unplaced chain (chain0135 in the adopted build, chain0136 in the connector rebuild).** I expected about 3% divergence from its copy. That was wrong: it is 99.97% identical over 928 kb to the first 957 kb of chr7_h3 (`minimap2 -x asm20`, de 0.0003), and 99.2% to the end of chr4_h3. Both it and the chr7_h3 copy have about haplotype depth (primary 11.6-29.1 and 26.5-27.3, haplotype 27), so they look like two real copies, not a duplicated haplotig.
 
-**Test:** on chain0135 alone, count pairs whose mate is unique elsewhere and whose read favours chain0135 by at least 2 mismatches. Compare the chromosomes hit with a shuffled control. Keep it unplaced unless one chromosome clearly stands out.
+| Pairs with one end on the chain and the other elsewhere | Count | Top scaffold, against its share of length |
+|---|---:|---|
+| All | 184,632 | chr4_h3 15.8% (3.5%), chr7_h3 14.6% (3.6%): the copies' neighbours, from tied reads |
+| Chain end MAPQ 0 | 182,366 (98.8%) | |
+| Chain end favoured by an alignment score margin of at least 5, `NM` at most 2, mate MAPQ at least 20 | 185 | chr7_h3 7.6% (3.6%); no chromosome above 17% |
+| Both ends MAPQ at least 20 | 49 | chr7_h3 8 pairs |
+
+At 0.03% divergence a 150 bp read carries a difference about once in 20 reads, and the pairs that do carry one spread over all chromosomes. With the arm result on Busk (99.6% exact ties), the margin adds too few pairs to change any placement. Not built. The scratch tool was a stream of the Hi-C BAM through `awk` (9 minutes for 20 GB) and a tally by scaffold.
 
 ## 6. Reads under 5 kb, and local assembly at gaps
 
@@ -68,4 +74,5 @@ Both builds used the processed `p_utg` graph. hifiasm's `r_utg` graph keeps bubb
 - **Loosening `readfill.py`:** `--minIdentity 0.95 --maxTrim 15000` gained 1 gap and lost 2.
 - **More hops on 13Q010:** 8 hops give the same 33 bridges as 3. That is before connectors: on Busk, with connectors, 12 hops are needed.
 - **Raw reads to place 13Q010 unplaced sequence:** one q20 link in total. The evidence there is Hi-C or nothing.
+- **Allele-aware Hi-C (idea 5):** near-identical copies are near-identical in Hi-C reads too. See above.
 - **A reference synteny term in ordering:** no effect over four rounds, and it breaks the evidence order anyway.

@@ -9,6 +9,7 @@
 | Signal | Cause | Fix |
 |---|---|---|
 | One group too many, or a chromosome with too few haplotypes | Satellite chains' alignments look like allelic conflicts and block merges | Built in: held out of seeding (`--stats`), conflicts ignored above repeat fraction 0.5 (`--repeat`). Check `max_repeat` and `min_within` |
+| Two chromosomes merged and another split, after a rebuild that grouped fine before | A point of thousands of pairs between two chains: organelle reads on nuclear insertions, with the organelle missing from the target | Fixed in `05_hic_chains` (decoys). Check `09_hic_map/decoys.txt` holds the organelle, and look for such a point in `pairs.tsv.gz` (13Q010 rebuild: 21,394 pairs in one 500 kb bin pair) |
 | One chromosome split by haplotype and two others merged | Divergent homologs: Hi-C between them is as weak as between chromosomes | `hap_first: true` clusters directly to chromosomes x ploidy. **It pairs groups into chromosomes by allele alignment, for ploidy 2 only** |
 
 **Independent support to report:**

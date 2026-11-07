@@ -22,6 +22,10 @@ No Juicebox review had been done on any at the time of writing. The user adopted
 
 A unitig is redundant when another copy covers its sequence, but it may still be the only graph link between two chains. Restoring those took Busk from 60 gaps to 8 before any read filling, with no bridges across chromosomes, and grouping unchanged. Their joins hold up about as well as joins inside chains: 88% have q20 reads through them at 10 kb, against 92% within chains. **What this does not show:** which allele a connector carries relative to its neighbours. Most such arms have arbitrary phase.
 
+## Sequence set aside must stay in the Hi-C target, as decoys
+
+Stage 04 sets high-copy chains aside (`07_chains2/repeat_chains.txt`), and the chloroplast is one of them. In the 13Q010 rebuild a change in chain building left the chloroplast unitig (utg000711l, 287 kb, about 2,800 x) alone in such a chain, so it was missing from the Hi-C target. Chloroplast Hi-C reads then landed on two nuclear plastid insertions, chr9_h3 at 8.36 Mb and chr5_h3 at 1.11 Mb, as if unique: 21,394 pairs in one 500 kb bin pair, against none there in the adopted build. Grouping merged chr1 with chr2 twice and split chr9 to keep the count. `05_hic_chains` now maps Hi-C to the chains plus every set-aside unitig as `decoy_*`, and drops pairs touching a decoy. **Signal to look for:** thousands of pairs between two chains at one point (`awk` over `pairs.tsv.gz` in 500 kb bins). Busk's and WatsonsChoice's largest such spots are among unassigned high-copy chains, which act as decoys already.
+
 ## A short haplotype can mean a tangle in unplaced sequence
 
 chr7_h2 is 4.85 Mb shorter than chr7_h1. Both gap edges open into a connected component of 27 unplaced chains (7.24 Mb, mostly repeats), which touches no other scaffold in the graph, and read tails enter it. No single chain has enough Hi-C to place. Summed Hi-C was misleading at first: one chain with a repeat fraction of 0.90 gave 77% of its links and pointed to chr4. Without it, chr7 leads, though barely separating haplotypes (347 against 281). Compare homolog lengths, and look at what lies behind the gap of the shorter one.

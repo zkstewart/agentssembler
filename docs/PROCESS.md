@@ -57,7 +57,7 @@ Primary depth per unitig, and sequence-class depth adding near-identical copies.
 
 ## 05_hic_chains, then D04 (about 1.6 h)
 
-Hi-C to the final chains, keeping pairs at MAPQ >= 1 and NM < 3. Mapping to chains rather than unitigs gave 17% more pairs on 13Q010, recovering contacts lost at unitig ends. Do not skip it.
+Hi-C to the final chains, keeping pairs at MAPQ >= 1 and NM < 3. Mapping to chains rather than unitigs gave 17% more pairs on 13Q010, recovering contacts lost at unitig ends. Do not skip it. The target also holds every unitig stage 04 set aside as high-copy, named `decoy_*`, so that organelle reads do not land on nuclear insertions as if unique (see [LESSONS](LESSONS.md)); pairs touching a decoy are dropped. `reset 05_hic_chains --remap` is needed to redo the mapping, since `09_hic_map` is kept otherwise.
 
 ## 06_evidence (about 40 min)
 
