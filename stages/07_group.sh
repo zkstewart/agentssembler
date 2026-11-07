@@ -12,3 +12,5 @@ if has_ref; then
   B="${AS_BASELINE_AGP:-/dev/null}"
   python3 "$S/eval_groups.py" 10_groups/groups.tsv 12_broken/chains.agp 03_unitig_align/unitigs_vs_ref.paf.gz "$B" > 10_groups/eval_groups.txt || true
 fi
+# Chains running through a collapsed fork cannot be seen until groups exist. A break costs a read mapping, so read this before spending time on order (D06).
+if collapsed && [ -s 10_groups/groups.chroms.tsv ]; then python3 "$S/review/chain_forks.py" 12_broken/chains.agp 00_inputs/unitigs.gfa 04_copynumber/copy_number.tsv 10_groups/groups.tsv 10_groups/groups.chroms.tsv --hap "$AS_HAP" > 10_groups/chain_forks.txt; fi

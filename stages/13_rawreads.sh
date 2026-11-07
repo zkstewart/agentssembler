@@ -81,4 +81,7 @@ else
   map_paf $A/fill/audit.paf.gz -x lr:hq -c --eqx -t "$AS_THREADS" --secondary=no $A/fill/audit.fasta $A/neargap.fasta; AUD+=($A/fill/audit.paf.gz)
 fi
 python3 "$S/rawreads/audit_joins.py" --agp $A/fill/candidate.agp --paf "${AUD[@]}" "${REPORTS[@]}" --minimap2 "$MM" --hapDepth "$AS_HAP" --out $A/audit.tsv
+# Raw reads past each gap edge: correction loses reads near gaps, so these often say more than 14_readfill/gap_tails.tsv
+if collapsed; then TP=($A/fill/raw.h*.paf.gz); else TP=($A/fill/raw.paf.gz); fi
+step $A/gap_tails.tsv python3 "$S/review/gap_tails.py" $F/$AS_SAMPLE.final.agp $A/neargap.fasta $A/fill/in.fasta $A/gap_tails.tsv --paf "${TP[@]}" --minimap2 "$MM" --threads "$AS_THREADS"
 rm -f $A/fill/target.h*.fasta* $A/fill/audit.h*.fasta* $A/fill/audit.fasta

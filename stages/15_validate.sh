@@ -13,6 +13,7 @@ python3 "$S/lift_pairs.py" $D/pairs.tsv.gz $D/chains.agp $AGP $D/groups.tsv 13_s
 cut -f1 $FA.fai | awk '{c=$1; sub(/_h[0-9]+$/,"",c); a[c]=a[c]","$1; if(!(c in s)){s[c]=1; o[++n]=c}} END{for(i=1;i<=n;i++) print o[i]"\t"substr(a[o[i]],2)}' > $V/homolog_groups.tsv
 if [ -n "${AS_PLOT_PYTHON:-}" ]; then for t in specific scaffold; do "$AS_PLOT_PYTHON" "$S/contact_map.py" --pairs $V/pairs.$t.tsv.gz --agp $V/identity.agp --groups $V/homolog_groups.tsv --out $V/maps/$t > $V/maps/$t.log 2>&1 || echo "contact_map $t failed: see log"; done; fi
 python3 "$S/validate/phase_scan.py" $V/pairs.specific.tsv.gz $AGP > $V/phase_scan.txt 2>&1
+python3 "$S/review/unplaced_components.py" 13_scaffold/$AS_SAMPLE.graph.placement.tsv 12_broken/chains.agp 00_inputs/unitigs.gfa 12_broken/links.tsv > $V/unplaced_components.txt
 # corrected reads to the final coordinates
 cat $FA $UN > $V/reads/all.fasta; PAFS=()
 if collapsed; then

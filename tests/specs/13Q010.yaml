@@ -10,7 +10,7 @@ config:
     hic_r1: 00_inputs/hic_R1.fq.gz
     hic_r2: 00_inputs/hic_R2.fq.gz
     reference: 00_inputs/reference.fasta
-    raw_bams: [../raw_reads/glauca_shearing_Pete_13Q010_27_11_2024.sup.bam]
+    raw_bams: [../nanopore/glauca_shearing_Pete_13Q010_27_11_2024.sup.bam]
   settings: {hap_first: false, restore_connectors: false, hops: 8}
   tools:
     minimap2: /home/stewarz2/bio/minimap2-2.31/minimap2

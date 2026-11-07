@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Fast checks with no data: every script parses and states its purpose, no hard-coded paths or samples, and the edit-applying scripts behave. Run: python3 tests/test_units.py"""
-import ast, glob, os, re, subprocess, sys, tempfile, textwrap, unittest
+import ast, glob, gzip, os, re, shutil, subprocess, sys, tempfile, textwrap, unittest
 R = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SCRIPTS = glob.glob(f"{R}/scripts/*.py") + glob.glob(f"{R}/scripts/*/*.py")
 def run(script, *a): return subprocess.run([sys.executable, f"{R}/scripts/{script}", *a], capture_output=True, text=True)
@@ -93,4 +93,39 @@ class T(unittest.TestCase):
             self.assertEqual([x[5] for x in o], ["a", "10", "b", "c"])
             self.assertEqual(o[0][6:8], ["1", "100"]); self.assertEqual(o[2][6:8], ["11", "100"]); self.assertEqual(o[3][6:8], ["1", "100"])
             self.assertEqual(o[-1][2], str(100 + 10 + 90 + 100))
+    def test_homolog_and_tail_alarms(self):
+        sys.path.insert(0, R)
+        from agentssembler import report as r
+        with tempfile.TemporaryDirectory() as d:
+            open(f"{d}/f.fai", "w").write("c1_h1\t30000000\t0\t60\t61\nc1_h2\t25000000\t0\t60\t61\nc2_h1\t30000000\t0\t60\t61\nc2_h2\t29500000\t0\t60\t61\n")
+            open(f"{d}/a.agp", "w").write("c1_h2\t1\t100\t1\tW\tu\t1\t100\t+\nc1_h2\t101\t200\t2\tN\t100\tscaffold\tyes\tna\n")
+            A = r.homolog_lengths(f"{d}/f.fai", f"{d}/a.agp")
+            self.assertEqual(len(A), 1); self.assertIn("c1_h2", A[0]); self.assertIn("1 gaps", A[0])
+            open(f"{d}/t.tsv", "w").write("#h\nc1_h2\t9\tright\t14\tunplaced_a\t14\t1\t1\t2\t+\t60\nc1_h2\t9\tleft\t10\tunplaced_b\t2\t1\t1\t2\t+\t60\nc1_h2\t9\tleft\t4\tc1_h2\t4\t1\t1\t2\t+\t60\nc1_h2\t7\tleft\t4\tc1_h1\t4\t1\t1\t2\t+\t60\nc2_h1\t5\tleft\t3\t.\t0\t0\t.\t.\t.\t.\n")
+            T = r.tail_alarms(f"{d}/t.tsv")
+            self.assertEqual(len(T), 2); self.assertIn("14 of 14", T[0]); self.assertIn("1 gap edges", T[1])
+    def test_unplaced_components(self):
+        # u1 placed on s1; u2 - u3 unplaced, joined to each other and to u1 in the graph; u4 unplaced, alone
+        with tempfile.TemporaryDirectory() as d:
+            open(f"{d}/p.tsv", "w").write("#h\nc1\t1000000\t.\ts1\tplaced\nc2\t400000\t.\t.\tunplaced\nc3\t400000\t.\t.\tunplaced\nc4\t500000\t.\t.\tunplaced\n")
+            open(f"{d}/c.agp", "w").write("".join(f"c{i}\t1\t10\t1\tW\tu{i}\t1\t10\t+\n" for i in range(1, 5)))
+            open(f"{d}/g.gfa", "w").write("L\tu1\t+\tu2\t+\t0M\nL\tu2\t+\tu3\t+\t0M\n")
+            open(f"{d}/l.tsv", "w").write("")
+            o = run("review/unplaced_components.py", f"{d}/p.tsv", f"{d}/c.agp", f"{d}/g.gfa", f"{d}/l.tsv")
+            self.assertEqual(o.returncode, 0, o.stderr)
+            self.assertRegex(o.stdout, r"2 chains, 0\.80 Mb; graph contacts: \{'s1': 1\}")
+            self.assertRegex(o.stdout, r"1 chains, 0\.50 Mb; graph contacts: none")
+    @unittest.skipUnless(os.environ.get("MINIMAP2") or shutil.which("minimap2"), "needs minimap2")
+    def test_gap_tails(self):
+        # A read aligned to the right flank's start, whose unaligned part lies in an unplaced sequence: its tail must be traced there.
+        import random; random.seed(2); seq = lambda n: "".join(random.choice("ACGT") for _ in range(n))
+        L, Rt, U = seq(20000), seq(20000), seq(20000); read = U[5000:12000] + Rt[:6000]
+        with tempfile.TemporaryDirectory() as d:
+            open(f"{d}/a.agp", "w").write("s\t1\t20000\t1\tW\tu1\t1\t20000\t+\ns\t20001\t20100\t2\tN\t100\tscaffold\tyes\tna\ns\t20101\t40100\t3\tW\tu2\t1\t20000\t+\n")
+            open(f"{d}/all.fa", "w").write(f">s\n{L}{'N' * 100}{Rt}\n>un\n{U}\n"); open(f"{d}/r.fa", "w").write(f">r1\n{read}\n")
+            with gzip.open(f"{d}/m.paf.gz", "wt") as o: o.write("r1\t13000\t7000\t13000\t+\ts\t40100\t20100\t26100\t6000\t6000\t60\n")
+            x = run("review/gap_tails.py", f"{d}/a.agp", f"{d}/r.fa", f"{d}/all.fa", f"{d}/o.tsv", "--paf", f"{d}/m.paf.gz", "--minimap2", os.environ.get("MINIMAP2") or shutil.which("minimap2"), "--threads", "2")
+            self.assertEqual(x.returncode, 0, x.stderr)
+            F = [l.split("\t") for l in open(f"{d}/o.tsv") if l[0] != "#"]
+            self.assertEqual(len(F), 1); self.assertEqual(F[0][:6], ["s", "20000", "right", "1", "un", "1"])
 if __name__ == "__main__": unittest.main(verbosity=1)

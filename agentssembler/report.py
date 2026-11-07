@@ -106,6 +106,10 @@ def r_group(w, c, s):
         for r in rows(f"{w}/11_ont_chains/depth.windows.tsv"): W[r[0]].append(float(r[3]))
         hub = [f"{u} ({st.median(W[u][len(W[u]) // 3:2 * len(W[u]) // 3]):.0f}x)" for u in Un if len(W[u]) >= 6 and 1.54 * h <= st.median(W[u][len(W[u]) // 3:2 * len(W[u]) // 3]) <= 2.68 * h]
         if hub: out.append(f"Unassigned with 2x depth in their middle third, candidates only; test each with review/hub_depth.py (D14): {', '.join(hub)}.")
+    forks = f"{w}/10_groups/chain_forks.txt"
+    if os.path.exists(forks):
+        n = sum(1 for l in open(forks) if l.startswith("HUB"))
+        if n: al.append(f"{n} HUB rows in 10_groups/chain_forks.txt: 2x unitigs in a chain whose other exit reaches a homolog's chain. Read them before going on: a break costs a read mapping (D04, D06).")
     if os.path.exists(f"{w}/10_groups/eval_groups.txt"): out.append("Reference alarm table: 10_groups/eval_groups.txt. It says where to look, never what to change.")
     return out, al
 def r_bridges(w, c, s):
@@ -130,6 +134,40 @@ def r_build(w, c, s):
     return [f"Scaffolds {len(L)}, {Mb(sum(L.values()))}. Junction types: {dict(J)}.", "Build log: 13_scaffold/build.log."], []
 def fill_reports(w, c):
     return sorted(glob.glob(f"{w}/14_readfill/h*/fill.h*.report.tsv") + glob.glob(f"{w}/14_readfill/*.graph.report.tsv"))
+def homolog_lengths(fa_fai, agp, minBp=1000000, minFrac=0.05):
+    """Scaffolds much shorter than their longest homolog. Sequence may lie behind a gap on the short side (D11)."""
+    H, gaps = collections.defaultdict(dict), collections.Counter()
+    if not os.path.exists(fa_fai): return []
+    for n, L in fai(fa_fai).items():
+        k, _, h = n.rpartition("_h")
+        if k: H[k][n] = L
+    if os.path.exists(agp):
+        for r in rows(agp):
+            if len(r) > 4 and r[4] in ("N", "U"): gaps[r[0]] += 1
+    out = []
+    for k, v in sorted(H.items()):
+        top = max(v.values())
+        for n, L in sorted(v.items()):
+            if top - L >= minBp and (top - L) / top >= minFrac: out.append(f"{n} is {Mb(top - L)} ({100 * (top - L) / top:.0f}%) shorter than its longest homolog, " + (f"with {gaps[n]} gaps: look behind them, or say why not (D11)." if gaps[n] else "with no gaps: check its telomeres before calling the difference real (D11)."))
+    return out
+def tail_alarms(p):
+    """Gap edges where at least 2 reads, and at least half of them, continue into one unplaced sequence. Tails entering a scaffold are mostly homologs at divergent ends, or repeats: counted, not listed."""
+    out = []; other = set()
+    if os.path.exists(p):
+        for r in rows(p):
+            if r[4] == "." or r[4] == r[0] or int(r[5]) < 2 or 2 * int(r[5]) < int(r[3]): continue
+            if r[4].startswith("unplaced"): out.append(f"{r[0]}:{r[1]} {r[2]} edge: {r[5]} of {r[3]} q20 read tails enter {r[4]} ({p.split('/')[-2]}/gap_tails.tsv). A candidate only: test the graph path, homolog and Hi-C (D11).")
+            else: other.add((r[0], r[1], r[2]))
+    if other: out.append(f"{len(other)} gap edges have read tails mostly entering another scaffold ({p.split('/')[-2]}/gap_tails.tsv). Usually homologs at divergent ends, or repeats.")
+    return out
+def component_alarms(p, minMb=1.0):
+    """Large unplaced tangles with graph contact to a scaffold."""
+    out = []
+    if os.path.exists(p):
+        for l in open(p):
+            m = re.match(r"(\d+) chains, ([\d.]+) Mb; graph contacts: (\{.*\})", l)
+            if m and float(m[2]) >= minMb: out.append(f"Unplaced tangle of {m[1]} chains, {m[2]} Mb, graph contacts {m[3]} (unplaced_components.txt). Report it; do not place it on this alone.")
+    return out
 def r_fill(w, c, s):
     K = collections.Counter(); R = fill_reports(w, c)
     for f in R:
@@ -143,6 +181,7 @@ def r_fill(w, c, s):
         for r in rows(f):
             if r[5] == "no" and int(r[7]) >= 10 and int(r[6]) < 2: lm.append(r[0])
     if lm: al.append(f"Many low-MAPQ spanning reads at {lm}: consider edits/fill_retry.tsv (D11).")
+    sm = c["sample"]; al += homolog_lengths(f"{w}/15_final/{sm}.final.fasta.fai", f"{w}/15_final/{sm}.final.agp") + tail_alarms(f"{w}/14_readfill/gap_tails.tsv")
     return out, al
 def r_raw(w, c, s):
     a = f"{w}/17_raw_reads/audit.tsv"; V = list(rows(a)); al = []; ok = [r for r in V if r[-1] == "pass"]; out = [f"Joins audited: {len(V)}; suggested pass {len(ok)}. Table: 17_raw_reads/audit.tsv."]
@@ -157,6 +196,7 @@ def r_raw(w, c, s):
         for k in ("gap", "ctl"):
             x = [g for g in S if g["kind"] == k]; R = sum(int(g["raw_spanq20"]) for g in x); O = sum(int(g["corr_spanq20"]) for g in x)
             out.append(f"{k}: q20 spanning reads raw {R}, corrected {O}, kept {100 * O / max(R, 1):.0f}%.")
+    al += tail_alarms(f"{w}/17_raw_reads/gap_tails.tsv")
     return out, al
 def r_apply(w, c, s):
     f = f"{w}/15_final_raw/stats.txt"; return [open(f).read().strip()] if os.path.exists(f) else ["Final files unchanged."], []
@@ -185,6 +225,8 @@ def r_validate(w, c, s):
         if rv > fw: al.append(f"{os.path.basename(f)}: more inverted ({Mb(rv)}) than forward ({Mb(fw)}): check direction before calling anything an inversion; edits/flip.txt fixes direction (D12).")
     m = f"{V}/sv/inv/merged.tsv"
     if os.path.exists(m): out.append(f"Inverted homolog blocks to test: {sum(1 for _ in open(m))} (sv/inv/merged.tsv, sv/bp_reads.tsv, sv/inversion_test.txt).")
+    F = "15_final_raw" if os.path.exists(f"{w}/15_final_raw/{c['sample']}.final.agp") else "15_final"
+    al += homolog_lengths(f"{w}/{F}/{c['sample']}.final.fasta.fai", f"{w}/{F}/{c['sample']}.final.agp") + component_alarms(f"{V}/unplaced_components.txt")
     out.append("Hand the user the Juicebox files and the SV table (D13).")
     return out, al
 FN = {"01_inputs": r_inputs, "03_depth": r_depth, "04_chains": r_chains, "05_hic_chains": r_hic, "06_evidence": r_evidence, "07_group": r_group, "08_bridges": r_bridges, "09_order": r_order, "10_arms_tails": r_arms, "11_build": r_build, "12_fill": r_fill, "13_rawreads": r_raw, "14_apply_joins": r_apply, "15_validate": r_validate}

@@ -45,3 +45,6 @@ agp2fa $F/$AS_SAMPLE.final.agp 00_inputs/unitigs.fasta,$R/fills.fasta $F/$AS_SAM
 if has_rows edits/flip.txt; then python3 "$S/flip_scaffold.py" $F/$AS_SAMPLE.final.agp $F/$AS_SAMPLE.final.fasta $F/flip.agp $F/flip.fasta $(grep -v '^#' edits/flip.txt | cut -f1); mv $F/flip.agp $F/$AS_SAMPLE.final.agp; mv $F/flip.fasta $F/$AS_SAMPLE.final.fasta; "$AS_SAMTOOLS" faidx $F/$AS_SAMPLE.final.fasta; fi
 cp $T/$AS_SAMPLE.graph.unplaced.fasta $F/$AS_SAMPLE.final.unplaced.fasta; "$AS_SAMTOOLS" faidx $F/$AS_SAMPLE.final.unplaced.fasta
 python3 "$S/agp_stats.py" $F/$AS_SAMPLE.final.agp | tee $F/stats.txt
+# Where reads go past each gap edge, for D11. Candidates only.
+if collapsed; then TP=($R/ont_vs_target.h*.paf.gz); else TP=($R/ont_vs_target.paf.gz); fi
+step $R/gap_tails.tsv python3 "$S/review/gap_tails.py" $AGP $READS $T/target.fasta $R/gap_tails.tsv --paf "${TP[@]}" --minimap2 "$AS_MINIMAP2" --threads "$AS_THREADS"

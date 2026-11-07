@@ -68,11 +68,11 @@ Writes scaffolds, junctions, placements and unplaced sequence. Chains with too l
 
 **Freeze the order first: this mapping is costly.** Reads across gaps with unique anchors in both flanks, agreeing with each other. If collapsed: two masked targets, since reads cannot anchor over sequence present twice, a fill per haplotype, and no `--target`, since excision would treat true shared copies as false duplication.
 
-**Check:** sum of AGP sequence and gaps equals FASTA length. Most gaps stay open, and that is correct: most gaps have no spanning read. Compare homolog lengths: a large difference with a gap on the short side means looking behind the gap ([D11](decisions/D11_gap_closures.md)).
+**Check:** sum of AGP sequence and gaps equals FASTA length. Most gaps stay open, and that is correct: most gaps have no spanning read. The report lists scaffolds much shorter than their homolog, and gap edges whose read tails mostly enter one unplaced sequence (`14_readfill/gap_tails.tsv`). Both are prompts to look behind the gap ([D11](decisions/D11_gap_closures.md)), not grounds to place anything.
 
 ## 13_rawreads, then D18 (1-2 h; optional)
 
-Streams raw reads into minimap2 against the same targets as the corrected reads. Compares them at gaps and control sites, extracts reads near gaps, re-fills, and audits every read-derived join, old and new.
+Streams raw reads into minimap2 against the same targets as the corrected reads. Compares them at gaps and control sites, extracts reads near gaps, re-fills, and audits every read-derived join, old and new. Repeats the tail scan with raw reads (`17_raw_reads/gap_tails.tsv`), since correction loses reads near gaps.
 
 ## 14_apply_joins
 
@@ -80,4 +80,4 @@ Writes `15_final_raw/`, leaving `15_final/` as it was.
 
 ## 15_validate, then D12, D13 (about 1.5 h)
 
-On the final files only: size and N50, telomeres, dosage against the reference, Hi-C lifted to final coordinates, contact maps and crosstalk, phase scan, depth by class, homolog alignments and inverted blocks with breakpoint evidence, tail joins, Juicebox files, and compleasm **on the unplaced sequence too**. On WatsonsChoice, genes in unplaced sequence and missing from both haplotypes first exposed a real ordering bug.
+On the final files only: size and N50, telomeres, dosage against the reference, Hi-C lifted to final coordinates, contact maps and crosstalk, phase scan, depth by class, homolog alignments and inverted blocks with breakpoint evidence, tail joins, connected unplaced tangles (`unplaced_components.txt`), Juicebox files, and compleasm **on the unplaced sequence too**. On WatsonsChoice, genes in unplaced sequence and missing from both haplotypes first exposed a real ordering bug.

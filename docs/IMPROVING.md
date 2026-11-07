@@ -3,7 +3,7 @@
 ## Tried on Busk, and adopted
 
 - **Connectors:** dropped unitigs that are the graph path between chain ends. 60 gaps to 8. See [LESSONS](LESSONS.md). **Not yet applied to WatsonsChoice or 13Q010:** 28 of 71 and 28 of 63 of their gaps have such a path. Rebuilding is the user's decision, since it changes adopted assemblies.
-- **Tails past a gap edge and unplaced components:** `review/gap_tails.py`, `review/unplaced_components.py`. They find what is behind a gap; they do not place it.
+- **Tails past a gap edge and unplaced components:** `review/gap_tails.py` (stages 12, 13), `review/unplaced_components.py` (stage 15), with alarms in the reports. They find what is behind a gap; they do not place it.
 
 ## Not yet tried
 

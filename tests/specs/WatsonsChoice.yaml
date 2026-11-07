@@ -89,4 +89,4 @@ compare:
   - [15_final_raw/WC.final.agp, 15_final_v3/WC.graph.final.agp, sorted]
   - [15_final_raw/WC.final.fasta.fai, 15_final_v3/WC.graph.final.fasta.fai, sorted]
   - [16_validate/telomeres.final.tsv, 16_validate_v3/telomeres.final.tsv, sorted]
-  - [16_validate/pairs.specific.tsv.gz, 16_validate_v3/pairs.specific.tsv.gz]
+  - [16_validate/pairs.specific.tsv.gz, 16_validate_v3/pairs.specific.tsv.gz, sorted]
