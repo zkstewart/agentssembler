@@ -86,3 +86,7 @@ agentssembler run work/
 ## Requirements
 
 Python 3.10 or later with NumPy, PyYAML and matplotlib. minimap2 2.27 or later, samtools 1.12 or later, seqkit, bwa, samblaster, HapHiC's `filter_bam`. Optional: juicer_tools and compleasm. About 16 cores and 30 GB RAM were enough beyond the unitig alignments, which ran on an HPC with up to 50 GB.
+
+## Licence
+
+Mozilla Public License 2.0 ([LICENSE](LICENSE)). Changes to files of this repository must stay under the MPL when distributed; the pipeline can be used alongside code under other licences.
