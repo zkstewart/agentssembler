@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''Summarise region-to-assembly alignments: top targets of each region by strand. Usage: summarise_regions.py regions/*.paf.gz'''
 import gzip,collections,sys
 print("#region\tlen_Mb\ttarget\tprimary_Mb_plus\tprimary_Mb_minus\tsecondary_Mb_plus\tsecondary_Mb_minus\tmean_id")

@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''Scan each scaffold for bins whose long-range Hi-C prefers the homolog over their own scaffold (a piece of the other haplotype, or a
 phase switch). Pairs >= --far apart on the own scaffold; homolog pairs ignore distance. Specific pairs only, so shared sequence is not tested.
 Then lists which AGP components lie in the flagged runs. Usage: phase_scan.py pairs.specific.tsv.gz final.agp'''

@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''
 Hi-C test of an inverted block [x, y] on a scaffold. Each flank is compared with the near and far ends of the block:
 if the layout is right the near end has more contacts; if the block is really the other way round, the far end does.

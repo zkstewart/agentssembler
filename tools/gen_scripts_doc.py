@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """Write docs/SCRIPTS.md from each script's docstring. Run after adding or changing a script."""
 import ast, glob, os
 R = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

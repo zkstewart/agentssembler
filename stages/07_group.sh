@@ -1,4 +1,6 @@
 #!/bin/bash
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 # Group chains by Hi-C under the allele conflict constraint. Reference check is an alarm only. Stops for D05, D06, D14.
 source "$AS_REPO/stages/lib.sh"
 ARGS=(--chroms "$AS_CHROMS" --ploidy "$AS_PLOIDY" --stats 10_groups/chain_stats.tsv --repeat 10_groups/chain_repeat.tsv)

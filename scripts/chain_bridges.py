@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''
 Paths through short unassigned chains that connect the ends of two assigned chains, from chain-end links.
 A path enters a short chain through one end and must leave through the other. Search up to --hops short chains.

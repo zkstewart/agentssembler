@@ -1,4 +1,6 @@
 #!/bin/bash
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 # Hi-C to the final chains, and the chimera table for D04. About 1-2 h. Filters: MAPQ >= 1, NM < 3.
 source "$AS_REPO/stages/lib.sh"
 mkdir -p 09_hic_map 10_groups

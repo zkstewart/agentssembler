@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''Restored arms become chains of their own in the broken-chain AGP, named chain9001 onward. They have no Hi-C pairs, being near-identical to a sibling.
 Usage: add_restored_arms.py restored_arms.tsv unitigs.fasta.fai chains.agp restored_chains.tsv [prefix, default chain9]'''
 import sys

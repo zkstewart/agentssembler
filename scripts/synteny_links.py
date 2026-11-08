@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''
 Reference-free adjacency evidence from homologous haplotypes. The two chains of a junction should have alleles close
 together on a homolog, unless an SV separates them on one haplotype.

@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''
 Mapping targets for a diploid assembly in which shared sequence appears in both haplotypes. A read over such sequence would
 otherwise get MAPQ 0 and could not anchor. Each target keeps one haplotype whole and hard-masks, in the others, every AGP

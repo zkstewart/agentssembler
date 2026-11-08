@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''
 Lift chain-level Hi-C pairs, in which shared chains have one copy per haplotype, to final scaffold coordinates. A pair on a chain copy
 goes to that copy's own scaffold, so a unitig that occurs in both haplotypes is not ambiguous. Positions outside the AGP spans (trimmed

@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''Allelic relationships between chains, without the reference: unitig self-alignments lifted
 through the chains. Each aligned block >= --minLen is lifted by its ends; blocks on one chain pair are
 merged on each chain. Output: chain_a chain_b bp_a bp_b median_de strand_bp+ strand_bp- blocks.tsv for synteny.

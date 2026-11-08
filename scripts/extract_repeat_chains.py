@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''
 FASTA of the high-copy chains that round2.py removed. They stay in the assembly as unplaced sequence, named repeat_<chain>.
 Usage: extract_repeat_chains.py repeat_chains.txt chains.fasta out.fasta

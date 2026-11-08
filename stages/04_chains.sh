@@ -1,4 +1,6 @@
 #!/bin/bash
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 # Non-redundant unitigs, then chains: first round, redundancy and dovetails, join verification, rule-based breaks. Stops for D02 and D03.
 source "$AS_REPO/stages/lib.sh"
 mkdir -p 05_nonredundant 06_chains 07_chains2 08_final_chains

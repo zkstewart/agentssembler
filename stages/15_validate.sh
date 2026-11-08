@@ -1,4 +1,6 @@
 #!/bin/bash
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 # Everything measured on the final files. Corrected reads are remapped to final coordinates. Stops for D12, D13: the human Juicebox review and SV calls.
 source "$AS_REPO/stages/lib.sh"
 V=16_validate; F=15_final; [ -s 15_final_raw/$AS_SAMPLE.final.agp ] && F=15_final_raw

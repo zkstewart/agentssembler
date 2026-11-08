@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''Each breakpoint of a block: reads (primary, MAPQ >= 20) spanning with >= 5 kb each side, the fewest in +-25 kb and at the point, plus the nearest gap. Pre-fill coordinates.
 Use the AGP the PAFs were mapped against. Each PAF counts only for the scaffolds of its own haplotype when given as hN=path; a plain path counts for all.
 Usage: bp_reads.py scaffolds.agp [h1=]a.paf.gz[,[h2=]b.paf.gz...] scaffold:start:end ...'''

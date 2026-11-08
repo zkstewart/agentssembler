@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''Is a read kept by correction, overall and among reads near gaps, by quality and length? Usage: retention.py reads.tsv.gz corrected.lens.tsv.gz neargap.ids'''
 import gzip,collections,sys
 readsT,corrT,idsF=sys.argv[1:4]

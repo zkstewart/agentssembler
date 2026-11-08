@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''
 Evidence at the breakpoints of SV candidates, from data other than the reference. Coordinates are those of the
 scaffold the reads were aligned to (the AGP before read filling).

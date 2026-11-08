@@ -1,3 +1,5 @@
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """The stage list. A gate lists decisions that must be recorded before later stages run."""
 from dataclasses import dataclass, field
 

@@ -1,4 +1,6 @@
 #!/bin/bash
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 # Order each chromosome's groups in parallel by Hi-C with graph links and telomeres as near-hard constraints. Reference check is an alarm. Stops for D08, D09, D10, D17.
 source "$AS_REPO/stages/lib.sh"
 D=12_shared

@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''
 Reverse read-derived joins that failed review, as in decision D11. For each row of decisions.tsv (scaffold, left unitig, right unitig, reason), the flanks are restored from
 pre.agp and the gap comes back. Other joins in cand.agp stay. Every row needs a reason. Coordinates are renumbered.

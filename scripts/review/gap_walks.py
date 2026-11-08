@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''For each adjacent pair in the order with no bridge candidate, walk the graph from both ends through unassigned chains. Reports
 the sequence each end can reach, total bp and depth, and any placed chain end reached. Usage: gap_walks.py order.tsv end_links.tsv groups.tsv graph.bridges.tsv depth.tsv maxHops'''
 import sys, collections

@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''Reverse named scaffolds in a final AGP and FASTA, a change of writing direction only. Used when a direction flag in names.tsv stops
 matching after re-ordering, with the pre-fill AGP left as it was. Usage: flip_scaffold.py in.agp in.fasta out.agp out.fasta name [name ...]'''
 import sys

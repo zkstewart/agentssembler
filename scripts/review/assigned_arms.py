@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''Assigned non-shared chains under 500 kb linked at both ends to assigned chains that are not their order neighbours:
 candidates for arms that were clustered into a group. Usage: assigned_arms.py order.tsv end_links.tsv groups.tsv'''
 import sys, collections

@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''
 Audit a finished assembly against the reference (never used to build it). Unitig-to-reference alignments are lifted
 through the AGP, merged along each scaffold into blocks, and blocks >= --minLen on a chromosome other than the

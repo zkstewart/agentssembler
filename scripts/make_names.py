@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''
 Names for groups, and which to write in the reference's direction. Both are conventions and do not change any layout.
 Takes the outputs of eval_groups.py and eval_order.py; the haplotype suffix comes from the baseline if one was given to

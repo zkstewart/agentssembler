@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''Why do reads stop at gaps? Compares gap edges with control sites on the same mappings.
 For each edge, and for alignments ending within --win of it while heading towards it, classifies the end:
   read_end   the last-sequenced end of the read lies here (nothing left): stall, block or molecule end

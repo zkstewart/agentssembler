@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''
 One-sided graph paths at gaps and scaffold ends. A bridge needs a path joining both flanks; an arm that leaves one flank and stops
 before the other is left unplaced by every earlier step, although the graph says where it starts. This places such arms beside

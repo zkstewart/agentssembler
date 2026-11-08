@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''Are reads really absent near gaps, or placed elsewhere? Maps a sample of raw reads to short windows of flank sequence alone, so nothing competes: each window's depth counts reads carrying that sequence, from any copy.
 A read counts only if it covers at least 90% of the window at 97% identity or better: with looser rules any transposon fragment counts, and the test cannot report absence. Control sites should sit near 1-2 x haplotype depth; check that first.
 Satellite windows make base-level alignment crawl: run once without --loose and without -c to get a loose table, then pass it with --maxLoose (about 10 x haplotype depth) to skip them.

@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''
 Regression test on real data: seed a work directory with an earlier build's costly alignments and hand decisions, run the driver through every stage, and compare outputs with that build.
 A spec (see tests/specs/) names the seeds, decisions and comparisons, with paths relative to --saved.

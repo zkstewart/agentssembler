@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''
 After tails are placed: reads across each flank-to-tail join, at any MAPQ and at MAPQ >= 20, with --flank bp each side, using the AGP the reads were mapped to.
 Usage: tail_joins.py --tails tails.tsv --chainsAgp chains.agp --agp scaffolds.agp --names names.tsv --paf a.paf.gz [b.paf.gz ...] --out out.tsv

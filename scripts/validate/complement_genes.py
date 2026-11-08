@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''Gene completeness across the whole genome, not by haplotype number. Haplotype numbers are arbitrary across chromosomes, so with a translocation "all h1 scaffolds" need not be a complete set:
 a segment missing from chr2_h1 and carried by chr3_h2 counts as lost to h1 although the genome has it. Reports complete copies per gene on any scaffold, then the numbering per chromosome that
 makes the most genes complete per set. A large gain means the per-haplotype score was measuring numbering, provided the translocations themselves stand (D12). Scaffolds are not renamed.

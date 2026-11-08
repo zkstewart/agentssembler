@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''
 Depth class per chain, from a unitig_depth.py windows file. shared: median depth in [--sharedLo, --sharedHi). high: at or above --sharedHi. specific: below.
 Also writes the shared chains to --sharedOut. A candidate list only: see docs/decisions/D14_shared_chains.md.

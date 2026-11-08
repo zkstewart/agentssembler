@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''
 Give each shared (collapsed) chain one copy per haplotype, so later steps can keep their one-group-per-chain model.
 A copy is named <chain>.<group>. Every per-chain input for ordering and scaffolding is rewritten for the copies:

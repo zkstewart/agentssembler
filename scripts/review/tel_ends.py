@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''For scaffold ends without a telomere: terminal chain, tips from graph, and evidence linking unplaced telomeric chains
 (graph links, reads split between chains, Hi-C to terminal chains). Reads come from the chain-level PAF.
 Usage: tel_ends.py WC.graph.agp chains.agp order.edited.tsv names.tsv telomeres.tsv end_links.tsv groups.tsv ont_vs_chains.paf.gz pairs.tsv.gz'''

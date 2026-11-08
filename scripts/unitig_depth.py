@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''Per-unitig ONT depth from a PAF: primary (all MAPQ), unique (primary MAPQ >= 20) and secondary.
 Usage: unitig_depth.py <paf.gz> <unitigs.fai> <out_prefix> [--window 10000]
 Writes <out>.windows.tsv (unitig start end total unique secondary) and <out>.unitigs.tsv (medians).'''

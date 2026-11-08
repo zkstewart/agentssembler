@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''Contact profile of named regions: pairs per 50 kb bin along the region, partners by scaffold, and partner concentration. Usage: hotspot.py pairs.tsv.gz scaffold:start-end ...'''
 import sys, gzip, collections
 pa = sys.argv[1]; R = []

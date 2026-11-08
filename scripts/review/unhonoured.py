@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''Order tests needing no reference. (1) Same-group graph links and bridges an order does not honour. (2) Shared-chain order and
 orientation compared between the two homologs of a chromosome. (3) Telomere ends facing inward, and telomere ends per group.
 Usage: unhonoured.py order.tsv end_links.tsv graph.bridges.tsv telomeres.tsv chroms.tsv'''

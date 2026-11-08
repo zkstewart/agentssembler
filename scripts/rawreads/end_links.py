@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """Reads joining a sequence end (unplaced) or gap edge/scaffold end to another. Each read: alignments q>=Q, >=5 kb, adjacent on the read, each reaching within SL of a target end or gap edge, facing each other.
 Usage: end_links.py reads.paf.gz out.tsv target.fasta.fai scaffolds.agp [minMapq]"""
 import gzip,collections,sys

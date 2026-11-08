@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''Connected components of unplaced chains through graph links, with the placed chain ends they touch. Usage: walk.py placement.tsv end_links.tsv profile.tsv [minLen]'''
 import sys, collections
 pl, el, pr = sys.argv[1:4]

@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''Judge a chain grouping against independent evidence (never used to build it): reference chromosome
 of each group from unitig alignments, and baseline haplotype composition.
 Usage: eval_groups.py groups.tsv chains.agp unitigs_vs_ref.paf.gz baseline.agp'''

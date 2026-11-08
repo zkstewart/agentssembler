@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''Sequence-class depth: for each 10 kb window of a unitig, its primary ONT depth plus that of every
 near-identical copy (self-alignment >= minId over >= minLen), read at the matching position.
 Reads from identical copies split between them, so class depth / haplotype depth = haplotypes

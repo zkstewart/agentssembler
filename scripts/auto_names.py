@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''
 Names for groups: <chrom>_h<k>. Names are conventions and change no layout. With a reference, <chrom> is the reference sequence that most of the chromosome's
 aligned sequence hits, and a scaffold is flagged to be written in the reference's direction. Without one, chromosomes are named chr1.. by size. Haplotype numbers

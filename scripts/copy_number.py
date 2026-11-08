@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''Non-redundant unitig set from read depth. Unitigs are taken longest first. For each 10 kb window
 the sequence class depth / haplotype depth gives k, the haplotypes carrying that sequence (>= 1).
 A unitig is redundant when >= --minCov of its windows already have >= k copies among the kept

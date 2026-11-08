@@ -1,3 +1,5 @@
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """Driver: runs stages in order, stops at each decision gate, writes a report for the reader. See AGENTS.md."""
 import argparse, datetime, fnmatch, glob, hashlib, json, os, shutil, subprocess, sys
 import yaml

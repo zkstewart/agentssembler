@@ -1,4 +1,6 @@
 #!/bin/bash
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 # Names, arms at bridges, a pre-build, one-sided tails and their tests. Stops for D15, D16: nothing is placed without edits/accepted_tails.tsv.
 source "$AS_REPO/stages/lib.sh"
 D=12_shared; T=13_scaffold; mkdir -p $T $D/pre

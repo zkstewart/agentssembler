@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''
 Where do the two flanks of a breakpoint make Hi-C contact? For a flank (--skip to --win bp from the breakpoint), counts
 pairs with one end in it, by destination: same flank, the opposite flank, and elsewhere by scaffold.

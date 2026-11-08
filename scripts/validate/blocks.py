@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''Merged colinear blocks of a scaffold-to-homolog PAF, >= 100 kb aligned, for a query interval. Usage: blocks.py paf qstart_Mb qend_Mb'''
 import sys
 paf, a, b = sys.argv[1], float(sys.argv[2]) * 1e6, float(sys.argv[3]) * 1e6

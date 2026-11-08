@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''Each adjacent pair with no link/bridge: search the whole chain-end graph at base-chain level up to --hops chains,
 through any chain, for the ordered ends and for other orientations. Reports shortest path and what groups it passes.
 Usage: none_paths.py order.tsv end_links.tsv graph.bridges.tsv groups.tsv [hops]'''

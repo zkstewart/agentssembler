@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''How much of each chain lies in a longer chain, summarised by depth. Used to look before setting the round-2 rules.
 Usage: chain_dups.py chains.fasta.fai depth.windows.tsv chains_self.paf.gz'''
 import sys, gzip, collections, numpy as np

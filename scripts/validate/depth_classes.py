@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''Depth of the final scaffolds in 50 kb windows, split by whether the window lies in sequence placed in both haplotypes, from each
 haplotype's masked mapping, plus the share of each chromosome that is shared. Coordinates are the pre-fill ones, as for the PAFs.
 Usage: depth_classes.py scaffolds.agp target.masked.tsv a.paf.gz [b.paf.gz ...] out.tsv'''

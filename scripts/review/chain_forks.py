@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''Chains that run through a fork. build_chains.py joins along links that are one-to-one among kept unitigs, so a dropped alternative
 can leave a chain running straight through a real fork. The usual case is harmless: a bubble near a chain end that rejoins the next chain of
 the same group. The case that matters is a collapsed unitig, class depth about 2x, whose other exit leads through dropped unitigs to the end of a chain on the homolog: both

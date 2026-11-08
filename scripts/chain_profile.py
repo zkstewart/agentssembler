@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''
 Hi-C partners along a chain, in windows, to detect chimeric chains: for each window, pairs to each other
 group (or to the chain's own remainder). Also lists each unitig's window.

@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''Contacts between a flank and successive windows through a block, normalised by each window's total pairs, so a window that is repeat-rich does not
 look like distant. Layout right: signal falls with distance from that flank. Usage: block_profile.py pairs.tsv.gz scaffold:x:y [--flank 1000000 --win 250000]'''
 import sys, gzip, collections

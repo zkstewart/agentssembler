@@ -1,4 +1,6 @@
 #!/bin/bash
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 # Reads across gaps, then the first final files. Collapsed samples map per haplotype to masked targets and leave --target off, since excision would treat true shared copies as false duplication. Stops for D11.
 source "$AS_REPO/stages/lib.sh"
 T=13_scaffold; R=14_readfill; F=15_final; mkdir -p $R $F; AGP=$T/$AS_SAMPLE.graph.agp; READS=00_inputs/ont_corrected_reads.fasta

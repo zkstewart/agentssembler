@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''
 Diploid bridge choice. chain_bridges.py finds paths per haplotype copy; a bubble between shared chains then appears once
 per haplotype, and choose_bridges.py alone would give both haplotypes the arm with more reads, losing the other allele.

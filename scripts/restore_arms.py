@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''
 Diploid fork. copy_number.py and round2.py drop a unitig whose windows are covered by near-identical kept copies at the
 depth-implied k. Next to a collapsed node that is wrong: arms overlap the node by much of their length, so reads there

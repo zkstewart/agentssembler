@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''Per adjacent pair in an order: direct graph/read link? same-group bridge candidates? plus chains' telomere ends.
 Usage: order_review.py order.tsv end_links.tsv graph.bridges.tsv telomeres.tsv'''
 import sys, collections

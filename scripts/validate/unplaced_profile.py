@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''Evidence for unplaced chains: gene count (compleasm), depth, repeat, Hi-C by chromosome and group (density per Mb of partners), top partner chains, and graph
 links to placed chains. Usage: unplaced_profile.py placement.tsv class.tsv full_table.tsv groups.tsv chroms.tsv pairs.tsv.gz end_links.tsv out.tsv'''
 import sys, gzip, collections

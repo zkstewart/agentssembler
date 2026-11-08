@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """Raw vs corrected reads: what correction removed overall, and at each gap of the pre-fill AGPs, with control sites.
 reads.tsv.gz: id, length, mean Q. corrected.lens.tsv.gz: id (optional :N for a split fragment), length.
 Each SET is agp,fai,raw.paf.gz,corrected.paf.gz, in the coordinates of that AGP; give one per mapping target.

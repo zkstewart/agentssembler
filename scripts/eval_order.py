@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''Compare an order with the reference chromosome (a check, not an input): each chain gets a median reference
 position on the group's main chromosome from unitig alignments; reports chains in order with position, and
 the fraction of adjacent ordered pairs moving consistently along the reference.

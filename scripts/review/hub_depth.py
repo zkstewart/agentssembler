@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''Depth outside graph overlaps for named chains. Usage: hub_depth.py chains.agp gfa paf chain ...'''
 import sys, gzip, collections
 agp, gfa, paf = sys.argv[1:4]; Q = sys.argv[4:]

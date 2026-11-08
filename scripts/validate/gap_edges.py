@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''Per gap edge: reads reaching the edge (within slack, >=5 kb anchored, MAPQ>=20), how many have >=2 kb of read left beyond the
 edge, and where those reads' other alignments go. Run on a haplotype's filtered PAF. Usage: gap_edges.py in.agp ont.paf.gz out.tsv'''
 import sys, gzip, collections

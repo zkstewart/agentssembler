@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 # For given unitigs, report the share of their inter-unitig Hi-C links going to unitigs
 # placed on each reference chromosome (by the phasing TSV), and to each (chrom, hap).
 import sys

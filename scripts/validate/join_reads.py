@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''Reads through every sequence-merging join: adjacent AGP components with no gap, as a bridge or graph link leaves them. Read fill
 counts reads over gaps, so these joins are otherwise never checked at final coordinates. For each join, primary alignments covering
 it by --anchors bp on both sides, at any MAPQ and at MAPQ >= 20, with the median depth --flank bp either side for comparison.

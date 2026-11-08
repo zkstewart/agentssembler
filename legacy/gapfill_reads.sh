@@ -1,4 +1,6 @@
 #!/bin/bash
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 # Haplotype-aware gap filling from long reads, after the graph-based gapfill.sh. See REPLICATION.md.
 # The reads are mapped once to the whole gap-filled assembly (all haplotypes + unplaced), so each
 # read chooses its haplotype; readfill.py fills a gap only from reads anchored uniquely (MAPQ)

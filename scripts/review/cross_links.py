@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''Graph or read links from an end facing a gap to a specific chain of the homolog: possible phase switches. For each, Hi-C counts between the
 chains of the two possible pairings. Usage: cross_links.py order.tsv junctions.tsv end_links.tsv chroms.tsv links.tsv'''
 import sys, collections

@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''
 Reads through each chain join. A join at chain position p is supported by a read whose single
 alignment covers p - anchor to p + anchor. Spanning reads are counted at MAPQ >= 20 (unique) and any

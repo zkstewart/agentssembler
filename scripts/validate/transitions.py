@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''Strand blocks of scaffold-to-homolog alignments around candidate inversions, and reads spanning each transition.
 Each PAF is named <scaffold>_vs_<homolog>.paf. regions.tsv: scaffold, start_Mb, end_Mb.
 Usage: transitions.py regions.tsv reads.paf.gz a_vs_b.paf [c_vs_d.paf ...]'''

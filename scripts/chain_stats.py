@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''
 Per-chain summary used to judge how informative each chain's Hi-C is.
 Columns: chain, length, within-chain pair density per Mb, density of pairs >100 kb apart per Mb,

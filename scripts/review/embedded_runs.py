@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''Runs of about 2x depth inside a chain, smoothed over 5 windows. A chain's overall depth hides a collapsed stretch embedded in it, which is where
 hub nominations for D14 come from when the run sits away from the chain ends. Candidates only: test each with hub_depth.py.
 Usage: embedded_runs.py depth.windows.tsv chains.agp unitigs.gfa --hap H [--groups groups.tsv] [--minRun 100000]'''

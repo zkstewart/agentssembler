@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''
 Final check against the reference: over windows of the reference, how many scaffolds of the assembly carry that
 sequence? Rearranged haplotypes should still sum to the ploidy if the translocations are balanced.

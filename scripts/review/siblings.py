@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''For low-depth reused chains, where do the read alignments go? Finds unitigs/chains sharing graph neighbours and reads.
 Usage: siblings.py reused_depth.tsv chains.agp unitigs.gfa copy_number.tsv groups.tsv ont_vs_chains.paf.gz'''
 import sys, gzip, collections

@@ -1,4 +1,6 @@
 #!/bin/bash
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 # Haplotype-aware gap filling from the hifiasm unitig graph, with Hi-C arbitration and checks.
 # Runs after run_pipeline.sh (and apply_sv.sh for the SV version). See REPLICATION.md.
 #

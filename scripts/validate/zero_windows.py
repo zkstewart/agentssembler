@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''Reference windows at 0 copies in the final AGP: what aligns there, from all unitigs, and is it unplaced, removed or placed?
 Usage: zero_windows.py final.agp unplaced.fai chains.agp unitigs_vs_ref.paf.gz ref.fai placement.tsv'''
 import sys, gzip, collections

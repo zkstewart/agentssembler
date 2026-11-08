@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''Apply a hand-edit table to a chain order and groups file. Actions: unplace (out of the order), append or prepend (added to a
 group's end and assigned to it). Every row must carry a reason. Ranks are renumbered; added rows have no Hi-C statistics.
 Usage: apply_order_edits.py edits.tsv order.tsv groups.tsv order_out.tsv groups_out.tsv'''

@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''Hi-C contact density from every placed chain to each group and to unassigned chains; flags chains that prefer another group.
 Usage: group_profile.py groups.tsv pairs.tsv.gz chromosomes.tsv out.tsv'''
 import sys, gzip, collections

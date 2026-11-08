@@ -1,3 +1,5 @@
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 # Shared functions for run_pipeline.sh, apply_sv.sh and plot_contact_maps.sh (source, don't run).
 
 # Load a config file, resolve its relative paths against the config's directory, and derive

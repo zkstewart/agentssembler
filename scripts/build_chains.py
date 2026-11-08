@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''
 Join kept unitigs into chains along reciprocal one-to-one graph links, trimming each link's overlap.
 Chains are proposals: they are verified afterwards by reads aligning contiguously through each join.

@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''Round 2 inputs. From a chain self-alignment and chain read depth:
   - redundant chains: >= 90% of windows covered by a longer chain (>= 99.8% identity) with summed depth
     below 1.5 x haplotype depth; high-depth (class >= --repeat x) chains are listed separately;

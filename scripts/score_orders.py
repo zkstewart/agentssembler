@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''
 Hi-C log-likelihood of explicit chain orders, to compare hypotheses directly (same decay model as hic_order.py).
 Each hypothesis: name, then oriented chains, e.g. "A chain1+ chain2- chain3+".

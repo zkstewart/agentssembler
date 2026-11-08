@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''Where does a small chain belong in its group by Hi-C alone? For each query chain prints contact density with each ordered
 chain (pairs per Mb of target) with order rank, and the end-to-end profile: pairs per Mb to the flanking 100 kb of each target end.
 Usage: place_test.py order.tsv pairs.tsv.gz chains.fasta.fai query1 query2 ...'''

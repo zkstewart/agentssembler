@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''
 Juicebox assembly-mode input from pairs already lifted to scaffold coordinates. `juicer pre` works from a BAM on components, and a unitig
 placed in two haplotypes cannot be told apart there, so each AGP sequence line becomes its own component and pairs are placed directly.

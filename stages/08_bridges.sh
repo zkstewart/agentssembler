@@ -1,4 +1,6 @@
 #!/bin/bash
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 # Apply group edits, write shared copies when collapsed, find graph bridges (up to `hops` steps) and rank them. Stops for D07.
 source "$AS_REPO/stages/lib.sh"
 D=12_shared; mkdir -p "$D" 13_scaffold/bridges

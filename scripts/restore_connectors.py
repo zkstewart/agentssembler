@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''Dropped unitigs that connect chain ends. copy_number.py drops a unitig whose windows are covered by kept copies. An arm of a
 bubble is often covered by the flanks it overlaps, by 60-130 kb each side, so it is correctly redundant as sequence, but it was also
 the graph's only connection between those flanks. Without it the flanks can only be ordered by Hi-C, leaving a gap.

@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''Do unplaced chains form connected tangles attached to one scaffold? Single repeat-rich chains have too little Hi-C to place, but a component's graph contacts and summed Hi-C can show
 where the whole tangle belongs, such as a pericentromere missing from a short haplotype. Lists each component's size, the scaffolds it touches in the graph, and Hi-C per Mb of scaffold, also without
 its largest Hi-C contributor, since one satellite chain can outweigh all the others. An indication for the report, not grounds to place anything: a component usually cannot be ordered.

@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''
 Choose among alternative graph paths across a junction with reads. For each bridged junction, build
 A_tail + path + B_head (graph overlaps merged) for every candidate, map local reads competitively to all

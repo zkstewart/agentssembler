@@ -1,4 +1,6 @@
 #!/bin/bash
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 # Final scaffolds with the accepted tails, if any.
 source "$AS_REPO/stages/lib.sh"
 D=12_shared; T=13_scaffold

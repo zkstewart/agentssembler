@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''
 Test read-derived joins against reads that were not used to make them (normally raw reads). One row per join; a suggested verdict
 that the agent must read, not obey. See docs/decisions/D11_gap_closures.md.

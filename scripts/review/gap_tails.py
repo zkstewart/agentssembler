@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''Where do reads go when they run off a gap edge? For each gap, takes reads aligned up to a flank's end with at least --minTail unaligned bases beyond it, maps those tails
 to the whole assembly including unplaced sequence, and lists destinations per edge. A destination shared by several reads is a candidate for what belongs in the gap. Tail destinations often lie
 inside a chain, past an overlap with the flank, which chain_end_links.py does not count. Candidates only: test the graph path, the homolog and the Hi-C.

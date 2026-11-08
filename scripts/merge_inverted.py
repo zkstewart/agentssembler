@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''Inverted homolog blocks merged along h2: alignments >= 50 kb on the opposite strand, chain within 300 kb, total aligned >= 400 kb. Usage: merge.py chr*.h2_vs_h1.paf'''
 import sys
 for f in sys.argv[1:]:

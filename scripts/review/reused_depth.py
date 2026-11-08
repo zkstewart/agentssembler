@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''Are arms used by both haplotypes truly 2x? For every chain in a path used by both groups of a chromosome, measures
 depth outside the graph overlaps at both ends, and lists alternative paths for the junctions that used it.
 Usage: reused_depth.py arm_report.tsv choices_base.tsv groups.tsv chroms.tsv chains.agp unitigs.gfa ont_vs_chains.paf.gz out.tsv'''

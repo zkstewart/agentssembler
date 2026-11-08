@@ -1,4 +1,6 @@
 #!/bin/bash
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 # Optional, with raw basecalled BAMs. Streams reads >= 5 kb from the BAMs to minimap2: never write a raw FASTA. Compares raw with corrected reads at gaps and control sites, re-fills from raw reads near gaps, audits every read-derived join. Stops for D18.
 source "$AS_REPO/stages/lib.sh"
 has_raw || { log "no raw BAMs: nothing to do"; exit 0; }

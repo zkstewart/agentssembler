@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 # For each scaffold in a HapHiC AGP, measure how well its unitig order agrees with the
 # reference: the length-weighted longest increasing subsequence of reference positions
 # (taking the better of forward/reverse), over unitigs placed by the reference.

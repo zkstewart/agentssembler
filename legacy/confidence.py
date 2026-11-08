@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 # Per-pseudochromosome summary of how unitigs were placed and how well Hi-C supports
 # their haplotype assignment (support = share of same-chromosome Hi-C weight to own
 # haplotype from hic_phase.py; no-signal = < 1000 unique Hi-C reads per Mb).
