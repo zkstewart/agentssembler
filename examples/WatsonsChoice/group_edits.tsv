@@ -22,3 +22,11 @@ chain0530	group	g11	D7: graph link to chain0305 (36 kb overlap), telomere at far
 chain0539	group	g12	D7: graph link to chain0305 (30 kb overlap), telomere at far end; Hi-C 7 pairs to g12 chains, against chain0530 going to g11
 chain0263	group	g04	Graph path beyond chain0285 through 0281/0395 and 0483; no telomere; haplotype arbitrary (almost no Hi-C)
 chain0227	group	g08	Graph path beyond chain0285 through 0281/0395 and 0483; no telomere; haplotype arbitrary (5 pairs to g08, 1 to g04)
+chain0178	shared	with:chain0011	Interior 377 kb at 44.7x; Hi-C 8.9x next chromosome (10,611 pairs), homologs tied at 1.1
+chain0251	shared	with:chain0061	Interior 102 kb at 49.0x; Hi-C 3.0x next chromosome (2,060 pairs), homologs tied at 1.2
+chain0310	shared	with:chain0024	Interior 55 kb at 61.2x; Hi-C 5.5x next chromosome (3,048 pairs), homologs tied at 1.1
+chain0324	shared	with:chain0024	Interior 30 kb at 58.1x; Hi-C 5.6x next chromosome (1,815 pairs), homologs tied at 1.2
+chain0358	shared	with:chain0026	Interior 40 kb at 64.0x; Hi-C 3.1x next chromosome (2,626 pairs), homologs tied at 1.0
+chain0361	shared	with:chain0006	Interior 47 kb at 53.8x; Hi-C 7.8x next chromosome (2,819 pairs), homologs tied at 1.2
+chain0377	shared	with:chain0004	Interior 42 kb at 52.8x; Hi-C 2.5x next chromosome (2,327 pairs), homologs tied at 1.0
+chain0389	shared	with:chain0006	Interior 35 kb at 58.9x; Hi-C 4.6x next chromosome (2,453 pairs), homologs tied at 1.1

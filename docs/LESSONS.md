@@ -22,6 +22,16 @@ No Juicebox review had been done on any at the time of writing. The user adopted
 
 A unitig is redundant when another copy covers its sequence, but it may still be the only graph link between two chains. Restoring those took Busk from 60 gaps to 8 before any read filling, with no bridges across chromosomes, and grouping unchanged. Their joins hold up about as well as joins inside chains: 88% have q20 reads through them at 10 kb, against 92% within chains. **What this does not show:** which allele a connector carries relative to its neighbours. Most such arms have arbitrary phase.
 
+## Connectors re-run on adopted builds: what they changed
+
+Both earlier genomes were rebuilt with connectors and adopted. WatsonsChoice went from 71 to 35 gaps (contig N50 14.60 to 20.43 Mb) and 13Q010 from 63 to 32 (16.80 to 24.68 Mb), with telomeres and gene completeness unchanged or better. Three effects to expect:
+
+- **Orientation of blocks between Hi-C-only gaps can flip.** A connector sets the orientation by graph where Hi-C did before. On WatsonsChoice this withdrew two SV calls (chr1 19.5-23.3 Mb, chr5 11.1-11.8 Mb); on 13Q010 a 1.9 Mb chr8 block reversed. Re-test SV calls touching any block whose orientation changed.
+- **Satellite stacks get placed.** On 13Q010, about 12.6 Mb of chr8 satellite chains, unplaced before, are now joined by graph bridges, and chr8_h1 grew to 48.2 Mb. A chain in the stack with no graph link (chain0192) was unplaced at D09 instead of being kept on Hi-C. Check the stack in Juicebox.
+- **Haplotype numbers change.** Most 13Q010 scaffolds were renumbered (old chr7_h3 is new chr7_h1), though the content is the same. Map names by shared unitigs before comparing builds, and warn anyone with annotation keyed to old names.
+
+A tip path whose junction reads are all MAPQ 0, because the tip is near-identical to another placed copy, is a user choice, not an automatic placement. On 13Q010 the user chose to place one (chain0136, chain0183 at chr5_h2), accepting possible mosaicism: it completed 17 genes to three copies and gave chr5_h2 its second telomere.
+
 ## Sequence set aside must stay in the Hi-C target, as decoys
 
 Stage 04 sets high-copy chains aside (`07_chains2/repeat_chains.txt`), and the chloroplast is one of them. In the 13Q010 rebuild a change in chain building left the chloroplast unitig (utg000711l, 287 kb, about 2,800 x) alone in such a chain, so it was missing from the Hi-C target. Chloroplast Hi-C reads then landed on two nuclear plastid insertions, chr9_h3 at 8.36 Mb and chr5_h3 at 1.11 Mb, as if unique: 21,394 pairs in one 500 kb bin pair, against none there in the adopted build. Grouping merged chr1 with chr2 twice and split chr9 to keep the count. `05_hic_chains` now maps Hi-C to the chains plus every set-aside unitig as `decoy_*`, and drops pairs touching a decoy. **Signal to look for:** thousands of pairs between two chains at one point (`awk` over `pairs.tsv.gz` in 500 kb bins). Busk's and WatsonsChoice's largest such spots are among unassigned high-copy chains, which act as decoys already.
@@ -72,6 +82,8 @@ Raw SUP reads against corrected reads, at reads of 5 kb or more:
 - I gave a pooled corrected/raw depth ratio of 17-23% before finding two arrays had inflated it. The median is about 50%.
 - Writing raw reads to an uncompressed FASTA filled the host disk and crashed the machine.
 - I recorded D14 on Busk before reading the new report's nominations, and had to reverse two.
+- I called chain0135/0136 about 3% divergent from its placed match. It is 0.03%.
+- I accepted a 13Q010 D06 grouping without checking the chr8 satellite stack the guide names.
 - I reported "raw 40, corrected 3" spanners on Busk from a pooled count, when 37 of the 40 were at one array.
 - A report line read `homolog fraction 0.0000` on every genome until Busk, because of a parser bug. A value that exact should have looked wrong sooner.
 

@@ -1,2 +1,0 @@
-#end_a	end_b	reason
-chain0129+	chain0081+	chr8_h2: junction set by hand. Hi-C alone favoured the other side by only 454 of ~166,000 because the first 1.5 Mb of chain0005 is unmappable. Both homologs place the 0081/0101 alleles next to this end, and the resulting scaffold is colinear with chr8_h1 and chr8_h3 with telomeres at both ends. (An earlier version of this note claimed a 5 Mb inversion in chain0005; full-scaffold alignment to both homologs on the final assembly shows no such inversion.)

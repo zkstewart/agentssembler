@@ -1,3 +1,4 @@
 #gap	action	evidence
-chr9_h2:13701780	closed by overlap	Flanks share 27.6 kb at 100% identity; 22 raw reads through the join at q20, read/target length 0.9997
-chr2_h3:25630988	not applied	readfill would trim 29.7 kb but only 12.9 kb of it matches the kept flank, at 89.8%; 3 q20 reads run contiguously through the trimmed sequence
+chr9_h2:13701780	closed by overlap	Adopted unitig build (names of that build). Flanks share 27.6 kb at 100% identity; 22 raw reads through the join at q20, read/target length 0.9997
+chr2_h2:25630988	closed by overlap (connector rebuild; chr2_h3 in the earlier build)	The earlier build did not apply it, reporting that only 12.9 of the 29.7 kb trim matched the kept flank, at 89.8%. That did not reproduce: minimap2 -x asm20 -c aligns the whole trim at de 0.0066; 10 clean q20 raw reads through the join, 0 breaks, length ratio 0.999. Kept, and flagged for curation since 0.66% divergence is above overlap noise
+chr5_h3:36860721	filled, 235 bp	Corrected-read fill; 6 clean q20 raw reads through it

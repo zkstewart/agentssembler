@@ -12,7 +12,7 @@ Most of an assembly is mechanical. Some of it is not: nearly every significant f
 
 ## Status
 
-This process comes from three citrus genomes: one triploid and two diploid. The driver reproduces the first two builds ([docs/TESTING.md](docs/TESTING.md)). Busk is the first genome decided by following the guides, from stage 04 onward, with its first three stages run beforehand. Following them changed the process in 16 places ([examples/Busk/what_changed.md](examples/Busk/what_changed.md)), so expect a new genome to find more. **No genome has yet gone from raw inputs to a final assembly through the driver in one pass, and the Juicebox route back into the AGP has not been exercised.**
+This process comes from three citrus genomes: one triploid and two diploid. The driver reproduces the first two builds ([docs/TESTING.md](docs/TESTING.md)). Busk is the first genome decided by following the guides, from stage 04 onward, with its first three stages run beforehand. Following them changed the process in 16 places ([examples/Busk/what_changed.md](examples/Busk/what_changed.md)), so expect a new genome to find more. WatsonsChoice and 13Q010 were then rebuilt through the driver with connectors, and those rebuilds are now the adopted assemblies (35 and 32 gaps, against 71 and 63). **No genome has yet gone from raw inputs to a final assembly through the driver in one pass, and the Juicebox route back into the AGP has not been exercised.**
 
 ## Start
 

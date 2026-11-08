@@ -1,4 +1,4 @@
-#gap	source	action	reason
-chr8_h2:5743770	raw	not applied	Overlap 31.7 kb at 96.6% identity; 11 raw reads through the join match it at only 89% within 5 kb against 99% in the wider window
-chr8_h1:15713522	corrected v2	reverted to gap	Tandem array, about 600 reads deep; both anchors sit in it, one read passes 20 kb either side; array length is unknown
-chr8_h2:14209070	corrected v2	reverted to gap	Tandem array, about 3000 alignments in 40 kb; no read passes 20 kb either side; 65 reads break at the join; identity 68% at the join
+#scaffold	left_unitig	right_unitig	reason
+chr8_h1	utg000792l	utg000096l	Tandem array: alignment depth 3,500 within 20 kb, 92 reads break at the join; anchors inside the array say nothing of its length (adopted build reverted the same join)
+chr8_h2	utg000025l	utg000198l	Trim of 31.7 kb has no copy in the kept flank (96.6%); identity 88.7% at the join (adopted build did not apply it)
+chr8_h2	utg000345l	utg000070l	Tandem array: depth 2,900, 130 reads break, identity 52% at the join (adopted build reverted it)
