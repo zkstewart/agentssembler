@@ -34,7 +34,11 @@ cp config/sample.example.yaml sample.yaml   # then fill it in
 
 < --- OR --- >
 
-Natural language prompt telling the agent where your files are, what your organism is, what the expected num. chromosomes and ploidy is, and for it to locate and edit the necessary program paths. You may also ask it to find the telomere motif relevant to your organism.
+Natural language prompt telling the agent where your files are, 
+what your organism is, what the expected num. chromosomes and 
+ploidy is, and for it to locate and edit the necessary program 
+paths. You may also ask it to find the telomere motif relevant 
+to your organism.
 ```
 
 This config file will allow you to specify the data inputs including:
@@ -128,7 +132,7 @@ This software is *not* the result of painstaking coding effort; it is entirely v
 
 Thus, `agentssembler` is *not* meant to be a tool that is used for decades to come. It *will* be deprecated by the work of a more advanced agent; at the current rate of improvement this will, in all likelihood, happen very soon.
 
-# Detailed instructions for running `agentssembler`
+# An agent's instructions for running `agentssembler`
 
 ## Commands
 
