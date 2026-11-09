@@ -2,7 +2,7 @@
 
 ## Tried on Busk, and adopted
 
-- **Connectors:** dropped unitigs that are the graph path between chain ends. 60 gaps to 8. See [LESSONS](LESSONS.md). **Not yet applied to WatsonsChoice or 13Q010:** 28 of 71 and 28 of 63 of their gaps have such a path. Rebuilding is the user's decision, since it changes adopted assemblies.
+- **Connectors:** dropped unitigs that are the graph path between chain ends. 60 gaps to 8. See [LESSONS](LESSONS.md). Since applied to WatsonsChoice (71 to 35 gaps) and 13Q010 (63 to 32) by rebuilding, and both rebuilds were adopted.
 - **Tails past a gap edge and unplaced components:** `review/gap_tails.py` (stages 12, 13), `review/unplaced_components.py` (stage 15), with alarms in the reports. They find what is behind a gap; they do not place it.
 
 ## Out of scope
@@ -48,7 +48,7 @@ What has not been squeezed from the unitigs, reads and Hi-C. **None of these has
 
 ## 5. Allele-aware Hi-C for hard unplaced chains: tested, no
 
-**Result: it cannot place 13Q010's 958 kb unplaced chain (chain0135 in the adopted build, chain0136 in the connector rebuild).** I expected about 3% divergence from its copy. That was wrong: it is 99.97% identical over 928 kb to the first 957 kb of chr7_h3 (`minimap2 -x asm20`, de 0.0003), and 99.2% to the end of chr4_h3. Both it and the chr7_h3 copy have about haplotype depth (primary 11.6-29.1 and 26.5-27.3, haplotype 27), so they look like two real copies, not a duplicated haplotig.
+**Result: it cannot place 13Q010's 958 kb unplaced chain (chain0135 in the first build, chain0136 in the connector rebuild).** Scaffold names below are the first build's; its chr7_h3 is chr7_h1 in the rebuild. The user later chose to place the chain at chr5_h2's start by graph alone, accepting possible mosaicism ([LESSONS](LESSONS.md)). I expected about 3% divergence from its copy. That was wrong: it is 99.97% identical over 928 kb to the first 957 kb of chr7_h3 (`minimap2 -x asm20`, de 0.0003), and 99.2% to the end of chr4_h3. Both it and the chr7_h3 copy have about haplotype depth (primary 11.6-29.1 and 26.5-27.3, haplotype 27), so they look like two real copies, not a duplicated haplotig.
 
 | Pairs with one end on the chain and the other elsewhere | Count | Top scaffold, against its share of length |
 |---|---:|---|
@@ -67,7 +67,7 @@ Reads under 5 kb were never mapped (WatsonsChoice: 13.3 of 42.7 Gb, and on 13Q01
 
 ## 7. hifiasm's raw-unitig graph at gap ends
 
-Both builds used the processed `p_utg` graph. hifiasm's `r_utg` graph keeps bubbles that `p_utg` pops, so gap ends may connect there. It costs one minimap2 run of chain ends against `r_utg` and a graph walk. Any path found needs read support like any other. 13Q010 has an `r_utg.gfa` from its run, which the reference-guided gap filling may have read but the graph-first build did not.
+Both builds used the processed `p_utg` graph. hifiasm's `r_utg` graph keeps bubbles that `p_utg` pops, so gap ends may connect there. It costs one minimap2 run of chain ends against `r_utg` and a graph walk. Any path found needs read support like any other. 13Q010 has an `r_utg.gfa` from its hifiasm run, unused so far.
 
 ## Not worth repeating
 

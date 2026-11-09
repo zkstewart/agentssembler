@@ -159,12 +159,12 @@ def identity(a, b, mm2, tmp):
 
 def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--agp", required=True, help="AGP over the unitigs (e.g. the gapfill.py output)")
+    p.add_argument("--agp", required=True, help="AGP over the unitigs")
     p.add_argument("--fasta", required=True, help="the AGP's scaffold FASTA (with .fai)")
     p.add_argument("--paf", required=True, help="reads mapped to the whole assembly + unplaced (minimap2, --secondary=no)")
     p.add_argument("--reads", required=True, help="the reads (FASTA/FASTQ)")
     p.add_argument("--out", required=True)
-    p.add_argument("--gapfillReport", help="gapfill.py report: annotate each gap with its graph outcome")
+    p.add_argument("--gapfillReport", help="optional TSV annotating each gap with a graph outcome: id, left unitig with strand, right unitig with strand, outcome")
     p.add_argument("--minimap2", default="minimap2")
     p.add_argument("--seqkit", default="seqkit")
     p.add_argument("--preset", default="lr:hq", help="minimap2 preset for the reads (lr:hq corrected/Q20 ONT, map-hifi, map-ont)")
@@ -416,7 +416,7 @@ def main():
             try: results[g] = f.result()
             except subprocess.CalledProcessError as e: results[g] = ("error", str(e)[:200], 0, 0, "", 0, 0, 0)
 
-    # graph outcome of each gap (from gapfill.py), keyed by its flanking unitigs
+    # graph outcome of each gap (from --gapfillReport), keyed by its flanking unitigs
     graph = {}
     if a.gapfillReport:
         for l in open(a.gapfillReport):
