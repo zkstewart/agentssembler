@@ -7,8 +7,8 @@ mkdir -p 09_hic_map 10_groups
 cd 09_hic_map
 ln -sfn ../08_final_chains/chains.fasta chains.fasta; ln -sfn ../08_final_chains/chains.fasta.fai chains.fasta.fai
 # Decoys: unitigs of the high-copy chains that stage 04 set aside (07_chains2/repeat_chains.txt), organelles among them.
-# Without them, chloroplast Hi-C reads land on nuclear plastid insertions as if unique: on 13Q010, 21,394 pairs at one
-# point joined a chr9 and a chr5 chain and changed the grouping. Pairs touching a decoy are dropped.
+# Without them, chloroplast Hi-C reads land on nuclear plastid insertions as if unique: on one genome, over 20,000 pairs at one
+# point joined chains of two chromosomes and changed the grouping. Pairs touching a decoy are dropped.
 if [ ! -s pairs.tsv.gz ]; then
   guard
   [ -s targets.fasta ] || {

@@ -1,4 +1,0 @@
-#scaffold	left_unitig	right_unitig	reason
-chr8_h1	utg000792l	utg000096l	Tandem array: alignment depth 3,500 within 20 kb, 92 reads break at the join; anchors inside the array say nothing of its length (adopted build reverted the same join)
-chr8_h2	utg000025l	utg000198l	Trim of 31.7 kb has no copy in the kept flank (96.6%); identity 88.7% at the join (adopted build did not apply it)
-chr8_h2	utg000345l	utg000070l	Tandem array: depth 2,900, 130 reads break, identity 52% at the join (adopted build reverted it)

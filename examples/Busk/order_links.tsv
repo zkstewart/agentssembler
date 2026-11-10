@@ -1,4 +1,0 @@
-#end_a	end_b	type	reason
-chain0080-	chain0194-	curated	Hi-C near tie (342 of 685,000 against position 2). Graph overlap 2.6 kb, under the 5 kb rule; orientation fits with the link below; contacts densest with chain0080 and neighbours; allelic to chain0034 on the homolog
-chain0194+	chain0011-	curated	As above: graph overlap 3.5 kb, 89 pairs to chain0011, its top partner
-chain0077-	chain0081-	curated	Hi-C tie (11). One read and graph structure; chain0076 and chain0066 are their alleles and run this way on g10

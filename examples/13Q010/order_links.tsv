@@ -1,3 +1,0 @@
-#end_a	end_b	type	reason
-chain0140+	chain0222-	telomere_tip	D07: graph link utg000035l+ -> utg000723l+ (91 kb overlap); competing tip chain0256 (54 kb overlap) left unplaced, as in the adopted build; not settled by reads
-chain0136-	chain0183+	telomere_tip	D13 user choice: graph link utg001035l+ -> utg000051l- (34.5 kb overlap); chain0183 carries the telomere; junction reads MAPQ 0 (near-identical copy on chr7_h1)

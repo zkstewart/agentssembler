@@ -1,10 +1,10 @@
 # D12. Is an SV candidate real?
 
-**A claim about biology must survive a direct test before it is written down.** I made two false inversion claims on 13Q010, and one reached a curation file.
+**A claim about biology must survive a direct test before it is written down.** I have made two false inversion claims, and one reached a curation file.
 
 **Candidates:** `16_validate/sv_candidates.tsv` (reference), `16_validate/sv/inv/merged.tsv` (homologs). They are a list to test, not findings.
 
-**Apply in this order, and record each result in `16_validate/sv/sv_calls.tsv`.** Stage 15 puts the header there (`config/handover_templates/sv_calls.tsv`); keep its columns, one row per candidate tested, including those not supported. `examples/Busk/sv_calls.tsv` is a filled one. After a reset, the report names the archived table: re-test each of its rows on the new build, and do not copy rows across.
+**Apply in this order, and record each result in `16_validate/sv/sv_calls.tsv`.** Stage 15 puts the header there (`config/handover_templates/sv_calls.tsv`); keep its columns, one row per candidate tested, including those not supported. After a reset, the report names the archived table: re-test each of its rows on the new build, and do not copy rows across.
 
 1. **Whole-scaffold direction first.** A scaffold mostly inverted against its homolog is a writing-direction flag, not an inversion. The report raises this.
 2. **Dosage:** `16_validate/dosage.txt`. Do translocation partners balance to the ploidy?
@@ -22,6 +22,6 @@
 
 A breakpoint inside one unitig has read-level support from the assembler. At a Hi-C-only gap it has much less. Say which it is.
 
-**An opposite direction between homologs with flat Hi-C and no reads is undetermined, not an inversion.** WatsonsChoice chr5 chains 0275 and 0350 are the example.
+**An opposite direction between homologs with flat Hi-C and no reads is undetermined, not an inversion.**
 
 **Never fix toward the reference.** Report the disagreement.

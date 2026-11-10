@@ -67,7 +67,7 @@ Everything else is written by a stage, and **must not be edited by hand**.
 | `16_validate/curation_targets.tsv` | D13, D17 | Stage 15 puts the header there |
 | `README.md` | D13 | |
 
-`init` copies a template with a header for each `edits/` file from `config/edits_templates/`. A file holding only comment lines changes nothing. `examples/` holds filled-in ones.
+`init` copies a template with a header for each `edits/` file from `config/edits_templates/`. A file holding only comment lines changes nothing.
 
 ## Marks used below
 

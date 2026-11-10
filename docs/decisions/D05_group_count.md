@@ -14,9 +14,9 @@
 
 **Independent support to report:**
 
-- With `hap_first`, a cliff in merge scores right after the target (WatsonsChoice: 114.8 to 38.9). Groups pair clearly by allelic bp (7.4-30.8 Mb against at most 0.1 Mb for the next group).
-- The cliff can be absent. On Busk (`...20:15.5 19:8.5 18:7.1 17:6.8`) the last merges were no better than the next, while pairing still left no doubt (16-30 Mb allelic against at most 0.3 Mb for the next group). A missing cliff is a reason to look, and the allele pairing is the stronger test.
-- Bridges and links falling within one group (13Q010: 33/33 and 38/42).
+- With `hap_first`, a cliff in merge scores right after the target (a threefold drop on one genome). Groups pair clearly by allelic bp (megabases to tens of megabases, against about 0.1 Mb for the next group).
+- The cliff can be absent. On another genome the last merges scored no better than the next would have, while pairing still left no doubt (tens of megabases allelic against well under 1 Mb for the next group). A missing cliff is a reason to look, and the allele pairing is the stronger test.
+- Bridges and links falling within one group (all bridges and about 90% of links, on one genome).
 - No group with more than 2 telomeric ends.
 
 **The expected number itself may be wrong.** Chromosome number from a reference is an assumption. If the data keep disagreeing, tell the user.

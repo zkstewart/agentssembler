@@ -67,4 +67,4 @@ The stage scripts read everything from `AS_*` variables, so a stage runs anywher
 
 ## Reusing another build's mappings
 
-Link them in before `run`, by the same paths. [PROCESS.md](PROCESS.md) says which are safe to reuse; `tests/specs/*.yaml` list the files.
+Link them in before `run`, by the same paths. [PROCESS.md](PROCESS.md) says which are safe to reuse, and the table above lists the files.

@@ -6,15 +6,15 @@
 
 **Yes when** interior depth (outside graph overlaps) is near 2x and Hi-C is tied between homologs.
 
-**Not shared when** the chain is high copy: over about 3x, with Hi-C across all groups. Unassign it (WatsonsChoice chain0184, 262x, and chain0267, 100x).
+**Not shared when** the chain is high copy: over about 3x, with Hi-C across all groups. Unassign it (chains at 4 and 9 times haplotype depth, for example).
 
-**The score ratio alone is too strict.** Hub chains at 2x with a ratio of 1.5 were left unassigned or forced into one haplotype on WatsonsChoice. Read the call with depth and graph position. 11 chains were promoted by hand, for example:
+**The score ratio alone is too strict.** Hub chains at 2x with a ratio of 1.5 were left unassigned or forced into one haplotype on one genome. Read the call with depth and graph position, and promote by hand where they agree, with a reason of this kind:
 
-`chain0175  shared  c8  Interior depth 64.6x; Hi-C to chr3 5.23x next chromosome (32,356 pairs), no separation between g17 and g18; 13 complete genes; graph-linked hub of the chr3 gap`
+`<chain>  shared  with:<chain>  Interior depth 2.3x haplotype; Hi-C to this chromosome 5x the next chromosome, no separation between its two groups; 13 complete genes; graph-linked hub of a gap`
 
-On Busk five short hubs (190-340 kb) had medians of 71-84x, depth class `specific`, with 50-130 kb overlaps at each end and 125-145x in between. The auto-candidates missed them, because class comes from the median. The report lists such chains from the middle third of their windows, **which only nominates them**.
+Short hubs of a few hundred kb can have a median of 1.1-1.4x haplotype depth and depth class `specific`, with 50-130 kb overlaps at each end and 2x or more in between. The auto-candidates missed them, because class comes from the median. The report lists such chains from the middle third of their windows, **which only nominates them**.
 
-**Then run `scripts/review/hub_depth.py`, and require real interior.** I first promoted seven on window depth, then reversed two: chain0171 and chain0206 had 4.7 and 4.4 kb outside graph overlaps, and about 360 Hi-C pairs. A depth over that little sequence says nothing. The five kept had 27-119 kb. Unassigned chains can still serve as bridge arms, so leaving one out loses little. Read degree too: chain0108 is tied in Hi-C but has degree 1,1 and depth about 60-88x, and was left alone.
+**Then run `scripts/review/hub_depth.py`, and require real interior.** I once promoted chains on window depth, then reversed two of them: each had under 5 kb outside graph overlaps, and a few hundred Hi-C pairs. A depth over that little sequence says nothing. Those kept had tens of kb or more. Unassigned chains can still serve as bridge arms, so leaving one out loses little. Read degree too: a chain tied in Hi-C, but with degree 1,1 and depth of 1-1.4x haplotype, was left alone.
 
 **Why this matters:** promotion and 8-hop ordering, with tails, took genes complete only in unplaced sequence from 52 to 0. They were tested together, so their separate contributions are not known.
 

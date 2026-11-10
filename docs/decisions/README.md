@@ -3,7 +3,7 @@
 The driver stops at each decision below and points to its guide. Read the stage report and the guide, look at the evidence, make any edits, and record the decision with a reason:
 
 ```bash
-agentssembler decide WORK D04 --by NAME --reason "No chain has two signals. chain0009 is flagged by cross_ratio alone."
+agentssembler decide WORK D04 --by NAME --reason "No chain has two signals. The one flagged chain has cross_ratio alone."
 ```
 
 Decisions are recorded in `WORK/decisions/`, with a checksum of every edit file at that moment. An edit always needs its own reason as well.

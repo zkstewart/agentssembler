@@ -6,18 +6,18 @@
 
 **Leave unplaced when** the link is weak or conflicting, or when competing tips remain unresolved.
 
-**Ask the user when** every read at the junction is MAPQ 0, because the tip is near-identical to another placed copy. The placement then rests on the graph alone and may be mosaic ([D13](D13_user_decisions.md)). On 13Q010 the user chose to place one such path, which completed 17 genes to three copies and gave the scaffold its second telomere.
+**Ask the user when** every read at the junction is MAPQ 0, because the tip is near-identical to another placed copy. The placement then rests on the graph alone and may be mosaic ([D13](D13_user_decisions.md)). Tell the user what the placement would add: genes completed, and whether the scaffold gains a telomere.
 
 **Examples:**
 
-- **Accepted.** 13Q010 chain0221 to g16 via chain0139+.
-- **Left unplaced.** 13Q010 chain0182 and chain0265. chain0182 is a subtelomeric repeat shared among chromosome ends: raw reads later confirmed that its anchors are unreliable.
-- **Competing tips with Hi-C.** WatsonsChoice chain0530 and chain0539 both link to chain0305 with a telomere at the far end. Each went to a haplotype on 7 pairs. Report how thin that is.
-- **Surplus.** WatsonsChoice chain0563 would be a third telomeric end in g14, so it was unplaced.
+- **Accepted.** A tip with one graph link, to the end of an assigned chain in a group with no telomere at that end.
+- **Left unplaced.** A tip that is a subtelomeric repeat shared among chromosome ends: raw reads later confirmed that its anchors are unreliable.
+- **Competing tips with Hi-C.** Two tips linked to the same chain, which had a telomere at its far end. Each went to a haplotype on 7 pairs. Report how thin that is.
+- **Surplus.** A tip that would have been a third telomeric end in its group was unplaced.
 
 **Edit:**
 
-1. `edits/group_edits.tsv`: `chain0221<TAB>group<TAB>g16<TAB>reason`
-2. `edits/order_links.tsv`: `chain0139+<TAB>chain0221-<TAB>telomere_tip<TAB>reason`
+1. `edits/group_edits.tsv`: `<tip><TAB>group<TAB>with:<the chain it links to><TAB>reason`
+2. `edits/order_links.tsv`: `<chain>+<TAB><tip>-<TAB>telomere_tip<TAB>reason`, with the orientations from `graph.tips.tsv`
 
 Then `agentssembler reset WORK 08_bridges --keepDecision`, because group edits are applied in that stage.

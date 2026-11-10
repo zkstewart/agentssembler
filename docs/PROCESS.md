@@ -4,12 +4,12 @@
 
 1. **Before starting,** check the inputs: `p_utg` FASTA and GFA from the same hifiasm run, corrected reads, Hi-C, and raw BAMs if you have them. Know the chromosome number and ploidy, and ask the user if unsure. Tell the user which read sets must stay on disk until the end: stages 02, 04, 06, 08, 12, 13 and 15 use reads. Set `compute.guard_path` to the drive that fills first.
 2. **Run and decide, in a loop.** `agentssembler run WORK` stops at each decision. Read the report and guide, inspect the evidence, put any change in an `edits/` file with its reason, record the decision, and run again. A report's alarm is a prompt to look, not a verdict.
-3. **Go back when evidence says to.** `agentssembler reset WORK STAGE` undoes that stage and everything after it, keeping what it replaces in `WORK/archive/<timestamp>/`. Do not copy a directory to a `_v2` name instead ([LAYOUT.md](LAYOUT.md), "Re-running"). It is often cheaper than it looks: mappings stay unless `--remap`. Busk went back from validation to fork breaks at stage 06, and that took h1's missing genes from 19 to 7.
+3. **Go back when evidence says to.** `agentssembler reset WORK STAGE` undoes that stage and everything after it, keeping what it replaces in `WORK/archive/<timestamp>/`. Do not copy a directory to a `_v2` name instead ([LAYOUT.md](LAYOUT.md), "Re-running"). It is often cheaper than it looks: mappings stay unless `--remap`. One run went back from validation to fork breaks at stage 06, and that more than halved one haplotype's missing genes.
 4. **Hand over at D13.** Give the user the final AGP and FASTA, unplaced sequence, Juicebox files, SV table, curation targets, every open choice with your recommendation, and the limits of the result. Stop there: adoption and risk are theirs.
 
 **Finished means:** `15_final_raw/` (or `15_final/` without raw reads) holds the assembly, `16_validate/` its evidence, `decisions/` and `edits/` every judgement with its reason, D13 records the user's answer in their words, and `README.md` in the work directory is filled in.
 
-**Reusing mappings from an earlier build.** Link them into the new work directory before `run`, since a step skips when its output exists, and the costly stages then take minutes. `tests/specs/*.yaml` list the files.
+**Reusing mappings from an earlier build.** Link them into the new work directory before `run`, since a step skips when its output exists, and the costly stages then take minutes. [HPC.md](HPC.md) lists the files.
 
 - **Unitig-level mappings** (stages 02) depend only on the inputs, so they are always reusable.
 - **Chain-level mappings** (stages 04, 05, 06) are reusable only if the chains are identical. Compare `chains.fasta` first: a code fix upstream can change them (T16).
@@ -49,9 +49,9 @@ Primary depth per unitig, and sequence-class depth adding near-identical copies.
 
 ## 04_chains, then D03 (1-3 h)
 
-1. **Copy number and kept set.** Longest first; a unitig is redundant when its windows already have enough copies among kept unitigs. Unique sequence is never dropped. 13Q010: 2,305 unitigs (1,101 Mb) to 1,507 (1,027 Mb).
+1. **Copy number and kept set.** Longest first; a unitig is redundant when its windows already have enough copies among kept unitigs. Unique sequence is never dropped. On one genome this dropped a third of the unitigs and 7% of the sequence.
 2. **First chains** along unambiguous graph links.
-3. **Round 2.** Drops contained and high-copy chains, and adds exact end-to-end overlaps as links. 13Q010: 567 chains to 273.
+3. **Round 2.** Drops contained and high-copy chains, and adds exact end-to-end overlaps as links. On one genome this halved the number of chains.
 4. **Join verification.** Reads across every join. Under 3 reads breaks it.
 5. **Restored arms** if collapsed. Arms next to a collapsed node were dropped because reads land on the node, which loses an allele. They return in stage 06.
 

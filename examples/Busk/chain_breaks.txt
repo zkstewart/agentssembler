@@ -1,4 +1,0 @@
-# D04. Chains to break. Fields split by whitespace; anything after the two fields is ignored.
-# chain position reason
-chain0061 757008 Runs through a fork: 1x arm then 787 kb hub at 2x, Hi-C tied g04 and g06, other exit via utg001520 to chain0072 on g04; 10 genes in the hub are missing from chr2_h1
-chain0066 1221044 Runs through a fork: utg000371 is 2x, other exit via utg001281 to chain0081 on g13; the path closes the chain0081-chain0002 gap

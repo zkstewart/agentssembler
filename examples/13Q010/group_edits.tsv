@@ -1,4 +1,0 @@
-#chain	action	value	reason
-chain0222	group	with:chain0140	telomere tip: graph link utg000035l+ -> utg000723l+ (91 kb overlap); chain0140's g16 (chr4_h3) has 1 telomeric end, chain0222 has a telomere at its far end and no Hi-C; same edit as the adopted build (its chain0221 via chain0139+). Low confidence: end count and graph, not Hi-C
-chain0136	group	with:chain0102	D13, user 2026-11-08: "place the two chains (the caution was warranted but the benefit here seems safe enough, even if it might introduce some mosaicism)". Graph path chain0102- -> chain8011 (55.7 kb) -> chain0136+ (60.7 kb); 27.2x, one haplotype; supplies the third copy of 17 BUSCO genes; 99.97% identical to chr7_h1 0-0.96 Mb, so junction reads are MAPQ 0
-chain0183	group	with:chain0102	D13, same user choice: telomere chain (55x, shared) on chain0136- by graph (34.5 kb overlap); gives chr5_h2 its missing start telomere
