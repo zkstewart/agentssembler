@@ -9,7 +9,7 @@
   - [Why does `agentssembler` exist?](#why-does-agentssembler-exist)
   - [How is `agentssembler` implemented?](#how-is-agentssembler-implemented)
   - [What is `agentssembler` not meant to be?](#what-is-agentssembler-not-meant-to-be)
-- [Detailed instructions for running `agentssembler`](#detailed-instructions-for-running-agentssembler)
+- [An agent's instructions for running `agentssembler`](#an-agents-instructions-for-running-agentssembler)
   - [Commands](#commands)
   - [Where things are](#where-things-are)
   - [What gets automated, and what does not](#what-gets-automated-and-what-does-not)
