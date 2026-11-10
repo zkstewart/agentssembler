@@ -1,0 +1,4 @@
+# D12. One row per candidate tested, including those not supported. Coordinates are on the final scaffolds, in Mb.
+# call: inversion, translocation_candidate, dosage_run, or similar. homolog_span and matches_reference: `.` when not applicable.
+# grade: high, medium, low, not_supported, undetermined (see docs/decisions/D12_sv_calls.md). evidence: every test run and its numbers.
+#call	scaffold	start_Mb	end_Mb	homolog_span	matches_reference	grade	evidence

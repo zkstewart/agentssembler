@@ -18,6 +18,6 @@ On Busk five short hubs (190-340 kb) had medians of 71-84x, depth class `specifi
 
 **Why this matters:** promotion and 8-hop ordering, with tails, took genes complete only in unplaced sequence from 52 to 0. They were tested together, so their separate contributions are not known.
 
-**Candidate list:** by default it comes from depth class. To replace it, write `edits/shared.txt` (one chain per line, no comments) before `07_group` runs, or reset that stage.
+**Candidate list:** by default it comes from depth class. To replace it, add rows to `edits/shared.txt` (one chain per line, under its header) before `07_group` runs, or reset that stage. With no rows, the automatic list is used.
 
 **Edit:** `edits/group_edits.tsv`, action `shared`, value `with:<a chain on that chromosome>`.

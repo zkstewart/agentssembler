@@ -7,6 +7,9 @@ V=16_validate; F=15_final; [ -s 15_final_raw/$AS_SAMPLE.final.agp ] && F=15_fina
 AGP=$F/$AS_SAMPLE.final.agp; FA=$F/$AS_SAMPLE.final.fasta; UN=$F/$AS_SAMPLE.final.unplaced.fasta; D=12_shared
 mkdir -p $V/maps/specific $V/maps/scaffold $V/juicebox $V/sv/inv $V/reads $V/compleasm
 python3 "$S/agp_stats.py" $AGP | tee $V/stats.txt
+# The two tables the agent fills by hand (D12, D13, D17). Headers only; never replaced once present.
+[ -e $V/sv/sv_calls.tsv ] || cp "$AS_REPO/config/handover_templates/sv_calls.tsv" $V/sv/sv_calls.tsv
+[ -e $V/curation_targets.tsv ] || cp "$AS_REPO/config/handover_templates/curation_targets.tsv" $V/curation_targets.tsv
 python3 "$S/telomeres.py" $FA --motif "$AS_MOTIF" > $V/telomeres.final.tsv
 has_ref && python3 "$S/dosage.py" $AGP 03_unitig_align/unitigs_vs_ref.paf.gz 00_inputs/reference.fasta.fai --ploidy "$AS_PLOIDY" > $V/dosage.txt 2>&1 || true
 has_ref && python3 "$S/sv_candidates.py" $AGP 03_unitig_align/unitigs_vs_ref.paf.gz $V/sv_candidates.tsv > /dev/null 2>&1 || true

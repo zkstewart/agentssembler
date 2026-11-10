@@ -12,7 +12,9 @@ agentssembler decide WORK D04 --by NAME --reason "..."
 agentssembler run WORK                 # continue
 ```
 
-`agentssembler status WORK` shows where things stand. See [docs/PROCESS.md](docs/PROCESS.md) for each stage and [docs/decisions/](docs/decisions/README.md) for each fork.
+`agentssembler status WORK` shows where things stand. See [docs/PROCESS.md](docs/PROCESS.md) for each stage, [docs/decisions/](docs/decisions/README.md) for each fork, and [docs/LAYOUT.md](docs/LAYOUT.md) for every file in the work directory.
+
+**Directory numbers are not stage numbers.** Stage `06_evidence` writes `12_broken/` and `11_ont_chains/`; `06_chains/` belongs to stage `04_chains`; there is no `01_` directory. [LAYOUT](docs/LAYOUT.md) has the table.
 
 ## Rules that decide the forks
 
@@ -30,6 +32,8 @@ agentssembler run WORK                 # continue
 - A disagreement with the reference is reported as an SV candidate. It is never fixed toward the reference.
 - Leave sequence unplaced when the data do not support a position. Unplaced is a result, not a failure.
 - Every hand edit goes in an `edits/` file with its reason, and is applied by re-running a stage. Never edit an output by hand.
+- To redo a stage, use `agentssembler reset`, which keeps what it replaces in `archive/`. Never make a `_v2` copy of a directory by hand: stages cannot see it.
+- Keep `WORK/README.md` current. It says which files are the assembly, what was re-run and why, and anything the driver did not make.
 - A claim about biology must survive a direct test before it is written down. See [D12](docs/decisions/D12_sv_calls.md).
 - A value that is exactly 0, or exactly 100%, is a question about the test before it is a result.
 - Do not stop at numbers that look good. Every significant fix on the three genomes tried began with a result that looked wrong while every command had succeeded.

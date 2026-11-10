@@ -15,7 +15,22 @@ def wd(a):
     w = os.path.abspath(a.work)
     if not os.path.exists(f"{w}/config.yaml"): sys.exit(f"{w} has no config.yaml: run `agentssembler init` first")
     return w
-def cfg(w): return yaml.safe_load(open(f"{w}/config.yaml"))
+def base_dir(w):
+    """Where `init` was run. Relative config paths resolve from here on every later command, whatever the current directory.
+    Work directories made before this file existed fall back to the current directory, as before."""
+    f = f"{w}/state/base_dir"
+    return open(f).read().strip() if os.path.exists(f) else os.getcwd()
+def cfg(w):
+    c = yaml.safe_load(open(f"{w}/config.yaml")); b = base_dir(w)
+    fix = lambda p: os.path.normpath(os.path.join(b, p)) if isinstance(p, str) and p and not os.path.isabs(p) else p
+    i = c.get("inputs") or {}
+    for k, v in i.items(): i[k] = [fix(p) for p in v] if isinstance(v, list) else fix(v)
+    t = c.get("tools") or {}
+    for k, v in t.items():
+        if isinstance(v, str) and "/" in v: t[k] = fix(v)      # a bare name is looked up on PATH
+    for sec, k in (("compleasm", "library"), ("compute", "guard_path")):
+        if (c.get(sec) or {}).get(k): c[sec][k] = fix(c[sec][k])
+    return c
 def decisions(w):
     D = {}
     for f in sorted(glob.glob(f"{w}/decisions/D*.yaml")): D[os.path.basename(f)[:-5]] = yaml.safe_load(open(f))
@@ -57,8 +72,8 @@ def pending(w):
     return None, []
 
 def cmd_init(a):
-    w = os.path.abspath(a.work); os.makedirs(w, exist_ok=True)
-    for d in ("state", "decisions", "edits", "reports", "logs"): os.makedirs(f"{w}/{d}", exist_ok=True)
+    w = os.path.abspath(a.work)
+    if os.path.exists(f"{w}/config.yaml"): sys.exit(f"{w}/config.yaml exists, so this work directory is already set up, and init will not replace it.\nTo change a setting, edit that file, then `agentssembler reset {w} STAGE` from the earliest stage the change affects.\nFor a different sample or different inputs, give init a new work directory.")
     c = yaml.safe_load(open(a.config))
     for k in ("sample", "chromosomes", "ploidy", "inputs"):
         if k not in c: sys.exit(f"config lacks {k}")
@@ -66,8 +81,10 @@ def cmd_init(a):
         if not os.path.exists(c["inputs"].get(k, "")): sys.exit(f"input {k}: {c['inputs'].get(k)} not found")
     for p in c["inputs"].get("raw_bams") or []:
         if not os.path.exists(p): sys.exit(f"raw BAM not found: {p}")
-    if os.path.exists(f"{w}/config.yaml") and not a.force: sys.exit(f"{w}/config.yaml exists: use --force to replace it")
+    for d in ("state", "decisions", "edits", "reports", "logs"): os.makedirs(f"{w}/{d}", exist_ok=True)
     shutil.copyfile(a.config, f"{w}/config.yaml")
+    open(f"{w}/state/base_dir", "w").write(os.getcwd() + "\n")
+    if not os.path.exists(f"{w}/README.md"): shutil.copyfile(f"{REPO}/config/handover_templates/README.md", f"{w}/README.md")
     src = f"{REPO}/config/edits_templates"
     for f in os.listdir(src):
         if not os.path.exists(f"{w}/edits/{f}"): shutil.copyfile(f"{src}/{f}", f"{w}/edits/{f}")
@@ -181,7 +198,7 @@ def cmd_env(a):
 
 def main():
     p = argparse.ArgumentParser(prog="agentssembler", description=__doc__); sp = p.add_subparsers(dest="cmd", required=True)
-    x = sp.add_parser("init", help="create a work directory from a config"); x.add_argument("config"); x.add_argument("work"); x.add_argument("--force", action="store_true"); x.set_defaults(fn=cmd_init)
+    x = sp.add_parser("init", help="create a work directory from a config"); x.add_argument("config"); x.add_argument("work"); x.set_defaults(fn=cmd_init)
     x = sp.add_parser("status", help="stages and decisions"); x.add_argument("work"); x.set_defaults(fn=cmd_status)
     x = sp.add_parser("run", help="run until the next decision"); x.add_argument("work"); x.add_argument("--to", help="stop after this stage"); x.add_argument("--only", help="run just this stage, even if done"); x.set_defaults(fn=cmd_run)
     x = sp.add_parser("decide", help="record a decision and its reason"); x.add_argument("work"); x.add_argument("decision"); x.add_argument("--by", required=True); x.add_argument("--reason", required=True); x.add_argument("--set", action="append"); x.set_defaults(fn=cmd_decide)

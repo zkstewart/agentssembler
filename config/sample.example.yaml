@@ -1,4 +1,5 @@
-# Copy this, fill it in, and give it to `agentssembler init`. Relative paths resolve from where you run the command.
+# Copy this, fill it in, and give it to `agentssembler init`. Relative paths resolve from the directory where you run `init`,
+# and keep resolving from there on every later command. Absolute paths are safer if anything may move.
 sample: MySample        # used in file names
 chromosomes: 9          # haploid number
 ploidy: 2

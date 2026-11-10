@@ -232,6 +232,9 @@ def r_validate(w, c, s):
     if os.path.exists(m): out.append(f"Inverted homolog blocks to test: {sum(1 for _ in open(m))} (sv/inv/merged.tsv, sv/bp_reads.tsv, sv/inversion_test.txt).")
     F = "15_final_raw" if os.path.exists(f"{w}/15_final_raw/{c['sample']}.final.agp") else "15_final"
     al += homolog_lengths(f"{w}/{F}/{c['sample']}.final.fasta.fai", f"{w}/{F}/{c['sample']}.final.agp") + component_alarms(f"{V}/unplaced_components.txt")
+    # Hand tables set aside by a reset. Coordinates and haplotype numbers can change in a re-run, so these are lists to re-check, never rows to copy back.
+    old = [os.path.relpath(f, w) for pat in ("16_validate/sv/sv_calls.tsv", "16_validate/curation_targets.tsv") for f in sorted(glob.glob(f"{w}/archive/*/{pat}")) if any(True for _ in rows(f))]
+    if old: al.append("Hand tables from before a reset: " + ", ".join(old) + ". Re-test each row against this build and write the result in the new tables. Do not copy rows across: scaffold names and coordinates may have changed (D12, D13).")
     out.append("Hand the user the Juicebox files and the SV table (D13).")
     return out, al
 FN = {"01_inputs": r_inputs, "03_depth": r_depth, "04_chains": r_chains, "05_hic_chains": r_hic, "06_evidence": r_evidence, "07_group": r_group, "08_bridges": r_bridges, "09_order": r_order, "10_arms_tails": r_arms, "11_build": r_build, "12_fill": r_fill, "13_rawreads": r_raw, "14_apply_joins": r_apply, "15_validate": r_validate}

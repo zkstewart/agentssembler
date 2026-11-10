@@ -4,7 +4,7 @@
 
 **Candidates:** `16_validate/sv_candidates.tsv` (reference), `16_validate/sv/inv/merged.tsv` (homologs). They are a list to test, not findings.
 
-**Apply in this order, and record each result in `16_validate/sv/sv_calls.tsv`:**
+**Apply in this order, and record each result in `16_validate/sv/sv_calls.tsv`.** Stage 15 puts the header there (`config/handover_templates/sv_calls.tsv`); keep its columns, one row per candidate tested, including those not supported. `examples/Busk/sv_calls.tsv` is a filled one. After a reset, the report names the archived table: re-test each of its rows on the new build, and do not copy rows across.
 
 1. **Whole-scaffold direction first.** A scaffold mostly inverted against its homolog is a writing-direction flag, not an inversion. The report raises this.
 2. **Dosage:** `16_validate/dosage.txt`. Do translocation partners balance to the ploidy?

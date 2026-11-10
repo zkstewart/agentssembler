@@ -4,7 +4,7 @@ Real hand decisions from the three genomes, to show the form and the depth of re
 
 ## 13Q010 (triploid, 9 chromosomes, 27x per haplotype)
 
-The adopted build is the connector rebuild (2026-11-08): 32 gaps, against 63 before; contig N50 24.68 Mb, against 16.80. Haplotype numbers differ from the earlier build. `sv_calls.tsv` gives the earlier name for each call.
+The adopted build is the connector rebuild (2026-11-08): 32 gaps, against 63 before; contig N50 24.68 Mb, against 16.80. Haplotype numbers differ from the earlier build. `sv_calls.tsv` gives the earlier name for each call. **`13Q010/sv_calls.tsv` and `13Q010/curation_targets.tsv` predate the templates** in `config/handover_templates/` and use other columns: take the reasoning from them, and the columns from the template or from the Busk and WatsonsChoice tables.
 
 | Decision | Outcome | File |
 |---|---|---|

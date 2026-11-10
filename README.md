@@ -143,7 +143,7 @@ Thus, `agentssembler` is *not* meant to be a tool that is used for decades to co
 | `status WORK` | Stages done, decisions open |
 | `decide WORK Dnn --by NAME --reason TEXT [--set k=v]` | Record a decision |
 | `report WORK [STAGE]` | Print reports |
-| `reset WORK STAGE [--remap] [--keepDecision]` | Undo a stage and everything after it, moving outputs to `archive/` and setting aside the decisions they informed. Mappings stay unless `--remap` |
+| `reset WORK STAGE [--remap] [--keepDecision]` | Undo a stage and everything after it, moving outputs to `WORK/archive/<timestamp>/` and setting aside the decisions they informed. Mappings stay unless `--remap` |
 | `env WORK` | Print a stage's environment, to run it elsewhere |
 
 ## Where things are
@@ -152,6 +152,8 @@ Thus, `agentssembler` is *not* meant to be a tool that is used for decades to co
 |---|---|
 | [AGENTS.md](AGENTS.md) | **Start here if you are an agent.** Rules and the loop |
 | [docs/PROCESS.md](docs/PROCESS.md) | Start to end: the whole run, then each stage and what to check |
+| [docs/LAYOUT.md](docs/LAYOUT.md) | The work directory: which stage writes what, every file, and the files you write |
+| [docs/HPC.md](docs/HPC.md) | Running a mapping on another machine and putting it in place |
 | [docs/decisions/](docs/decisions/README.md) | One guide per decision |
 | [docs/SETTINGS.md](docs/SETTINGS.md) | Every setting and how to choose it |
 | [docs/TRAPS.md](docs/TRAPS.md) | Things that cost real time |

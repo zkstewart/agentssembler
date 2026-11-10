@@ -1,0 +1,3 @@
+# D14, collapsed samples only. Replaces the automatic candidate list (10_groups/shared.candidates.txt) when it holds any row.
+# One chain per line. Read when 07_group runs: write it before then, or `reset WORK 07_group`. To add or remove single chains, use group_edits.tsv instead.
+#chain

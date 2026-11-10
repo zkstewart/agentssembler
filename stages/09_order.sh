@@ -1,7 +1,7 @@
 #!/bin/bash
 # This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
 # If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
-# Order each chromosome's groups in parallel by Hi-C with graph links and telomeres as near-hard constraints. Reference check is an alarm. Stops for D08, D09, D10, D17.
+# Order each chromosome's groups in parallel by Hi-C with graph links and telomeres as near-hard constraints. Reference check is an alarm. Writes into 12_shared. Stops for D09, D10.
 source "$AS_REPO/stages/lib.sh"
 D=12_shared
 step $D/order_links.base.tsv python3 "$S/make_order_links.py" $D/groups.tsv $D/end_links.tsv $D/graph.bridges.tsv $D/order_links.base.tsv

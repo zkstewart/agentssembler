@@ -2,7 +2,7 @@
 
 An agent stops here and asks. Do not record D13 yourself until the user has answered, and quote their answer in the reason.
 
-**Hand over:** `16_validate/juicebox/out_JBAT.hic` and `.assembly`, `16_validate/sv/sv_calls.tsv`, `16_validate/curation_targets.tsv` (you write this one), and the reports.
+**Hand over:** `16_validate/juicebox/out_JBAT.hic` and `.assembly`, `16_validate/sv/sv_calls.tsv`, `16_validate/curation_targets.tsv` (you write this one, under the header stage 15 puts there), the work directory's `README.md` filled in from its template, and the reports.
 
 **The user decides:**
 

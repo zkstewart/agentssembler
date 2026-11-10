@@ -1,6 +1,7 @@
 #!/bin/bash
 # This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
 # If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
+# Writes 12_broken, 11_ont_chains, 10_groups and one file in 16_validate; there is no 06_evidence directory (06_chains belongs to stage 04).
 # Apply D04 breaks, restore arms if collapsed, then gather per-chain evidence: reads, alleles, Hi-C density, repeats, telomeres, end links, depth class.
 source "$AS_REPO/stages/lib.sh"
 mkdir -p 11_ont_chains 12_broken 10_groups 16_validate

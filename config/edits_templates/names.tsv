@@ -1,0 +1,3 @@
+# Stage 10. Replaces the automatic names (13_scaffold/names.tsv) when it holds any row; then every placed group needs a row.
+# name is <chrom>_h<k>. flip is `flip` to write the scaffold reversed, else `.`. Copy 13_scaffold/names.tsv here and change it, then `reset WORK 10_arms_tails`.
+#group	name	flip

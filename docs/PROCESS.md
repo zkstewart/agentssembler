@@ -4,10 +4,10 @@
 
 1. **Before starting,** check the inputs: `p_utg` FASTA and GFA from the same hifiasm run, corrected reads, Hi-C, and raw BAMs if you have them. Know the chromosome number and ploidy, and ask the user if unsure. Tell the user which read sets must stay on disk until the end: stages 02, 04, 06, 08, 12, 13 and 15 use reads. Set `compute.guard_path` to the drive that fills first.
 2. **Run and decide, in a loop.** `agentssembler run WORK` stops at each decision. Read the report and guide, inspect the evidence, put any change in an `edits/` file with its reason, record the decision, and run again. A report's alarm is a prompt to look, not a verdict.
-3. **Go back when evidence says to.** `agentssembler reset WORK STAGE` undoes that stage and everything after it. It is often cheaper than it looks: mappings stay unless `--remap`. Busk went back from validation to fork breaks at stage 06, and that took h1's missing genes from 19 to 7.
+3. **Go back when evidence says to.** `agentssembler reset WORK STAGE` undoes that stage and everything after it, keeping what it replaces in `WORK/archive/<timestamp>/`. Do not copy a directory to a `_v2` name instead ([LAYOUT.md](LAYOUT.md), "Re-running"). It is often cheaper than it looks: mappings stay unless `--remap`. Busk went back from validation to fork breaks at stage 06, and that took h1's missing genes from 19 to 7.
 4. **Hand over at D13.** Give the user the final AGP and FASTA, unplaced sequence, Juicebox files, SV table, curation targets, every open choice with your recommendation, and the limits of the result. Stop there: adoption and risk are theirs.
 
-**Finished means:** `15_final_raw/` (or `15_final/` without raw reads) holds the assembly, `16_validate/` its evidence, `decisions/` and `edits/` every judgement with its reason, and D13 records the user's answer in their words.
+**Finished means:** `15_final_raw/` (or `15_final/` without raw reads) holds the assembly, `16_validate/` its evidence, `decisions/` and `edits/` every judgement with its reason, D13 records the user's answer in their words, and `README.md` in the work directory is filled in.
 
 **Reusing mappings from an earlier build.** Link them into the new work directory before `run`, since a step skips when its output exists, and the costly stages then take minutes. `tests/specs/*.yaml` list the files.
 
@@ -19,9 +19,9 @@
 
 ## The stages
 
-Each stage is a bash script in `stages/`. Each writes `reports/STAGE.md` and logs to `logs/STAGE.log`. Outputs go in numbered directories in the work directory. The check under each stage is the question to ask; the numbers are from the genomes tried, so expect yours to differ.
+Each stage is a bash script in `stages/`. Each writes `reports/STAGE.md` and logs to `logs/STAGE.log`. Outputs go in numbered directories in the work directory, **whose numbers are not the stage numbers**: [LAYOUT.md](LAYOUT.md) maps each stage to its directories and lists every file. The check under each stage is the question to ask; the numbers are from the genomes tried, so expect yours to differ.
 
-Steps skip when their output exists, and costly mappings write to `.part` until complete. **To map elsewhere, such as an HPC,** run `agentssembler env WORK` to get the environment, run the stage script there or just its mappings, then put the outputs in place.
+Steps skip when their output exists, and costly mappings write to `.part` until complete. **To map elsewhere, such as an HPC,** follow [HPC.md](HPC.md): `agentssembler env WORK` gives the environment, the stage script runs there, and the outputs are put in place.
 
 ```mermaid
 flowchart TD
@@ -57,7 +57,7 @@ Primary depth per unitig, and sequence-class depth adding near-identical copies.
 
 ## 05_hic_chains, then D04 (about 1.6 h)
 
-Hi-C to the final chains, keeping pairs at MAPQ >= 1 and NM < 3. Mapping to chains rather than unitigs gave 17% more pairs on 13Q010, recovering contacts lost at unitig ends. Do not skip it. The target also holds every unitig stage 04 set aside as high-copy, named `decoy_*`, so that organelle reads do not land on nuclear insertions as if unique (see [LESSONS](LESSONS.md)); pairs touching a decoy are dropped. `reset 05_hic_chains --remap` is needed to redo the mapping, since `09_hic_map` is kept otherwise.
+Hi-C to the final chains, keeping pairs at MAPQ >= 1 and NM < 3. **This is the only Hi-C mapping, and the driver runs it** (`bwa mem -5SP`, `samblaster`, HapHiC's `filter_bam`): there is no earlier Hi-C step and no `01_` directory. Mapping to chains rather than unitigs gave 17% more pairs on 13Q010, recovering contacts lost at unitig ends. Do not skip it. The target also holds every unitig stage 04 set aside as high-copy, named `decoy_*`, so that organelle reads do not land on nuclear insertions as if unique (see [LESSONS](LESSONS.md)); pairs touching a decoy are dropped. `reset 05_hic_chains --remap` is needed to redo the mapping, since `09_hic_map` is kept otherwise.
 
 ## 06_evidence (about 40 min)
 
@@ -77,7 +77,7 @@ Orders each chromosome's groups in parallel. Hi-C sets the base score. Graph and
 
 ## 10_arms_tails, then D15, D16, D17
 
-Sets names, chooses arms at bridges (jointly if collapsed), builds once, then lists one-sided tails and tests them. Names are conventions: `<chrom>_h<k>`, with arbitrary haplotype numbers, and `flip` writes a scaffold in the reference's direction only. **Nothing here changes layout except accepted tails.**
+Sets names, chooses arms at bridges (jointly if collapsed), builds once, then lists one-sided tails and tests them. Names are conventions: `<chrom>_h<k>`, with arbitrary haplotype numbers, and `flip` writes a scaffold in the reference's direction only. To set names yourself, copy `13_scaffold/names.tsv` to `edits/names.tsv`, change it, and `reset WORK 10_arms_tails`. **Nothing here changes layout except accepted tails.**
 
 ## 11_build
 
