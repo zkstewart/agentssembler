@@ -1,6 +1,6 @@
 # D03. Which weak joins are real?
 
-**Read:** `07_chains2/joins.verify.tsv`, `07_chains2/ont.log` and the stage report. Check first that the self-alignment finished: an incomplete `chains_self.paf.gz` undermines round 2. On 13Q010, `asm20` for this step did not finish properly and `asm5 -K 200M` did. It loses nothing, since round 2 needs at least 99.8% identity.
+**Read:** `07_chains2/joins.verify.tsv`, `07_chains2/ont_vs_chains.paf.gz.log` and the stage report. Check first that the self-alignment finished (`06_chains/chains_self.paf.gz.log`): an incomplete `chains_self.paf.gz` undermines round 2.
 
 **The rule, applied automatically:** fewer than 3 spanning reads breaks the join. It removed 1 of 1,035 joins on 13Q010.
 

@@ -12,8 +12,6 @@
 4. **Was a path missed?** `hops: 12` is the default. 3 hops missed a 4 Mb hub path on WatsonsChoice and reversed a block; 8 missed a Busk allele path once connectors were in the graph (see `SETTINGS.md`).
 5. **Check the orientation of hub chains with gene evidence.** Run compleasm on the unplaced sequence later (`15_validate`): genes missing from both haplotypes but in unplaced sequence mean something is wrong with order or placement. That is how the WatsonsChoice chr3 error was found.
 
-**Tried and dropped:** a reference synteny term (`synteny_links.py`) changed nothing over four rounds, and using it would break the evidence rules.
-
 **Edit:**
 
 - `edits/order_edits.tsv` to unplace or add a chain at a group's end, with a reason. Then `reset 09_order --keepDecision`.

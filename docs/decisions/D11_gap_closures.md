@@ -9,13 +9,13 @@
 | `no_span` | No spanning read | Leave. On all three genomes most gaps are this |
 | `too_few_reads` | One read | Leave |
 | `inconsistent` | Reads disagree | Leave |
-| `local_realign_failed` | Reads leave a flank more than `--maxTrim` from its end | Leave. Raising the limit gained 1 gap and lost 2 on WatsonsChoice |
+| `local_realign_failed` | Reads leave a flank more than `--maxTrim` from its end | Leave |
 | `read_conflict` | Reads continue elsewhere | Report as a misjoin candidate. On 13Q010 chr3_h2 they fit repeat anchoring |
 | `trim_too_long` | A trim would remove a whole component | Examine by hand |
 
 **Action available:** with a shared flank on a collapsed sample, a read can get MAPQ 0 in spite of masking. If a gap reports many low-MAPQ spanning reads, list its scaffold in `edits/fill_retry.tsv` (`chr6_h2<TAB>1<TAB>reason`) and `reset 12_fill --keepDecision`. It closed one gap on WatsonsChoice with 28 of 28 reads.
 
-**Do not loosen `--minIdentity` or `--maxTrim` globally.** Loosening gained 1 and lost 2.
+**Do not loosen `--minIdentity` or `--maxTrim` globally.** Loosening gained 1 gap and lost 2 on WatsonsChoice.
 
 **Direction check:** if a scaffold came out reversed against its homolog as a whole (seen in `15_validate`), list it in `edits/flip.txt`. It changes writing direction only.
 

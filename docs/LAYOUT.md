@@ -1,10 +1,10 @@
 # The work directory
 
-What a work directory holds, which stage writes each part, and what you add by hand. The directory's own name and place are yours to choose: `work/`, `unitig_assembly/` and `connector_build/` have all been used. Below, `S` stands for `sample` in the config, `hK` for a haplotype (`h1`, `h2`, ...), and `chrN` for a chromosome name.
+What a work directory holds, which stage writes each part, and what you add by hand. The directory's own name and place are yours to choose. Below, `S` stands for `sample` in the config, `hK` for a haplotype (`h1`, `h2`, ...), and `chrN` for a chromosome name.
 
 ## Read this first: directory numbers are not stage numbers
 
-Stages are numbered 01 to 15. Directories are numbered 00 to 17. **The two sets of numbers are unrelated**, because the directories keep the names they had before the driver existed. `06_chains/` is written by stage `04_chains`; there is no `06_evidence/` directory, and stage `06_evidence` writes `12_broken/`, `11_ont_chains/` and more. Use this table, not the numbers.
+Stages are numbered 01 to 15. Directories are numbered 00 to 17. **The two sets of numbers are unrelated.** `06_chains/` is written by stage `04_chains`; there is no `06_evidence/` directory, and stage `06_evidence` writes `12_broken/`, `11_ont_chains/` and more. Use this table, not the numbers.
 
 | Stage | Writes into | Stops for |
 |---|---|---|
@@ -24,9 +24,9 @@ Stages are numbered 01 to 15. Directories are numbered 00 to 17. **The two sets 
 | `14_apply_joins` | `15_final_raw/` | |
 | `15_validate` | `16_validate/` | D12, D13 |
 
-Three things follow from the history, and all are as intended:
+Three things look like mistakes and are not:
 
-- **There is no `01_` directory.** It once held Hi-C mapped to the unitigs. Hi-C is now mapped once, to the chains, by stage `05_hic_chains` into `09_hic_map/`. Nothing reads a Hi-C mapping to unitigs. If you find `00_ref/`, `01_map/` or `01_hic_map/` in an old work directory, they predate the driver and are unused.
+- **There is no `01_` directory.** Hi-C is mapped once, to the chains, by stage `05_hic_chains` into `09_hic_map/`.
 - **There are two `12_` directories**, `12_broken/` (stage 06) and `12_shared/` (stages 08 to 10).
 - **`16_validate/` is begun at stage 06** (one telomere table) and finished at stage 15, after `17_raw_reads/`.
 
@@ -200,10 +200,10 @@ A fill writes six files from one prefix: `.agp`, `.fills.fasta`, `.report.tsv`, 
 
 **Within a work directory, use `agentssembler reset WORK STAGE`.** It moves that stage's outputs, and those of every later stage, to `archive/<YYYYmmdd_HHMMSS>/` under their own paths, with the decisions they informed in `archive/<...>/decisions/`. Costly mappings stay in place unless `--remap`. Then `run` rebuilds under the usual names.
 
-- **Do not make `12_shared_v2/`, `15_final_v3/` or the like by hand.** Builds made before the driver marked a re-run this way, and `tests/specs/*.yaml` still name those folders. Stages read and write fixed paths, so a suffixed folder is invisible to them, and a reader cannot tell which one is current.
-- **`archive/` is the record of what a re-run replaced.** Compare groups by chain against it after any reset above stage 07 (T19). It can be large. Delete it only when the user agrees, and write in `README.md` what was reset, why, and that the archive was deleted. All three example builds deleted theirs after adoption, which is why none has one now.
-- **A reset archives both hand tables**, `16_validate/sv/sv_calls.tsv` and `16_validate/curation_targets.tsv`, and stage 15 starts new ones with the header only. Its report names the archived copies. **Treat them as a list to re-check, not rows to restore:** a re-run can change coordinates and haplotype numbers. On 13Q010 most scaffolds were renumbered and the chr8 calls moved by 12.6 Mb. Only when nothing before stage 15 was reset are the final files the same, and a row may be carried over once you have confirmed that.
-- **To try something that changes the method**, such as a setting that alters the chains, make a second work directory beside the first with `init`, and link the reusable mappings in before `run` ([PROCESS.md](PROCESS.md), "Reusing mappings"). The two connector rebuilds were made this way. Name it for what differs, and say in both `README.md` files which is current.
+- **Do not make `12_shared_v2/`, `15_final_v3/` or the like by hand.** Stages read and write fixed paths, so a suffixed folder is invisible to them, and a reader cannot tell which one is current.
+- **`archive/` is the record of what a re-run replaced.** Compare groups by chain against it after any reset above stage 07 (T19). It can be large. Delete it only when the user agrees, and write in `README.md` what was reset, why, and that the archive was deleted.
+- **A reset archives both hand tables**, `16_validate/sv/sv_calls.tsv` and `16_validate/curation_targets.tsv`, and stage 15 starts new ones with the header only. Its report names the archived copies. **Treat them as a list to re-check, not rows to restore:** a re-run can change coordinates and haplotype numbers ([LESSONS](LESSONS.md)). Only when nothing before stage 15 was reset are the final files the same, and a row may be carried over once you have confirmed that.
+- **To try something that changes the method**, such as a setting that alters the chains, make a second work directory beside the first with `init`, and link the reusable mappings in before `run` ([PROCESS.md](PROCESS.md), "Reusing mappings"). Name it for what differs, and say in both `README.md` files which is current.
 - **To keep the output of a `run` command**, redirect it into `logs/`, for example `logs/run.06.out`. The driver does not do this.
 
 ## Not in the work directory

@@ -4,7 +4,7 @@ Real hand decisions from the three genomes, to show the form and the depth of re
 
 ## 13Q010 (triploid, 9 chromosomes, 27x per haplotype)
 
-The adopted build is the connector rebuild (2026-11-08): 32 gaps, against 63 before; contig N50 24.68 Mb, against 16.80. Haplotype numbers differ from the earlier build. `sv_calls.tsv` gives the earlier name for each call. **`13Q010/sv_calls.tsv` and `13Q010/curation_targets.tsv` predate the templates** in `config/handover_templates/` and use other columns: take the reasoning from them, and the columns from the template or from the Busk and WatsonsChoice tables.
+32 gaps, contig N50 24.68 Mb. This is a rebuild of an earlier adopted build, and haplotype numbers differ between the two: `sv_calls.tsv` gives the earlier name for each call. **`13Q010/sv_calls.tsv` and `13Q010/curation_targets.tsv` predate the templates** in `config/handover_templates/` and use other columns: take the reasoning from them, and the columns from the template or from the Busk and WatsonsChoice tables.
 
 | Decision | Outcome | File |
 |---|---|---|
@@ -21,7 +21,7 @@ The adopted build is the connector rebuild (2026-11-08): 32 gaps, against 63 bef
 
 ## WatsonsChoice (diploid, 9 chromosomes, 28x per haplotype)
 
-The adopted build is the connector rebuild (2026-11-07): 35 gaps, against 71 before; contig N50 20.43 Mb, against 14.60.
+35 gaps, contig N50 20.43 Mb. Also a rebuild of an earlier adopted build.
 
 | Decision | Outcome | File |
 |---|---|---|
@@ -37,4 +37,17 @@ The adopted build is the connector rebuild (2026-11-07): 35 gaps, against 71 bef
 
 ## Busk (diploid, 9 chromosomes, 62x per haplotype)
 
-The first genome decided by following the guides. [`Busk/what_changed.md`](Busk/what_changed.md) lists each decision and every place the process had to change.
+The first genome decided by following the guides, not by replaying earlier decisions: 7 gaps, contig N50 34.47 Mb. Where that exposed problems in the process is in [RECORD](../docs/RECORD.md).
+
+| Decision | Outcome | File |
+|---|---|---|
+| D01 | `hap_depth` 62, `repeat_depth` 273, `collapsed` true | |
+| D03 | 2 of 523 joins broken by rule, 3 weak joins kept | |
+| D04 | 2 fork breaks | `Busk/chain_breaks.txt` |
+| D06, D14 | Group edits, each with a reason | `Busk/group_edits.tsv` |
+| D09, D10 | Two chains unplaced; three curated links where Hi-C was near a tie | `Busk/order_edits.tsv`, `Busk/order_links.tsv` |
+| D16 | 4 candidates, none placed | |
+| D11, D18 | 0 fills from corrected reads; 1 raw overlap closure, passing audit | |
+| D12 | No inverted block over 400 kb; 2 translocation candidates and 1 dosage run not supported | `Busk/sv_calls.tsv` |
+| D13 | The user adopted the assembly as it stands, and left chain0099 unplaced | |
+| | Sites for the human review | `Busk/curation_targets.tsv` |

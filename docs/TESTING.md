@@ -9,6 +9,11 @@ python3 tests/regress.py tests/specs/WatsonsChoice.yaml --saved SAVED_DIR --work
 
 ## Regression results
 
+**Both specs replay the first builds, which the connector rebuilds have since superseded.** They compare against the old `unitig_assembly` folders, with connectors off. That is still a valid test of the driver, but:
+
+- Those folders are no longer the adopted assemblies. If they are deleted to free disk, the regressions cannot run.
+- The adopted builds (both connector rebuilds, and Busk) have no spec. Specs replaying them would test the current defaults, and would be worth more than these two.
+
 Last run after the Busk changes, with `restore_connectors: false` and `hops: 8` in both specs, since those builds predate connectors. Each reproduces the build it replays, not what the current defaults would now build.
 
 | Genome | Compared | Same | Different |
@@ -29,7 +34,7 @@ Differences understood:
 ## What the regressions do not show
 
 - **Seeded mappings.** Mappings were copied from saved runs, so `map_paf` was exercised on only a few mappings. On 13Q010, `06_chains` was also seeded, because the saved run predates a `build_chains.py` fix (567 chains against 568).
-- **Decisions were replayed, not made.** The regressions show the driver does what the hand-made edits did. They say nothing about whether an agent following the guides would reach the same decisions. Busk is the first such test: see `examples/Busk`.
+- **Decisions were replayed, not made.** The regressions show the driver does what the hand-made edits did. They say nothing about whether an agent following the guides would reach the same decisions. Busk is the first such test: see `examples/`.
 - **Not run in regression:** compleasm through the driver, which only the Busk run exercised, and any Juicebox review route.
 
 - **Connectors are not regressed.** Both specs turn them off, so only the Busk run exercised them.

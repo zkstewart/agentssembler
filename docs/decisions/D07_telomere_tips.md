@@ -6,6 +6,8 @@
 
 **Leave unplaced when** the link is weak or conflicting, or when competing tips remain unresolved.
 
+**Ask the user when** every read at the junction is MAPQ 0, because the tip is near-identical to another placed copy. The placement then rests on the graph alone and may be mosaic ([D13](D13_user_decisions.md)). On 13Q010 the user chose to place one such path, which completed 17 genes to three copies and gave the scaffold its second telomere.
+
 **Examples:**
 
 - **Accepted.** 13Q010 chain0221 to g16 via chain0139+.

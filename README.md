@@ -159,6 +159,7 @@ Thus, `agentssembler` is *not* meant to be a tool that is used for decades to co
 | [docs/TRAPS.md](docs/TRAPS.md) | Things that cost real time |
 | [docs/LESSONS.md](docs/LESSONS.md) | Findings from the three genomes, and my errors |
 | [docs/IMPROVING.md](docs/IMPROVING.md) | Ideas not yet tried, and what is out of scope |
+| [docs/RECORD.md](docs/RECORD.md) | The evidence behind the process. Not needed to run it |
 | [docs/SCRIPTS.md](docs/SCRIPTS.md) | Every script |
 | [docs/TESTING.md](docs/TESTING.md) | Tests and how the regression was run |
 | `examples/` | Hand decisions from each genome, as worked examples |

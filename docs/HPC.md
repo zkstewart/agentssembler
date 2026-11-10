@@ -1,6 +1,6 @@
 # Running a mapping elsewhere
 
-The costly steps are mappings. Any of them can be made on another machine, such as an HPC, and put in place: a step is skipped when its output exists. This is how stage 02 was run for all three genomes.
+The costly steps are mappings. Any of them can be made on another machine, such as an HPC, and put in place: a step is skipped when its output exists.
 
 **Nothing here has to be done by the user.** Write the job script, hand it over or submit it if you have access, check what comes back, and carry on.
 

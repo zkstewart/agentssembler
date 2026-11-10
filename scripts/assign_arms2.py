@@ -2,7 +2,7 @@
 # This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
 # If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''
-Diploid bridge choice for junctions adjacent in a chain order. Replaces "assign" in assign_arms.py, whose rule rejected any
+Diploid bridge choice for junctions adjacent in a chain order. An earlier rule rejected any
 path holding a chain the other haplotype used, so a path through a true 2x node always counted as reused and the 1x arm
 beside that node was given to both haplotypes.
 

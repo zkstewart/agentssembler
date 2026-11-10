@@ -21,10 +21,6 @@ second stage: their few uniquely placed pairs do not follow linear distance, yet
 order of megabases of informative chains. Stage 1 orders with their pairs ignored (links and telomeres still count).
 Stage 2 counts their pairs but moves only blocks made entirely of low-information chains, so the backbone is fixed.
 
-Synteny (--synteny, synteny_links.py) adds --synBonus per homolog that supports a junction: chains next to each other on a
-haplotype usually have alleles next to each other on its homologs. It is deliberately small, to settle what Hi-C leaves
-near a tie without overriding strong Hi-C, which is what a real single-haplotype SV looks like.
-
 Search: greedy insertion of chains longest first (every position and orientation), then local moves
 (move any contiguous block to any position in either orientation, which includes reinserting one chain,
 flipping and reversing a segment) to convergence. This is repeated from --starts random orders, because a
@@ -63,8 +59,6 @@ def main():
     p.add_argument("--endLinks", help="end_a end_b weight, ends as chain+ / chain-")
     p.add_argument("--linkBonus", type=float, default=200.0)
     p.add_argument("--starts", type=int, default=40)
-    p.add_argument("--synteny", help="synteny_links.py output")
-    p.add_argument("--synBonus", type=float, default=1000.0)
     p.add_argument("--stats", help="chain_stats.tsv")
     p.add_argument("--minWithin", type=float, default=700)
     p.add_argument("--telomeres", help="telomeres.py output for the chains")
@@ -101,11 +95,6 @@ def main():
         for l in open(a.endLinks):
             if l[0] == "#" or not l.strip(): continue
             s = l.split(); bonus[frozenset(((s[0][:-1], s[0][-1]), (s[1][:-1], s[1][-1])))] = max(bonus[frozenset(((s[0][:-1], s[0][-1]), (s[1][:-1], s[1][-1])))], a.linkBonus)
-    syn = {}
-    if a.synteny:
-        for l in open(a.synteny):
-            if l[0] == "#" or not l.strip(): continue
-            x, y, n = l.split(); syn[frozenset(((x[:-1], x[-1]), (y[:-1], y[-1])))] = int(n) * a.synBonus
     tel = {}
     if a.telomeres:
         for l in open(a.telomeres):
@@ -147,10 +136,6 @@ def main():
                 i, oi = order[m]; j, oj = order[m + 1]
                 e1 = (i, oi); e2 = (j, "-" if oj == "+" else "+")
                 s += bonus.get(frozenset((e1, e2)), 0.0)
-        if syn:     # junctions between consecutive informative chains, skipping low-information spacers
-            inf = [ x for x in order if x[0] not in lowinfo ]
-            for (i, oi), (j, oj) in zip(inf, inf[1:]):
-                s += syn.get(frozenset(((i, oi), (j, "-" if oj == "+" else "+"))), 0.0)
         return s + tel_score(order)
     def links_to(c, cs):
         return sum(len(P.get((c, x) if c < x else (x, c), ())) for x in cs if x != c)

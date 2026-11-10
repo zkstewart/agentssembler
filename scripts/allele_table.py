@@ -3,7 +3,7 @@
 # If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''Allelic relationships between chains, without the reference: unitig self-alignments lifted
 through the chains. Each aligned block >= --minLen is lifted by its ends; blocks on one chain pair are
-merged on each chain. Output: chain_a chain_b bp_a bp_b median_de strand_bp+ strand_bp- blocks.tsv for synteny.
+merged on each chain. Output: chain_a chain_b bp_a bp_b median_de strand_bp+ strand_bp- in pairs.tsv, and the merged blocks in blocks.tsv.
 Usage: allele_table.py chains.agp unitigs_self.paf.gz out_prefix'''
 import gzip, argparse, statistics, collections, sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))

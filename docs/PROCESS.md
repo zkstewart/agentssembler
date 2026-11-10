@@ -57,7 +57,7 @@ Primary depth per unitig, and sequence-class depth adding near-identical copies.
 
 ## 05_hic_chains, then D04 (about 1.6 h)
 
-Hi-C to the final chains, keeping pairs at MAPQ >= 1 and NM < 3. **This is the only Hi-C mapping, and the driver runs it** (`bwa mem -5SP`, `samblaster`, HapHiC's `filter_bam`): there is no earlier Hi-C step and no `01_` directory. Mapping to chains rather than unitigs gave 17% more pairs on 13Q010, recovering contacts lost at unitig ends. Do not skip it. The target also holds every unitig stage 04 set aside as high-copy, named `decoy_*`, so that organelle reads do not land on nuclear insertions as if unique (see [LESSONS](LESSONS.md)); pairs touching a decoy are dropped. `reset 05_hic_chains --remap` is needed to redo the mapping, since `09_hic_map` is kept otherwise.
+Hi-C to the final chains, keeping pairs at MAPQ >= 1 and NM < 3. **This is the only Hi-C mapping, and the driver runs it** (`bwa mem -5SP`, `samblaster`, HapHiC's `filter_bam`): there is no earlier Hi-C step and no `01_` directory. The target also holds every unitig stage 04 set aside as high-copy, named `decoy_*`, so that organelle reads do not land on nuclear insertions as if unique (see [LESSONS](LESSONS.md)); pairs touching a decoy are dropped. `reset 05_hic_chains --remap` is needed to redo the mapping, since `09_hic_map` is kept otherwise.
 
 ## 06_evidence (about 40 min)
 
@@ -99,4 +99,4 @@ Writes `15_final_raw/`, leaving `15_final/` as it was.
 
 ## 15_validate, then D12, D13 (about 1.5 h)
 
-On the final files only: size and N50, telomeres, dosage against the reference, Hi-C lifted to final coordinates, contact maps and crosstalk, phase scan, depth by class, homolog alignments and inverted blocks with breakpoint evidence, tail joins, connected unplaced tangles (`unplaced_components.txt`), Juicebox files, and compleasm **on the unplaced sequence too**. On WatsonsChoice, genes in unplaced sequence and missing from both haplotypes first exposed a real ordering bug. **Read `compleasm/complement.txt` before the per-haplotype scores.** Haplotype numbers are arbitrary across chromosomes, so with translocations "all h1 scaffolds" is not a complete set: 13Q010 went from 91.84, 98.18 and 93.73% to 99.32, 99.50 and 98.82% by numbering alone.
+On the final files only: size and N50, telomeres, dosage against the reference, Hi-C lifted to final coordinates, contact maps and crosstalk, phase scan, depth by class, homolog alignments and inverted blocks with breakpoint evidence, tail joins, connected unplaced tangles (`unplaced_components.txt`), Juicebox files, and compleasm **on the unplaced sequence too**. Genes in unplaced sequence and missing from every haplotype point to an ordering or placement error ([D09](decisions/D09_order.md)). **Read `compleasm/complement.txt` before the per-haplotype scores:** haplotype numbers are arbitrary across chromosomes, so with translocations "all h1 scaffolds" is not a complete set ([LESSONS](LESSONS.md)).
