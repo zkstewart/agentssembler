@@ -23,7 +23,9 @@ Subcommands (run in this order, or use 'all'; each step is skipped when already 
               per-sequence alignment summary is used; its haplotype partitions are ignored.
            3. Labelling, by alignment for every assembly:
                 backbone   >= --scaffold_len; chromosome = the reference chromosome with most
-                           aligned bases ('chimeric?' when that is < --min_dominance of them)
+                           aligned bases ('chimeric?' when that is < --min_dominance of them:
+                           a misjoin, or a real translocation relative to the reference; the
+                           label only names and orders the backbone, it is never penalised)
                 fragment   shorter, >= --min_part_len, >= --min_dominance to one chromosome
                            and >= --min_aligned_frac of its length aligned
                 unplaced   everything else (still in the mapping target)
@@ -32,30 +34,37 @@ Subcommands (run in this order, or use 'all'; each step is skipped when already 
            4. Mapping target = all sequences + decoys (named decoy_*). When an earlier run's
               prepare/mapping_target.fa and labels.tsv exist they are REUSED unchanged (same
               sequences, so the Hi-C mapping stays valid), and only the labels change.
-           5. Homology, from the assembly's own sequences (no reference): each backbone is
-              the minimap2 target for every other sequence of its chromosome.
-                partners   two sequences of a chromosome whose alignment covers
-                           >= --partner_frac of the shorter one: different copies (homologs)
-                           of the same region. Pieces of one copy do not overlap, so they are
-                           never partners, and contacts between them are never penalised.
+           5. Homology, from the assembly's own sequences (no reference, no chromosome labels):
+              each backbone is the minimap2 target for every other chromosome-assigned
+              sequence, so a homolog moved to another chromosome by a translocation is found.
+                homologous regions  alignment blocks >= --mask_min_aln chained along both
+                           sequences (gaps <= --homolog_gap), kept when the chain aligns
+                           >= min(--min_homolog_region, --partner_frac x the other sequence's
+                           length). Region-level, not sequence-level: a backbone carrying a
+                           translocated block is homologous to the other chromosome only in
+                           that block (homology.v4.tsv). Pieces of one copy do not overlap, so
+                           contacts between them are never penalised.
                 testable   backbone sequence covered by >= ploidy-1 other sequences (so not
-                           collapsed or hemizygous) AND by >= 1 partner backbone (so a phasing
+                           collapsed or hemizygous) AND by >= 1 other backbone (so a phasing
                            error there could be seen). Only testable loci are scored.
-                excess     backbone sequence covered by >= ploidy partner backbones: more copies
-                           than the ploidy allows (duplicated or unpurged), written to excess.v3.bed.
+                excess     backbone sequence covered by >= ploidy other backbones: more copies
+                           than the ploidy allows (duplicated or unpurged), written to excess.v4.bed.
   map      bwa-mem2 mem -5SP -T0 | samtools fixmate -m | sort | markdup -r |
            view -F 0x904 | sort -n, then pairs.tsv.gz: ctgA posA mapqA ctgB posB mapqB
            (read 1 first; both mates MAPQ >= 1 and NM < --max_nm).
   score    Phase-testable = testable minus excess (one mask). Pairs with both MAPQ >= --mapq,
            no decoy and no unplaced end are drawn in the maps; of those, backbone pairs are:
-             interchrom     backbones of different chromosomes, NOT masked (a misjoined
-                            segment has no homolog on its scaffold's chromosome, so the
-                            allelic mask would hide it)                  -> structure
-             unresolved     non-partner backbones of one chromosome, e.g. two pieces of one
-                            copy                                            [not penalised]
+             homologous     two backbones, each end in its backbone's region homologous to
+                            the other, whatever the chromosome labels (so a translocation in
+                            one haplotype is scored as phasing, not structure)
+             interchrom     different chromosome labels and not homologous, NOT masked (a
+                            misjoined segment has no homolog on its scaffold's chromosome,
+                            so the allelic mask would hide it)           -> structure
+             unresolved     same label and not homologous, e.g. two pieces of one copy
+                                                                            [not penalised]
              cis            same backbone, both ends phase-testable
-             homolog        partner backbones, both ends phase-testable  -> phasing error
-             dropped_masked same backbone or partners, an end not phase-testable
+             homolog        homologous, both ends phase-testable         -> phasing error
+             dropped_masked same backbone or homologous, an end not phase-testable
            Pairs with a fragment end are counted (fragment_pairs) but never scored.
            homolog_fraction = homolog / (cis + homolog)
            interchrom_fraction = interchrom / backbone_pairs
@@ -277,7 +286,7 @@ def read_old_labels(path):
 def prepare(a):
     P = os.path.join(a.outdir, "prepare")
     os.makedirs(P, exist_ok=True)
-    if done(os.path.join(P, "done.v3.ok")):
+    if done(os.path.join(P, "done.v4.ok")):
         log("prepare: already done")
         return
     if not a.reference or not a.input or not a.annotarium:
@@ -438,85 +447,111 @@ def prepare(a):
         os.replace(target + ".part", target)
         log(f"mapping target written with {nDecoy} decoy sequence(s)")
 
-    # 6. homology among the assembly's own sequences, per chromosome, in target orientation
+    # 6. homology among the assembly's own sequences, in target orientation. Every backbone is
+    #    the minimap2 target for ALL other chromosome-assigned sequences, whatever their label,
+    #    so homologs moved to another chromosome by a translocation are still found.
     H = os.path.join(P, "homology")
     os.makedirs(H, exist_ok=True)
     byTarget = {x["target_id"]: (q, x) for q, x in lab.items()}
     assigned = {x["target_id"] for x in lab.values() if x["class"] != "unplaced"}
-    chromFh = {}
-    for tid, seq in read_fasta(target):
-        if tid not in assigned:
-            continue
-        q, x = byTarget[tid]
-        if len(seq) != meta[q]["length"]:
-            die(f"{tid} in {target} is {len(seq)} bp but {meta[q]['orig']} is {meta[q]['length']} bp")
-        if x["chrom"] not in chromFh:
-            chromFh[x["chrom"]] = open(os.path.join(H, f"chrom_{x['chrom']}.fa"), "w")
-        write_fasta(chromFh[x["chrom"]], tid, seq)
-        if x["class"] == "backbone":
-            with open(os.path.join(H, f"bb_{tid}.fa"), "w") as fh:
-                write_fasta(fh, tid, seq)
-    for fh in chromFh.values():
-        fh.close()
+    assignedFa = os.path.join(H, "assigned.fa")
+    with open(assignedFa + ".part", "w") as allFh:
+        for tid, seq in read_fasta(target):
+            if tid not in assigned:
+                continue
+            q, x = byTarget[tid]
+            if len(seq) != meta[q]["length"]:
+                die(f"{tid} in {target} is {len(seq)} bp but {meta[q]['orig']} is {meta[q]['length']} bp")
+            write_fasta(allFh, tid, seq)
+            if x["class"] == "backbone":
+                with open(os.path.join(H, f"bb_{tid}.fa"), "w") as fh:
+                    write_fasta(fh, tid, seq)
+    os.replace(assignedFa + ".part", assignedFa)
 
     lengthOf = {x["target_id"]: meta[q]["length"] for q, x in lab.items()}
     classOf = {x["target_id"]: x["class"] for x in lab.values()}
-    cov = {}  # backbone -> other sequence -> merged intervals on the backbone
+    # Homologous regions, per (backbone b, other sequence o): alignment blocks >= --mask_min_aln
+    # chained along b and o (gaps <= --homolog_gap on both), kept when the chain aligns
+    # >= min(--min_homolog_region, --partner_frac * len(o)) bp. Chaining in both coordinates
+    # keeps scattered repeat hits from adding up to a false homolog.
+    blocks = {}  # b -> o -> merged aligned blocks on b (coverage: collapse, testable, excess)
+    spans = {}   # b -> backbone o -> merged chain spans on b (which contacts are homolog contacts)
+    G = a.homolog_gap
     for q, x in lab.items():
         if x["class"] != "backbone":
             continue
         tid = x["target_id"]
-        paf = os.path.join(H, f"bb_{tid}.paf")
+        paf = os.path.join(H, f"bb_{tid}.v4.paf")
         if not os.path.exists(paf + ".ok"):
             run([minimap2, "-x", a.preset, "-t", str(a.threads), "--secondary=no", "-o", paf,
-                 os.path.join(H, f"bb_{tid}.fa"), os.path.join(H, f"chrom_{x['chrom']}.fa")],
-                os.path.join(H, "minimap2.log"))
+                 os.path.join(H, f"bb_{tid}.fa"), assignedFa], os.path.join(H, "minimap2.log"))
             touch(paf + ".ok")
-        c = collections.defaultdict(list)
+        hits = collections.defaultdict(list)
         with open(paf) as fh:
             for line in fh:
                 s = line.split("\t")
                 if s[0] != tid and s[5] == tid and int(s[10]) >= a.mask_min_aln:
-                    c[s[0]].append((int(s[7]), int(s[8])))
-        cov[tid] = {o: merge(iv) for o, iv in c.items()}
+                    hits[s[0]].append((int(s[7]), int(s[8]), int(s[2]), int(s[3])))
+        blocks[tid], spans[tid] = {}, {}
+        for o, hs in hits.items():
+            need_bp = min(a.min_homolog_region, a.partner_frac * lengthOf[o])
+            keptBlocks, keptSpans, chain = [], [], None
+            for ts, te, qs, qe in sorted(hs) + [(None,) * 4]:
+                if chain is not None and (ts is None or ts - chain["te"] > G or
+                                          max(qs, chain["qs"]) - min(qe, chain["qe"]) > G):
+                    iv = merge(chain["iv"])
+                    if total(iv) >= need_bp:
+                        keptBlocks += iv
+                        keptSpans.append((iv[0][0], iv[-1][1]))
+                    chain = None
+                if ts is None:
+                    break
+                if chain is None:
+                    chain = {"te": te, "qs": qs, "qe": qe, "iv": [(ts, te)]}
+                else:
+                    chain["te"] = max(chain["te"], te)
+                    chain["qs"], chain["qe"] = qs, qe  # next block must be near the last one on o
+                    chain["iv"].append((ts, te))
+            if keptBlocks:
+                blocks[tid][o] = merge(keptBlocks)
+                if classOf[o] == "backbone":
+                    spans[tid][o] = merge(keptSpans)
 
-    # 7. partners and testable regions
+    # 7. partners (any homologous region, with any chromosome label) and testable regions
     partners = collections.defaultdict(set)
     partnerRows = []
-    for b, others in cov.items():
+    for b, others in blocks.items():
         for o, iv in others.items():
-            bp = total(iv)
-            if bp >= a.partner_frac * min(lengthOf[b], lengthOf[o]):
-                partners[b].add(o)
-                partners[o].add(b)
-                partnerRows.append((b, o, classOf[o], bp))
-    testable, testBp = {}, 0
-    for b, others in cov.items():
+            partners[b].add(o)
+            partners[o].add(b)
+            partnerRows.append((b, o, classOf[o], total(iv)))
+    testable, excess, testBp, excessBp = {}, {}, 0, 0
+    for b, others in blocks.items():
         L = lengthOf[b]
+        bbIv = [iv for o, iv in others.items() if classOf[o] == "backbone"]
         depth = depth_at_least(list(others.values()), a.ploidy - 1, L)
-        anyPartner = depth_at_least([others[o] for o in others
-                                     if o in partners[b] and classOf[o] == "backbone"], 1, L)
-        testable[b] = intersect(depth, anyPartner)
+        testable[b] = intersect(depth, depth_at_least(bbIv, 1, L))
+        # extra copies: covered by more partner backbones than the ploidy allows (a duplicated or
+        # unpurged copy, not a phase switch)
+        excess[b] = [iv for iv in depth_at_least(bbIv, a.ploidy, L)  # drop slivers where blocks touch
+                     if iv[1] - iv[0] >= a.mask_min_aln]
         testBp += total(testable[b])
-    # extra copies: covered by more partner backbones than the ploidy allows (a duplicated or
-    # unpurged copy, not a phase switch); homolog contacts there are reported apart
-    excess, excessBp = {}, 0
-    for b, others in cov.items():
-        excess[b] = depth_at_least([others[o] for o in others
-                                    if o in partners[b] and classOf[o] == "backbone"], a.ploidy, lengthOf[b])
         excessBp += total(excess[b])
-    with open(os.path.join(P, "excess.v3.bed"), "w") as fh:
-        for b in sorted(excess):
-            for s, e in excess[b]:
-                fh.write(f"{b}\t{s}\t{e}\n")
+    for fname, regions in (("testable.v4.bed", testable), ("excess.v4.bed", excess)):
+        with open(os.path.join(P, fname), "w") as fh:
+            for b in sorted(regions):
+                for s, e in regions[b]:
+                    fh.write(f"{b}\t{s}\t{e}\n")
+    with open(os.path.join(P, "homology.v4.tsv"), "w") as fh:
+        fh.write("#backbone\tstart\tend\thomologous_backbone\n")
+        for b in sorted(spans):
+            for o in sorted(spans[b]):
+                for s, e in spans[b][o]:
+                    fh.write(f"{b}\t{s}\t{e}\t{o}\n")
     with open(os.path.join(P, "partners.tsv"), "w") as fh:
         fh.write("#backbone\tpartner\tpartner_class\taligned_bp_on_backbone\n")
         for row in partnerRows:
             fh.write("\t".join(str(v) for v in row) + "\n")
-    with open(os.path.join(P, "testable.v2.bed"), "w") as fh:
-        for b in sorted(testable):
-            for s, e in testable[b]:
-                fh.write(f"{b}\t{s}\t{e}\n")
 
     # 8. labels and summary
     nameOrder = lambda q: ((0, refIndex[lab[q]["chrom"]], lab[q]["name"]) if lab[q]["chrom"]
@@ -565,8 +600,8 @@ def prepare(a):
     if claimed:
         log(f"  NOTE: chromosome differs from the name's claim: {', '.join(claimed)}")
     if excessBp:
-        log(f"  NOTE: {excessBp / 1e6:.2f} Mb of backbone has more copies than --ploidy allows (excess.v3.bed)")
-    touch(os.path.join(P, "done.v3.ok"))
+        log(f"  NOTE: {excessBp / 1e6:.2f} Mb of backbone has more copies than --ploidy allows (excess.v4.bed)")
+    touch(os.path.join(P, "done.v4.ok"))
 
 # ------------------------------------------------------------------------ map ----
 PAIRS_AWK = r'''
@@ -595,7 +630,7 @@ def map_reads(a):
     if done(os.path.join(Mp, "done.ok")):
         log("map: already done")
         return
-    if not done(os.path.join(P, "done.v3.ok")):
+    if not done(os.path.join(P, "done.v4.ok")):
         die("run 'prepare' first")
     if not a.r1 or not a.r2:
         die("map needs -1 and -2")
@@ -730,20 +765,34 @@ def score(a):
     length = {r["target_id"]: r["length"] for r in labels}
     chromOrder = list(dict.fromkeys(r["chrom"] for r in labels if r["chrom"] != "."))
     backbones = [r["target_id"] for r in labels if r["class"] == "backbone"]
-    partners = collections.defaultdict(set)
-    with open(os.path.join(P, "partners.tsv")) as fh:
+    homPath = os.path.join(P, "homology.v4.tsv")
+    if not os.path.exists(homPath):
+        die(f"{homPath} not found; rerun 'prepare' (it reuses the mapping target, so 'map' stays valid)")
+    # homologous regions per ordered backbone pair: a contact between two backbones is a homolog
+    # contact only when each end lies in the region of its backbone that is homologous to the other
+    homIv = collections.defaultdict(list)
+    with open(homPath) as fh:
         for line in fh:
             if not line.startswith("#"):
-                b, o = line.split("\t")[:2]
-                partners[b].add(o)
-                partners[o].add(b)
-    excessPath = os.path.join(P, "excess.v3.bed")
-    if not os.path.exists(excessPath):
-        die(f"{excessPath} not found; rerun 'prepare' (it reuses the alignments and mapping target)")
-    excess = read_bed(excessPath)
+                b, s_, e_, o = line.rstrip("\n").split("\t")
+                homIv[(b, o)].append((int(s_), int(e_)))
+    homIv = {k: merge(iv) for k, iv in homIv.items()}
+    homStarts = {k: [s_ for s_, e_ in iv] for k, iv in homIv.items()}
+    homolog_of = collections.defaultdict(set)
+    for b, o in homIv:
+        homolog_of[b].add(o)
+
+    def in_hom(b, o, x):  # x is 1-based
+        st = homStarts.get((b, o))
+        if not st:
+            return False
+        i = bisect.bisect_right(st, x - 1) - 1
+        return i >= 0 and x - 1 < homIv[(b, o)][i][1]
+
+    excess = read_bed(os.path.join(P, "excess.v4.bed"))
     # one phasing mask: testable and not an extra copy. Contacts in excess regions are left out of
     # numerator and denominator alike; their bp are reported as duplicated.
-    testable = read_bed(os.path.join(P, "testable.v2.bed"))
+    testable = read_bed(os.path.join(P, "testable.v4.bed"))
     phase = {n: subtract(iv, excess.get(n, [])) for n, iv in testable.items()}
     pStarts = {n: [s for s, e in iv] for n, iv in phase.items()}
     pEnds = {n: [e for s, e in iv] for n, iv in phase.items()}
@@ -788,8 +837,11 @@ def score(a):
                 continue
             c["backbone_pairs"] += 1
             ka, kb = (ca, xa // B), (cb, xb // B)
-            if ra["chrom"] != rb["chrom"]:
-                # structure, not phasing: no mask, so misjoined segments stay visible
+            homologous = ca != cb and in_hom(ca, cb, xa) and in_hom(cb, ca, xb)
+            if ra["chrom"] != rb["chrom"] and not homologous:
+                # structure, not phasing: no mask, so misjoined segments stay visible. Homologous
+                # regions with different labels (a translocation in one haplotype) are scored
+                # as homologs below instead.
                 c["interchrom"] += 1
                 per[ca]["interchrom"] += 1
                 per[cb]["interchrom"] += 1
@@ -800,7 +852,7 @@ def score(a):
             if far:
                 ownAll[ka] += 1
                 ownAll[kb] += 1
-            if ca != cb and cb not in partners[ca]:
+            if ca != cb and not homologous:
                 c["unresolved"] += 1  # e.g. two pieces of one chromosome copy: not penalised
                 per[ca]["unresolved"] += 1
                 per[cb]["unresolved"] += 1
@@ -868,7 +920,7 @@ def score(a):
                  "partner_backbones\tcis\thomolog\tinterchrom\tunresolved\thomolog_fraction\tsource_id\tnote\n")
         for t in backbones:
             r, g, x = byT[t], per[t], perBp[t]
-            pb = sorted(nm(p) for p in partners[t] if byT[p]["class"] == "backbone")
+            pb = sorted(nm(p) for p in homolog_of[t])
             fh.write(f"{r['name']}\t{r['chrom']}\t{r['length']}\t{x['consistent_bp']}\t{x['switch_bp']}\t"
                      f"{x['misjoin_bp']}\t{x['duplicated_bp']}\t{x['untestable_bp']}\t{','.join(pb) or '.'}\t"
                      f"{g['cis']}\t{g['homolog']}\t{g['interchrom']}\t{g['unresolved']}\t"
@@ -994,8 +1046,12 @@ def main():
         p.add_argument("--mask_min_aln", type=int, default=10000,
                        help="minimum alignment block for homology between sequences [%(default)s]")
         p.add_argument("--partner_frac", type=float, default=0.2,
-                       help="two sequences are homolog partners when their alignment covers this much "
-                            "of the shorter one [%(default)s]")
+                       help="a homologous chain also counts when it aligns this fraction of the other "
+                            "sequence (lets short fragments count) [%(default)s]")
+        p.add_argument("--min_homolog_region", type=int, default=200000,
+                       help="aligned bp a chain of blocks needs to count as a homologous region [%(default)s]")
+        p.add_argument("--homolog_gap", type=int, default=100000,
+                       help="largest gap, on either sequence, between chained alignment blocks [%(default)s]")
 
     def map_args(p):
         p.add_argument("-1", dest="r1", help="Hi-C R1 FASTQ(s), comma-separated")
