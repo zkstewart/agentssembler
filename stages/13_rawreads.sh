@@ -66,6 +66,8 @@ if collapsed; then
     zcat $A/fill/raw.$h.paf.gz | awk -F'\t' -v o="$other" '$6 !~ o' | gzip -1 > $d/raw.paf.gz
     python3 "$S/readfill.py" --agp $d/in.agp --fasta $d/in.fasta --paf $d/raw.paf.gz --reads $A/neargap.fasta --out $d/fill "${RF[@]}" --threads "$AS_THREADS" > $d/fill.log 2>&1
     REPORTS+=(--report raw=$d/fill.report.tsv,$d/in.fasta --report corrected=$R/$h/fill.$h.report.tsv,$R/$h/in.fasta)
+    # D11 fill_retry joins live in their own report (same gap IDs and in.fasta as the haplotype's fill); audit them too
+    for rr in $R/retry_*_$h/fill.report.tsv; do [ -s "$rr" ] && REPORTS+=(--report corrected=$rr,$R/$h/in.fasta); done
   done
   for h in $HAPS; do grep -v '^#' $A/fill/$h/fill.agp; done > $A/fill/candidate.agp; cat $A/fill/h*/fill.fills.fasta > $A/fill/fills.fasta
 else

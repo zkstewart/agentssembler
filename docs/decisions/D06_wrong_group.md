@@ -23,7 +23,9 @@
 - `Depth 262x; Hi-C spread over all groups` (high copy)
 - `No graph link; 102 pairs to g01, none to its order neighbours` (no evidence for a position)
 
-**Edit:** `edits/group_edits.tsv`, columns `chain, action, value, reason`. Actions are `group`, `unassigned .`, `shared`. For `group` and `shared`, write the value as `with:chain0013`, meaning that chain's group or chromosome. A bare `g06` or `c4` also works, but labels are numbered by size and shift when anything upstream changes: on Busk a chain break swapped g06 with g07 and c4 with c5, and old labels would have put a chr2 hub on chr3.
+**Edit:** `edits/group_edits.tsv`, columns `chain, action, value, reason`. Actions are `group`, `unassigned .`, `shared`, `pair`. For `group` and `shared`, write the value as `with:chain0013`, meaning that chain's group or chromosome. A bare `g06` or `c4` also works, but labels are numbered by size and shift when anything upstream changes: on Busk a chain break swapped g06 with g07 and c4 with c5, and old labels would have put a chr2 hub on chr3.
+
+**When edits move a whole haplotype between groups** (D05: two chromosomes merged and another split), add a `pair` row as well: `chainX  pair  with:chainY  reason` makes the group holding chainX, after the other edits, a haplotype of chainY's chromosome. Without it the group-to-chromosome pairing is copied unchanged from clustering, and ordering, shared copies and names would follow the old pairing. Here `with:` reads the grouping after the edits. GammaCitrus needed it: chr1 and chr7 haplotypes merged in one group, and one chr9 haplotype split in two.
 
 **After:** `run` continues, as `08_bridges` applies the edits. If you find this later, edit and `reset 08_bridges`.
 
