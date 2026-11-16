@@ -2,6 +2,13 @@
 
 A tail is a graph path leaving one flank and stopping before the other. It goes beside the flank it links to, with the gap beyond. **The default is not to place.** Nothing is placed without a row in `edits/accepted_tails.tsv`.
 
+**First, the tangle check** ([TANGLES](../TANGLES.md)). Do it before choosing any tail, because what it finds replaces tails:
+
+1. **Lost-route forks** (collapsed samples): read the `LOST` rows of `12_shared/chain_forks.tsv`. Break where the lost chain is the allele of a reused arm (`over` in `12_shared/arm_usage.tsv`), or leads on to more unplaced 1x or telomeric chains. Leave a bubble arm that rejoins the same chain. A break goes in `edits/chain_breaks.txt` at `break_at`, then `reset 06_evidence --remap`.
+2. **Small tangles:** a group end with no telomere, whose tails stop inside a small tangle short of unplaced telomeric chains. Use TTT ([TANGLES](../TANGLES.md)), then reset from the earliest stage its edits touch.
+
+Record the check in the reason even when nothing is done, for example: `Tangle check: 3 LOST rows, 1 broken (chain0073 -> chain0081, reused arm); TTT on chr5 (17 unitigs), both ends now telomeric; 2 left as bubbles.` After a reset you return here on a new pre-build, and choose tails then.
+
 **Read:** `12_shared/tails.tsv`, `12_shared/tail_report.tsv`, `12_shared/tail_checks.tsv`.
 
 **`make_tails.py` labels are not safety checks.** It tests a path's copy limit, repeat class and chromosome, per chain. On 13Q010, chain0256 was labelled `only`, and all three chr5 haplotypes already hold it at 92-99.9%. Placing it would make a fourth copy in a triploid.
@@ -26,5 +33,7 @@ A tail is a graph path leaving one flank and stopping before the other. It goes 
 **This is the user's call when in doubt.** On 13Q010, the user chose not to place the six that passed, to minimise assembly risk. On WatsonsChoice, 47 were placed (7.06 Mb distinct, 27 arbitrary), none had a copy of 30% or more on its own scaffold within 2 Mb, and all joins had reads, 7 of them with none at q20.
 
 **Edit:** copy accepted rows from `12_shared/tails.tsv` to `edits/accepted_tails.tsv` unchanged, and give the reasoning in the decision. Then `run`.
+
+**A tail through a tangle the check resolved is superseded.** On GammaCitrus chr5, tails reached into the tangle, and TTT later carried both haplotypes through it to their telomeres. Accept the TTT rows, not those tails.
 
 **Beyond tails:** placing them changes every coordinate downstream, so decide before mapping in `12_fill`.

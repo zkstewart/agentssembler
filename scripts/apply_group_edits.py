@@ -7,8 +7,11 @@ edits.tsv columns: chain, action, value, reason. Actions:
   group <gNN>       the chain joins that group
   unassigned .      the chain leaves any group, or stops being shared
   shared <cN>       the chain is collapsed sequence of chromosome cN, copied into all its haplotypes
-In place of gNN or cN, with:<chain> means that chain's group or chromosome in the input grouping. Prefer it: labels are numbered by
-size, so any change upstream can renumber them, and an old label would then silently point at another chromosome.
+  pair <cN>         the group holding this chain, after all group edits, becomes a haplotype of chromosome cN. Use it when
+                    edits move a haplotype between groups, since group-to-chromosome pairing is otherwise copied unchanged.
+                    Here with:<chain> means that chain's chromosome after the edits. Applied after every other row.
+In place of gNN or cN, with:<chain> means that chain's group or chromosome in the input grouping (except for pair, above). Prefer it:
+labels are numbered by size, so any change upstream can renumber them, and an old label would then silently point at another chromosome.
 Usage: apply_group_edits.py in_prefix edits.tsv out_prefix   (reads and writes prefix.tsv, prefix.shared.tsv, prefix.chroms.tsv)
 '''
 import sys, os, shutil
@@ -27,11 +30,13 @@ def resolve(val, act, c):
     m = val[5:]; g = base.get(m)
     if g is None or not g.startswith("g"): sys.exit(f"edit for {c}: {m} is not in a group")
     return g if act == "group" else chrom[g]
+pairs = []
 for l in open(ed):
     if l[0] == "#" or not l.strip(): continue
     c, act, val, *why = l.rstrip("\n").split("\t")
     if not why or not why[0].strip(): sys.exit(f"edit for {c} has no reason")
     if c not in L: sys.exit(f"unknown chain {c}")
+    if act == "pair": pairs.append((c, val)); continue
     val = resolve(val, act, c)
     if act == "group":
         Srow.pop(c, None); Grow[c] = [c, L[c], val]
@@ -52,4 +57,23 @@ with open(out + ".tsv", "w") as o:
 with open(out + ".shared.tsv", "w") as o:
     o.write("\n".join(hdrS) + "\n")
     for c, r in Srow.items(): o.write("\t".join(r) + "\n")
-if os.path.abspath(pre) != os.path.abspath(out): shutil.copyfile(pre + ".chroms.tsv", out + ".chroms.tsv")
+if not pairs:
+    if os.path.abspath(pre) != os.path.abspath(out): shutil.copyfile(pre + ".chroms.tsv", out + ".chroms.tsv")
+else:
+    fin = {c: r[2] for c, r in Grow.items()}
+    order = [l.split("\t")[0] for l in open(pre + ".chroms.tsv") if l[0] != "#" and l.strip()]
+    for c, val in pairs:
+        g = fin.get(c)
+        if g is None or not g.startswith("g"): sys.exit(f"pair for {c}: the chain is not in a group after the edits")
+        if val.startswith("with:"):
+            m = val[5:]; gm = fin.get(m)
+            if gm is None or gm not in chrom: sys.exit(f"pair for {c}: {m} is not in a paired group after the edits")
+            val = chrom[gm]
+        print(f"pair: {g} (holding {c}) {chrom.get(g, '-')} -> {val}", file=sys.stderr)
+        chrom[g] = val
+        if g not in order: order.append(g)
+    n = {}
+    for g in order: n[chrom[g]] = n.get(chrom[g], 0) + (1 if any(x == g for x in fin.values()) else 0)
+    for k, v in sorted(n.items()): print(f"chromosome {k}: {v} non-empty group(s)", file=sys.stderr)
+    with open(out + ".chroms.tsv", "w") as o:
+        for g in order: o.write(f"{g}\t{chrom[g]}\n")

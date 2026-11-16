@@ -17,7 +17,7 @@ Stages are numbered 01 to 15. Directories are numbered 00 to 17. **The two sets 
 | `07_group` | `10_groups/` (`groups*`, `shared.txt`, `eval_groups.txt`, `chain_forks.txt`) | D05, D06, D14 |
 | `08_bridges` | `10_groups/final*`, `12_shared/`, `13_scaffold/bridges/` | D07 |
 | `09_order` | `12_shared/` (`order*`, `by_chrom/`) | D09, D10 |
-| `10_arms_tails` | `12_shared/` (`choices.tsv`, `arm_*`, `tails*`, `pre/`), `13_scaffold/names.tsv`, `13_scaffold/repeat_chains.fasta` | D17, D15, D16 |
+| `10_arms_tails` | `12_shared/` (`choices.tsv`, `arm_*`, `tails*`, `chain_forks.tsv`, `pre/`), `13_scaffold/names.tsv`, `13_scaffold/repeat_chains.fasta` | D17, D15, D16 |
 | `11_build` | `13_scaffold/` | |
 | `12_fill` | `14_readfill/`, `15_final/` | D11 |
 | `13_rawreads` | `17_raw_reads/` | D18 |
@@ -42,6 +42,7 @@ Three things look like mistakes and are not:
 | `reports/` | driver | `STAGE.md` per finished stage. `02_map_unitigs.md` and `01_inputs.md` are short by design |
 | `logs/` | driver | `STAGE.log` per stage, appended on each run |
 | `archive/` | `reset` | Only after a `reset`. See [Re-running](#re-running) |
+| `ttt/` | you | Only if TTT was used at D16: tangles, boundary files, coverage, the read GAF and runs ([TANGLES](TANGLES.md)). `reset` leaves it alone |
 | `00_inputs/` to `17_raw_reads/` | stages | Below |
 
 A copy of the config beside these, such as `sample.yaml`, is harmless. Do not add other files or folders at the top level without listing them in `README.md`.
@@ -56,7 +57,7 @@ Everything else is written by a stage, and **must not be edited by hand**.
 | `edits/chain_breaks.txt` | D04, D06 | |
 | `edits/shared.txt` | D14 | Replaces the whole candidate list. Collapsed samples only |
 | `edits/group_edits.tsv` | D05, D06, D07, D14 | |
-| `edits/order_links.tsv` | D07, D09, D10 | |
+| `edits/order_links.tsv` | D07, D09, D10 | The type column is free text: `telomere_tip`, `curated`, `ttt` ([TANGLES](TANGLES.md)) |
 | `edits/order_edits.tsv` | D09 | |
 | `edits/names.tsv` | stage 10 | Replaces the automatic names |
 | `edits/accepted_tails.tsv` | D16 | Rows copied unchanged from `12_shared/tails.tsv` |
@@ -141,6 +142,7 @@ The working set for ordering. When **[C]**, shared chains appear here as one cop
 | `choices.tsv`, `arm_report.tsv` `arm_depth.tsv` `arm_usage.tsv` **[C]**, `build_args.txt` | 10 |
 | `pre/S.agp`, `pre/S.fasta`, `pre/S.junctions.tsv`, `pre/S.placement.tsv`, `pre/S.unplaced.fasta`, `pre/target.fasta` | 10, a trial build to find tails |
 | `tails.tsv`, `tail_report.tsv`, `tail_checks.tsv` (when there are candidates) | 10, read at D16 |
+| `chain_forks.tsv` **[C]**: forks with `LOST` rows first, for D16's tangle check | 10 |
 
 ## `13_scaffold/` (stages 08, 10, 11)
 
@@ -203,7 +205,7 @@ A fill writes six files from one prefix: `.agp`, `.fills.fasta`, `.report.tsv`, 
 - **Do not make `12_shared_v2/`, `15_final_v3/` or the like by hand.** Stages read and write fixed paths, so a suffixed folder is invisible to them, and a reader cannot tell which one is current.
 - **`archive/` is the record of what a re-run replaced.** Compare groups by chain against it after any reset above stage 07 (T19). It can be large. Delete it only when the user agrees, and write in `README.md` what was reset, why, and that the archive was deleted.
 - **A reset archives both hand tables**, `16_validate/sv/sv_calls.tsv` and `16_validate/curation_targets.tsv`, and stage 15 starts new ones with the header only. Its report names the archived copies. **Treat them as a list to re-check, not rows to restore:** a re-run can change coordinates and haplotype numbers ([LESSONS](LESSONS.md)). Only when nothing before stage 15 was reset are the final files the same, and a row may be carried over once you have confirmed that.
-- **To try something that changes the method**, such as a setting that alters the chains, make a second work directory beside the first with `init`, and link the reusable mappings in before `run` ([PROCESS.md](PROCESS.md), "Reusing mappings"). Name it for what differs, and say in both `README.md` files which is current.
+- **To try something that changes the method**, such as a setting that alters the chains, make a second work directory beside the first with `init`, and link the reusable mappings in before `run` ([PROCESS.md](PROCESS.md), "Reusing mappings"). Name it for what differs, and say in both `README.md` files which is current. Do this only for a trial the user has agreed to after the run (AGENTS.md, "One output, then proposals"). The D16 tangle check, TTT included, is not such a trial: it runs in the work directory itself.
 - **To keep the output of a `run` command**, redirect it into `logs/`, for example `logs/run.06.out`. The driver does not do this.
 
 ## Not in the work directory

@@ -23,6 +23,19 @@ Last run after the Busk changes, with `restore_connectors: false` and `hops: 8` 
 
 WatsonsChoice reproduced the adopted `15_final_v3` AGP and FASTA index, and its validation telomere table, exactly. 13Q010 reproduced its scaffold AGP and FASTA and the adopted `15_final_v2` AGP and FASTA index exactly.
 
+**Run after the D16 tangle check was added** (lost-route forks, `chain_forks.py` fix), through `11_build` only:
+
+| Genome | Compared | Same | Different |
+|---|---|---|---|
+| GammaCitrus (diploid, collapsed; spec kept outside the repo, as the genome is confidential) | 32 | 30 | 2, expected |
+| 13Q010 (`--missingReadsOk --to 11_build`) | 19 | 17 | 2, both the known ones below |
+
+- **Both rebuilt the saved scaffolds exactly:** the stage 11 AGP, the scaffold FASTA and the unplaced FASTA.
+- **GammaCitrus `10_groups/chain_forks.txt`:** the same 100 fork rows. Rows to chains in no group are now labelled `ungrouped`, not `same_group` or `other`, and there is a new `break_at` column.
+- **GammaCitrus `12_shared/arm_usage.tsv`:** the same 112 rows in a different order.
+- **The new stage 10 scan ran only on GammaCitrus,** since it needs a collapsed sample. It wrote `12_shared/chain_forks.tsv` with 12 `LOST` pairs and raised the stage 10 alarm. 13Q010 does not exercise it.
+- **13Q010's inputs are mostly gone.** Its corrected reads exist only gzipped elsewhere, and its raw BAM and Hi-C reads are deleted. `init` refuses a missing input, so the run used a local copy of the spec with empty Hi-C stand-ins. That is safe because `09_hic_map/pairs.tsv.gz` is seeded, so stage 05 maps nothing. The WatsonsChoice saved build is deleted, so that spec cannot run.
+
 Differences understood:
 
 - WatsonsChoice `07_chains2/restored_arms.tsv`: one arm overlaps two flanks by the same length, and the table names a different one of the pair. Nothing downstream changed.

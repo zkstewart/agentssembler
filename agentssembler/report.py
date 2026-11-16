@@ -130,7 +130,13 @@ def r_arms(w, c, s):
     out.append("Nothing is placed without edits/accepted_tails.tsv. Keep the tails.tsv columns; the reason goes in the decision.")
     A = list(rows(f"{w}/12_shared/arm_report.tsv"))
     if A: out.append("Arm labels: " + str(dict(collections.Counter(r[3] for r in A if len(r) > 3))))
-    return out, []
+    al = []
+    F = [r for r in rows(f"{w}/12_shared/chain_forks.tsv") if r[0] == "LOST"]
+    if F:
+        pairs = sorted({(r[1], r[9], int(r[13])) for r in F}, key=lambda x: -x[2])
+        al.append(f"{len(pairs)} lost-route forks in 12_shared/chain_forks.tsv (LOST): a placed or tail chain runs through a 2x hub whose other exit reaches an unplaced 1x chain: "
+                  + ", ".join(f"{c}->{t} ({n // 1000} kb)" for c, t, n in pairs[:12]) + ". Do the tangle check in D16 (docs/TANGLES.md) before choosing tails: a break at break_at needs `reset 06_evidence --remap`.")
+    return out, al
 def r_build(w, c, s):
     p = f"{w}/13_scaffold/{c['sample']}.graph"; L = fai(p + ".fasta.fai"); J = collections.Counter(r[4] for r in rows(p + ".junctions.tsv") if len(r) > 4)
     return [f"Scaffolds {len(L)}, {Mb(sum(L.values()))}. Junction types: {dict(J)}.", "Build log: 13_scaffold/build.log."], []

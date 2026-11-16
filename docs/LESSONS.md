@@ -6,6 +6,8 @@ Results that shaped the process. They come from one triploid and two diploid cit
 
 A unitig is redundant when another copy covers its sequence, but it may still be the only graph link between two chains. Restoring those (connectors) took Busk from 60 gaps to 8 before any read filling, with no bridges across chromosomes, and grouping unchanged. On the other two genomes it halved the gaps. Their joins hold up about as well as joins inside chains: 88% have q20 reads through them at 10 kb, against 92% within chains. **What this does not show:** which allele a connector carries relative to its neighbours. Most such arms have arbitrary phase.
 
+**Connectors are found only between chain ends.** A dropped unitig at a fork in the middle of a chain is never restored: the chain runs straight through the fork, and the other haplotype's arm is lost. On GammaCitrus that left a 779 kb allele unplaced, its partner arm reused by both haplotypes, and h2's route to the chr5 telomere unreachable. The fork scan had listed both forks. It read them as ordinary bubbles, because both chains were in no group, and "no group" compared as the same group. Stage 10 now repeats the scan once placement is known (D16's tangle check, [TANGLES](TANGLES.md)). Breaking at the hub makes it a chain end, and stage 06 then restores the route.
+
 ## A rebuild changes more than the gaps
 
 Seen when two adopted builds were rebuilt after a change to the method:

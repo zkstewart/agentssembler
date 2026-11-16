@@ -4,7 +4,7 @@
 import argparse, datetime, fnmatch, glob, hashlib, json, os, shutil, subprocess, sys
 import yaml
 from .stages import STAGES, BY_ID, GUIDES
-from . import report
+from . import report, compare
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEFAULTS = dict(telomere_motif="CCCTAAA", min_within=700, link_bonus=20000, hops=12, restore_connectors=True)
@@ -196,6 +196,12 @@ def cmd_env(a):
     for k in sorted(e):
         if k.startswith("AS_"): print(f"export {k}={json.dumps(e[k])}")
 
+def cmd_compare(a):
+    wa, wb = os.path.abspath(a.work), os.path.abspath(a.other)
+    for w in (wa, wb):
+        if not os.path.exists(f"{w}/config.yaml"): sys.exit(f"{w} has no config.yaml")
+    print(compare.table(wa, wb, str(cfg(wa)["sample"]), str(cfg(wb)["sample"])))
+
 def main():
     p = argparse.ArgumentParser(prog="agentssembler", description=__doc__); sp = p.add_subparsers(dest="cmd", required=True)
     x = sp.add_parser("init", help="create a work directory from a config"); x.add_argument("config"); x.add_argument("work"); x.set_defaults(fn=cmd_init)
@@ -205,4 +211,5 @@ def main():
     x = sp.add_parser("reset", help="undo a stage and all later ones, moving outputs to archive/"); x.add_argument("work"); x.add_argument("stage"); x.add_argument("--remap", action="store_true", help="also move aside costly mappings"); x.add_argument("--keepDecision", action="store_true", help="keep this stage's own decisions; later ones still go"); x.set_defaults(fn=cmd_reset)
     x = sp.add_parser("report", help="print reports"); x.add_argument("work"); x.add_argument("stage", nargs="?"); x.set_defaults(fn=cmd_report)
     x = sp.add_parser("env", help="print the environment a stage gets, to run a stage script by hand or on an HPC"); x.add_argument("work"); x.set_defaults(fn=cmd_env)
+    x = sp.add_parser("compare", help="side-by-side metrics of two finished work directories, for D13"); x.add_argument("work"); x.add_argument("other"); x.set_defaults(fn=cmd_compare)
     a = p.parse_args(); a.fn(a)

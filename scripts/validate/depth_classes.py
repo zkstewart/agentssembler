@@ -4,7 +4,7 @@
 '''Depth of the final scaffolds in 50 kb windows, split by whether the window lies in sequence placed in both haplotypes, from each
 haplotype's masked mapping, plus the share of each chromosome that is shared. Coordinates are the pre-fill ones, as for the PAFs.
 Usage: depth_classes.py scaffolds.agp target.masked.tsv a.paf.gz [b.paf.gz ...] out.tsv'''
-import sys, gzip, collections
+import sys, gzip, collections, re
 import numpy as np
 agp, mask, *pafs, out = sys.argv[1:]; W = 50000
 L = {}; N = collections.defaultdict(list)
@@ -42,4 +42,5 @@ summ("specific (<10% shared)", [r[2] for r in rows if r[4] < .1])
 summ("shared (>90% shared)", [r[2] for r in rows if r[4] > .9])
 summ("mixed", [r[2] for r in rows if .1 <= r[4] <= .9])
 print("share of each scaffold placed in both haplotypes:")
-for c in sorted(L, key=lambda x: (int(x[3:].split('_')[0]), x)): print(f"  {c}\t{L[c]/1e6:.2f} Mb\t{bp[c]/1e6:.2f} Mb\t{bp[c]/L[c]:.3f}")
+# natural sort: scaffold names need not be chrN_hM
+for c in sorted(L, key=lambda x: [int(t) if t.isdigit() else t for t in re.split(r'(\d+)', x)]):  print(f"  {c}\t{L[c]/1e6:.2f} Mb\t{bp[c]/1e6:.2f} Mb\t{bp[c]/L[c]:.3f}")

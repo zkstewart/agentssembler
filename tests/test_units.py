@@ -142,4 +142,25 @@ class T(unittest.TestCase):
             self.assertIn("not complete in all sets 2.", x.stdout.splitlines()[0])
             self.assertIn("not complete in all sets 1.", x.stdout.splitlines()[1])
             self.assertIn("Gene copies short of 2 per gene, on any scaffold: 1 of 8", x.stdout)
+    def test_chain_forks_lost_route(self):
+        # Chain X = a, h; h is a 2x hub whose left side also links to dropped d, which reaches the end of chain Y. Both chains are in no group:
+        # that must not read as the same group. With placement (X placed, Y unplaced at 1x) the row is LOST, with the break just before h.
+        with tempfile.TemporaryDirectory() as d:
+            p = lambda n, s: open(f"{d}/{n}", "w").write(textwrap.dedent(s).lstrip())
+            p("c.agp", "X\t1\t1000\t1\tW\ta\t1\t1000\t+\nX\t1001\t2000\t2\tW\th\t1\t1000\t+\nY\t1\t100000\t1\tW\tt\t1\t100000\t+\n")
+            p("g.gfa", "L\ta\t+\th\t+\t0M\nL\td\t+\th\t+\t0M\nL\tt\t+\td\t+\t0M\n")
+            p("cn.tsv", "#u\tlen\tprim\tuq\tsec\tclass\nh\t1000\t30\t0\t0\t60\na\t1000\t30\t0\t0\t30\nd\t1000\t30\t0\t0\t30\nt\t100000\t30\t0\t0\t30\n")
+            p("gr.tsv", "#chain\tlength\tgroup\nX\t2000\tunassigned\nY\t100000\tunassigned\n")
+            p("ch.tsv", "g01\tc1\n")
+            p("pl.tsv", "#chain\tlength\tgroup\tname\tstatus\nX\t2000\tunassigned\t.\tplaced:bridge\nY\t100000\tunassigned\t.\tunplaced:no_group\n")
+            p("cls.tsv", "#chain\tlength\tmedian_depth\nX\t2000\t45\nY\t100000\t30\n")
+            base = [f"{d}/c.agp", f"{d}/g.gfa", f"{d}/cn.tsv", f"{d}/gr.tsv", f"{d}/ch.tsv", "--hap", "30"]
+            r = run("review/chain_forks.py", *base); self.assertEqual(r.returncode, 0, r.stderr)
+            row = r.stdout.splitlines()[1].split("\t")
+            self.assertEqual((row[0], row[1], row[9], row[11], row[12]), (".", "X", "Y", "ungrouped", "1000"))
+            r = run("review/chain_forks.py", *base, "--placement", f"{d}/pl.tsv", "--chainClass", f"{d}/cls.tsv", "--oneLo", "19", "--oneHi", "46")
+            self.assertEqual(r.returncode, 0, r.stderr); self.assertEqual(r.stdout.splitlines()[1].split("\t")[0], "LOST")
+            p("tails.tsv", "#end\tgroup\tpath\tlabel\tpairs\tbp\nZ+\tg01\tY-\tonly\t1\t100000\n")
+            r = run("review/chain_forks.py", *base, "--placement", f"{d}/pl.tsv", "--chainClass", f"{d}/cls.tsv", "--oneLo", "19", "--oneHi", "46", "--tails", f"{d}/tails.tsv")
+            self.assertEqual(r.stdout.splitlines()[1].split("\t")[0], ".", "a chain on a tail is in use, not lost")
 if __name__ == "__main__": unittest.main(verbosity=1)
