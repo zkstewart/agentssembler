@@ -7,6 +7,7 @@ An agent stops here and asks. Do not record D13 yourself until the user has answ
 **The user decides:**
 
 - Which assembly to adopt, when a change trades contiguity against placed sequence or risk.
+- **Whether to trial anything outside the process.** That means a different method or setting, a tool the guides do not name, or a fix specific to this assembly. Propose it here, after the run is complete, with the evidence for it. Do not try it first. If the user agrees, build it in a second work directory and give `agentssembler compare`'s table, where each gain lies, and the weakest change with how to revert it alone. The tangle check is not such a trial: it is part of D16.
 - How much risk to accept for completeness. Tails ([D16](D16_tails.md)) and chains behind a gap ([D11](D11_gap_closures.md)) are the clearest cases. On all three genomes so far the user chose to err toward minimising assembly risk, including leaving Busk's chain0099 unplaced.
 - Whether medium-confidence SVs stay as assembled after inspection.
 - Juicebox edits. **This route has not been exercised:** bring edits back as breaks, links or group edits with reasons, and re-run from the earliest affected stage. Do not paste a Juicebox export over the AGP.

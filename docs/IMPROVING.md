@@ -34,10 +34,15 @@ The numbers behind each entry here and under "Not worth repeating" are in [RECOR
 
 **Phasing arms with reads: at a minority of junctions.** Built as a report, `review/phase_reads.py`, in stage 13. The numbers and limits are in [D15](decisions/D15_arm_phase.md).
 
+**Solving tangles with TTT: worth it for small tangles with boundaries, so it is now part of D16's tangle check.** On GammaCitrus it carried both chr5 haplotypes through a 17-unitig 2-2 tangle to telomeric arms the pipeline left unplaced, making 46 more genes complete per haplotype. Elsewhere it confirmed the pipeline, could not decide phase, or found no path. When and how: [TANGLES](TANGLES.md).
+
 ## Not worth repeating
 
 - **Loosening `readfill.py`:** `--minIdentity 0.95 --maxTrim 15000` gained 1 gap and lost 2.
 - **Fewer or more hops than 12:** 3 missed a real path on one genome, and 8 missed one on another once connectors were in the graph. 16 found the same as 12.
 - **Raw reads to place unplaced sequence:** one q20 link in total on 13Q010. The evidence there is Hi-C or nothing.
 - **Allele-aware Hi-C for unplaced chains and arms:** near-identical copies are near-identical in Hi-C reads too. For a 958 kb chain 99.97% identical to a placed copy, 98.8% of its pairs were MAPQ 0, and the 185 with any alignment score margin spread over all chromosomes. On arms, 99.6% of records tie exactly.
+- **TTT as an early stage, before chains:** planned for after D01 on GammaCitrus, and not built. Its one gain came from one small tangle. The largest tangle (254 unitigs) was beyond it, and most other output confirmed the baseline or was bubble alleles that chains cannot express.
+- **TTT on a large tangle or one with dead ends:** no valid path, as every route needs banned connections, and the MILP grew by about 340 MB a minute.
+- **hifiasm's `rd:i` as TTT coverage:** it dropped real alleles to multiplicity 0. Use stage 03's corrected-read depth.
 - **A homolog synteny term in ordering:** a small bonus for junctions whose alleles are adjacent on a homolog had no effect over four rounds. Removed from the code.

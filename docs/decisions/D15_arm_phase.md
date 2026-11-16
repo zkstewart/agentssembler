@@ -18,6 +18,6 @@
 **Two checks:**
 
 - A near-2x chain with a real alternative is the larger of two alleles, not one chain used twice. WatsonsChoice chain0398 and chain0564 are the example (`--minAllele`, `--maxPair`).
-- A 1x chain on a path that is the only route through 2x flanks may legitimately be used twice. Say so. I first called such reuse legitimate without testing it, and ten were not clearly 2x: use `scripts/review/reused_depth.py` and `scripts/review/siblings.py`.
+- A 1x chain on a path that is the only route through 2x flanks may legitimately be used twice. Say so. I first called such reuse legitimate without testing it, and ten were not clearly 2x: use `scripts/review/reused_depth.py` and `scripts/review/siblings.py`. Where a reused arm's likely allele is unplaced and reachable from the same hub, `12_shared/chain_forks.tsv` lists it as `LOST`: a chain ran through the fork. Settle it in D16's tangle check ([TANGLES](../TANGLES.md)).
 
 **Usually no edit is needed.** To record the outcome: `--reason "x only, y coverage, z supported, w arbitrary; reused arms checked."`

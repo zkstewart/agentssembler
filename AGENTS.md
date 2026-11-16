@@ -32,6 +32,7 @@ agentssembler run WORK                 # continue
 - A disagreement with the reference is reported as an SV candidate. It is never fixed toward the reference.
 - Leave sequence unplaced when the data do not support a position. Unplaced is a result, not a failure.
 - Every hand edit goes in an `edits/` file with its reason, and is applied by re-running a stage. Never edit an output by hand.
+- At D16, do the tangle check before choosing tails ([TANGLES](docs/TANGLES.md)). A fix there means a `reset` back, which is cheaper before stage 12 than after.
 - To redo a stage, use `agentssembler reset`, which keeps what it replaces in `archive/`. Never make a `_v2` copy of a directory by hand: stages cannot see it.
 - Keep `WORK/README.md` current. It says which files are the assembly, what was re-run and why, and anything the driver did not make.
 - A claim about biology must survive a direct test before it is written down. See [D12](docs/decisions/D12_sv_calls.md).
@@ -44,6 +45,10 @@ agentssembler run WORK                 # continue
 - Weigh two signals against each other ([D04](docs/decisions/D04_chimeric_chains.md), [D09](docs/decisions/D09_order.md)).
 - Refuse tempting joins ([D16](docs/decisions/D16_tails.md), [D18](docs/decisions/D18_raw_read_joins.md)). Every automated label here has been wrong at least once: `only`, `reads_overlap`, read counts.
 - Say what you do not know. Arm phase is mostly unknowable on a diploid, and that belongs in the report.
+
+## One output, then proposals
+
+The process builds toward a single assembly. Every route it defines, including going back with `reset`, belongs to that one run. That includes the tangle check at [D16](docs/decisions/D16_tails.md): lost-route forks and, for a small tangle, TTT ([docs/TANGLES.md](docs/TANGLES.md)). Anything outside the defined process waits until the run is finished. That covers a different method or setting, a tool the guides do not name, or a change specific to this assembly. At D13, propose it with the evidence for it. The user decides whether to trial it, in a second work directory ([LAYOUT](docs/LAYOUT.md), "Re-running"), compared with `agentssembler compare`.
 
 ## What belongs to the user
 

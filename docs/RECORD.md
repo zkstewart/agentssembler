@@ -103,6 +103,61 @@ At 0.03% divergence a 150 bp read carries a difference about once in 20 reads, a
 
 `synteny_links.py` scored a junction by whether the two chains' alleles lie close together on a homolog, and `hic_order.py --synteny` added a small bonus for each homolog in support. It used no reference. Homolog evidence ranks below Hi-C and above the reference, so a tie-breaking bonus was consistent with the evidence order. It changed no order over four rounds, and both were removed from the code.
 
+### TTT on graph tangles (GammaCitrus)
+
+**Result: one clear gain, from the smallest tangle.** Six tangles were found with `ttt/tangle_explore.py` (anchors: unitigs of 300 kb or more at 0.6-1.4x haplotype depth). Reads were 186,250 corrected reads touching them, aligned with GraphAligner to the whole graph. Coverage was stage 03's depth, with `--median-unique` from D01. The method is in [TANGLES](TANGLES.md).
+
+| Tangle | Unitigs | Mb | What TTT did |
+|---|---|---|---|
+| chr5 telomeric | 17 | 2.77 | Clean 2-2. Both pairings scored the same. Both haplotypes reached unplaced 1x chains leading uniquely to telomeric chains. Paths identical with 30 seeds |
+| chr4 hub block | 31 | 4.69 | Same topology as the baseline. chain0177 reuse forced. 2 extra chains entered from inside hub chains |
+| chr2c distal | 49 | 7.27 | Same tip assignment as D07, swap tied. 4 bubble alleles at directly joined chain ends |
+| chr2a | 56 | 6.89 | Not separable from chr2b by its boundaries. Alone, on a graph with chr2b's links cut, it preferred the unplaced allele chain0081 over the reused arm, 114 to 24 |
+| chr2a+chr2b | 254 | about 31.5 | No valid path. About 10 banned Z connections needed. MILP stalled at a 49% gap |
+| chr3 telomeric | 30 | 4.16 | One-sided. Not run |
+
+**Acceptance:**
+
+- Every traversal adjacency was a GFA link.
+- Multiplicity against depth disagreed often. TTT gave multiplicity 2 to 0.5-1.0x nodes both haplotypes had to cross, and its coverage scale hit its lower bound (60 of 72).
+- Reads at q20 spanned 0-8 chain junctions each, so most joins rest on the graph alone, as the baseline's do.
+- hifiasm `rd:i` coverage was worse: it set three real alleles to 0.
+
+**Build:** a second work directory with the baseline's edits plus TTT rows.
+
+**Carried, and the result:**
+
+- chr5 on both haplotypes. The pairing was broken by Hi-C at 41 against 24 pairs.
+- The chr2a swap, by two chain breaks.
+
+**Effect:** telomere to telomere rose from 4 to 6 of 18. Complete genes per haplotype rose from 95.76 and 95.26% to 97.18 and 96.83%, with 40-44 of each haplotype's 46 new genes on the chr5 arms. Unplaced sequence fell by 4.5 Mb, and there were 2 more gaps. SVs were unchanged.
+
+**Dropped:**
+
+- The chr2c and chr4 additions. Grouped, Hi-C put them at the wrong place and dragged a chr2 block with them.
+
+**The chr2a swap is weak.** TTT's support was GraphAligner reads on utg000989l, which turned out to be an exact copy of the arm's first ~130 kb (as is utg000659l). In raw reads, 157 q20 tails from the hub run ~28 kb past the duplicated segment into the arm, and none go into chain0081.
+
+**What it exposed:** stage 04's redundancy removal dropped unitigs that real haplotype paths need (utg000989l, utg000659l, utg000601l). Connectors restored two of them only after a chain break. A path through the others stays a gap: chr5_h1 has one. See "Lost-route forks" below.
+
+### Lost-route forks
+
+**Result: the fork scan had seen both of GammaCitrus's lost routes, and labelled them harmless.** chain0073 runs through hub utg000537l, whose other exit leads through dropped utg000989l to chain0081. chain0107 runs through hub utg000467l, whose other exits lead through dropped utg000913l and utg000601l. Both chains were in no group. `chain_forks.py` compared "unassigned" with "unassigned" as the same group, and so read both as ordinary bubbles.
+
+**Why not flag every fork to an ungrouped chain at stage 07:** on GammaCitrus that is 66 rows, most of them bubbles inside collapsed chains in the chr2 tangle. At stage 10, placement is known, and the rule becomes specific. A row is flagged `LOST` when all of these hold:
+
+- the hub is 2x;
+- the chain is placed or on a tail;
+- the other exit reaches a chain that is neither placed nor on a tail, at about 1x and at least 50 kb.
+
+| Genome | Stage 07 HUB rows, before and after the fix | LOST rows at stage 10 (distinct chain to target) |
+|---|---|---|
+| GammaCitrus | 2, 2 | 12, including chain0073 -> chain0081 (779 kb), chain0107 -> chain0173 (h2's chr5 route), and the alleles of the reused arms chain0093, chain0138 and chain0185 |
+| Busk | 1, 1 | 3 |
+| 13Q010 | 1, 1 | 0 |
+
+`break_at` for chain0073 is 778960, the break made by hand in the TTT build. Of GammaCitrus's other rows, chain0083 -> chain0193 and chain0089 -> chain0240 are bubble arms at directly joined chain ends. Added as TTT proposed, Hi-C misplaced them, so the guide says to leave such rows. Not yet run through a full build: the rows are a check for D16, and each break is a judgement.
+
 ## Errors made while building this
 
 - I stated coverage from reasoning, not the histogram (9x per haplotype; it was 27x).

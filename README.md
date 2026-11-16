@@ -145,6 +145,7 @@ Thus, `agentssembler` is *not* meant to be a tool that is used for decades to co
 | `report WORK [STAGE]` | Print reports |
 | `reset WORK STAGE [--remap] [--keepDecision]` | Undo a stage and everything after it, moving outputs to `WORK/archive/<timestamp>/` and setting aside the decisions they informed. Mappings stay unless `--remap` |
 | `env WORK` | Print a stage's environment, to run it elsewhere |
+| `compare WORK OTHER` | Side-by-side metrics of two finished builds, for choosing one at D13 |
 
 ## Where things are
 
@@ -157,6 +158,7 @@ Thus, `agentssembler` is *not* meant to be a tool that is used for decades to co
 | [docs/decisions/](docs/decisions/README.md) | One guide per decision |
 | [docs/SETTINGS.md](docs/SETTINGS.md) | Every setting and how to choose it |
 | [docs/TRAPS.md](docs/TRAPS.md) | Things that cost real time |
+| [docs/TANGLES.md](docs/TANGLES.md) | D16's tangle check: lost-route forks, and TTT for small tangles |
 | [docs/LESSONS.md](docs/LESSONS.md) | Findings from the three genomes, and my errors |
 | [docs/IMPROVING.md](docs/IMPROVING.md) | Ideas not yet tried, and what is out of scope |
 | [docs/RECORD.md](docs/RECORD.md) | The evidence behind the process. Not needed to run it |
@@ -174,14 +176,14 @@ Thus, `agentssembler` is *not* meant to be a tool that is used for decades to co
 | Hi-C evidence, allele table, end links | Chimera calls (D04) |
 | Clustering and ordering searches | Group count, membership, shared chains (D05, D06, D14) |
 | Bridge finding and ranking, connector restoration, arm search | Telomeric tips (D07), odd orders (D09, D10), phase (D15, D17) |
-| Tail candidates and copy tests | Whether to place any tail (D16) |
+| Tail candidates and copy tests, lost-route fork scan | Tangle check and whether to place any tail (D16) |
 | Read filling, join audit | Which read-derived joins stand (D11, D18) |
 | Validation, and scans for forks, read tails, unplaced tangles and short homologs | SV claims (D12), and what those scans mean (D06, D11) |
 | | Adoption, risk, Juicebox review: the user (D13) |
 
 ## Requirements
 
-Python 3.10 or later with NumPy, PyYAML and matplotlib. minimap2 2.27 or later, samtools 1.12 or later, seqkit, bwa, samblaster, HapHiC's `filter_bam`. Optional: juicer_tools and compleasm. About 16 cores and 30 GB RAM were enough beyond the unitig alignments, which ran on an HPC with up to 50 GB.
+Python 3.10 or later with NumPy, PyYAML and matplotlib. minimap2 2.27 or later, samtools 1.12 or later, seqkit, bwa, samblaster, HapHiC's `filter_bam`. Optional: juicer_tools and compleasm; TTT (with PuLP 2.9 and GLPK) and GraphAligner, each in its own environment, if D16's tangle check calls for them ([TANGLES](docs/TANGLES.md)). About 16 cores and 30 GB RAM were enough beyond the unitig alignments, which ran on an HPC with up to 50 GB.
 
 # How to cite
 `agentssembler` is currently being evaluated. It is the author's hope that this will validate its use, and that reviewers will see its value as a potential publication.

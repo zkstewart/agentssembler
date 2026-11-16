@@ -5,7 +5,7 @@
 1. **Before starting,** check the inputs: `p_utg` FASTA and GFA from the same hifiasm run, corrected reads, Hi-C, and raw BAMs if you have them. Know the chromosome number and ploidy, and ask the user if unsure. Tell the user which read sets must stay on disk until the end: stages 02, 04, 06, 08, 12, 13 and 15 use reads. Set `compute.guard_path` to the drive that fills first.
 2. **Run and decide, in a loop.** `agentssembler run WORK` stops at each decision. Read the report and guide, inspect the evidence, put any change in an `edits/` file with its reason, record the decision, and run again. A report's alarm is a prompt to look, not a verdict.
 3. **Go back when evidence says to.** `agentssembler reset WORK STAGE` undoes that stage and everything after it, keeping what it replaces in `WORK/archive/<timestamp>/`. Do not copy a directory to a `_v2` name instead ([LAYOUT.md](LAYOUT.md), "Re-running"). It is often cheaper than it looks: mappings stay unless `--remap`. Busk went back from validation to fork breaks at stage 06, and that took h1's missing genes from 19 to 7.
-4. **Hand over at D13.** Give the user the final AGP and FASTA, unplaced sequence, Juicebox files, SV table, curation targets, every open choice with your recommendation, and the limits of the result. Stop there: adoption and risk are theirs.
+4. **Hand over at D13.** Give the user the final AGP and FASTA, unplaced sequence, Juicebox files, SV table, curation targets, every open choice with your recommendation, and the limits of the result. Propose here anything outside the process that might help this assembly, with its evidence; the user decides whether to trial it. Stop there: adoption and risk are theirs.
 
 **Finished means:** `15_final_raw/` (or `15_final/` without raw reads) holds the assembly, `16_validate/` its evidence, `decisions/` and `edits/` every judgement with its reason, D13 records the user's answer in their words, and `README.md` in the work directory is filled in.
 
@@ -78,6 +78,13 @@ Orders each chromosome's groups in parallel. Hi-C sets the base score. Graph and
 ## 10_arms_tails, then D15, D16, D17
 
 Sets names, chooses arms at bridges (jointly if collapsed), builds once, then lists one-sided tails and tests them. Names are conventions: `<chrom>_h<k>`, with arbitrary haplotype numbers, and `flip` writes a scaffold in the reference's direction only. To set names yourself, copy `13_scaffold/names.tsv` to `edits/names.tsv`, change it, and `reset WORK 10_arms_tails`. **Nothing here changes layout except accepted tails.**
+
+**Check, before tails (D16):** the tangle check ([TANGLES.md](TANGLES.md)).
+
+- If collapsed, `12_shared/chain_forks.tsv` lists `LOST` rows. In each, a placed or tail chain runs through a 2x hub, and the hub's other exit reaches an unplaced 1x chain. The report names them.
+- Look for tails that stop inside a small tangle short of unplaced telomeric chains.
+
+A break or a TTT result goes in as edits, followed by a `reset` back (`06_evidence --remap` for a break). Doing it here costs a stage-06 mapping, against stages 12-15 if it is found after validation. On GammaCitrus both chr5 telomeric arms and a 779 kb lost allele were behind such forks.
 
 ## 11_build
 

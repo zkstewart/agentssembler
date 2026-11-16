@@ -1,7 +1,7 @@
 #!/bin/bash
 # This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
 # If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
-# Names, arms at bridges, a pre-build, one-sided tails and their tests. Writes into 12_shared and 13_scaffold. Stops for D17, D15 (both only if collapsed) and D16: nothing is placed without edits/accepted_tails.tsv.
+# Names, arms at bridges, a pre-build, one-sided tails and their tests, and the lost-route fork scan for D16's tangle check. Writes into 12_shared and 13_scaffold. Stops for D17, D15 (both only if collapsed) and D16: nothing is placed without edits/accepted_tails.tsv.
 source "$AS_REPO/stages/lib.sh"
 D=12_shared; T=13_scaffold; mkdir -p $T $D/pre
 O=$D/order.tsv; GRP=$D/groups.tsv; [ -s $D/groups.edited.tsv ] && GRP=$D/groups.edited.tsv
@@ -22,6 +22,10 @@ printf '%s\n' "${BA[@]}" > $D/build_args.txt
 step $D/pre/$AS_SAMPLE.junctions.tsv python3 "$S/build_scaffolds.py" "${BA[@]}" --out $D/pre/$AS_SAMPLE
 step $D/tails.tsv python3 "$S/make_tails.py" --order "$O" --junctions $D/pre/$AS_SAMPLE.junctions.tsv --placement $D/pre/$AS_SAMPLE.placement.tsv --links $D/end_links.tsv --groups "$GRP" --chroms 10_groups/final.chroms.tsv --choices $D/choices.tsv --telomeres $D/telomeres.tsv --hic 12_broken/links.tsv --class 11_ont_chains/chain_class.tsv --agp 12_broken/chains.agp --gfa 00_inputs/unitigs.gfa --paf 11_ont_chains/ont_vs_chains.paf.gz --exclude 12_broken/connector_chains.tsv --out $D/tails.tsv --report $D/tail_report.tsv --twoX "$AS_TWO_X" --maxDepth "$AS_MAX_DEPTH"
 [ -s $D/pre/target.fasta ] || cat $D/pre/$AS_SAMPLE.fasta $D/pre/$AS_SAMPLE.unplaced.fasta > $D/pre/target.fasta
+# D16 tangle check: placed or tail chains running through a 2x fork whose other exit reaches an unplaced 1x chain (a lost haplotype route).
+if collapsed && [ ! -s $D/chain_forks.tsv ]; then
+  python3 "$S/review/chain_forks.py" 12_broken/chains.agp 00_inputs/unitigs.gfa 04_copynumber/copy_number.tsv 10_groups/final.tsv 10_groups/final.chroms.tsv --hap "$AS_HAP" --placement $D/pre/$AS_SAMPLE.placement.tsv --chainClass 11_ont_chains/chain_class.tsv --oneLo "$AS_ONE_LO" --oneHi "$AS_SHARED_LO" --tails $D/tails.tsv > $D/chain_forks.tsv.tmp && mv $D/chain_forks.tsv.tmp $D/chain_forks.tsv
+fi
 if [ -s $D/tails.tsv ] && [ "$(grep -vc '^#' $D/tails.tsv)" -gt 0 ]; then
   step $D/tail_checks.tsv python3 "$S/rawreads/tail_checks.py" --tails $D/tails.tsv --chains 12_broken/chains.fasta --target $D/pre/target.fasta --names $T/names.tsv --class 11_ont_chains/chain_class.tsv --report $D/tail_report.tsv --hapDepth "$AS_HAP" --ploidy "$AS_PLOIDY" --minimap2 "$AS_MINIMAP2" --threads "$AS_THREADS" --out $D/tail_checks.tsv
 fi

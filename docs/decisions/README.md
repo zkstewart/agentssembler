@@ -21,7 +21,7 @@ Decisions are recorded in `WORK/decisions/`, with a checksum of every edit file 
 | [D10](D10_curation.md) | Should a junction be set by hand? | `09_order` | High, and rarely yes |
 | [D17](D17_phase_switches.md) | Is a gap end a phase switch? | `10_arms_tails` | Medium, collapsed samples only |
 | [D15](D15_arm_phase.md) | Which arm goes where? | `10_arms_tails` | Reporting, mostly |
-| [D16](D16_tails.md) | Should a tail be placed? | `10_arms_tails` | High |
+| [D16](D16_tails.md) | Is a tangle hiding a haplotype's route? Then, should a tail be placed? | `10_arms_tails` | High |
 | [D11](D11_gap_closures.md) | Which gaps need more than the automatic fill? | `12_fill` | Low |
 | [D18](D18_raw_read_joins.md) | Which read-derived joins survive raw reads? | `13_rawreads` | Medium, needs raw BAMs |
 | [D12](D12_sv_calls.md) | Is an SV candidate real? | `15_validate` | High |
