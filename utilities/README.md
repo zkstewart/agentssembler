@@ -18,7 +18,7 @@ The table written as output by `hic_crosstalk.py compare` has a row titled `hic_
 |---|---|---|
 | C | consistent | On a backbone (chromosome-scale scaffold), scorable for phasing, and Hi-C raises no conflict. **`hic_score` = C%** |
 | X | conflict | In a 100 kb bin flagged as a haplotype switch or misjoin, shown as `[switch, misjoin]` |
-| D | duplicated | On a backbone, in a region with more backbone copies than the ploidy allows |
+| D | duplicated | On a backbone, in a region with more backbone copies than the ploidy allows. Every copy of such a region counts, not only the extra one |
 | U | untestable | On a backbone, but no complete set of homologous copies on other backbones: collapsed, hemizygous, or the other copy is not scaffolded |
 | O | off-backbone | Fragments and unplaced sequence (and missing sequence, when `--genome_size` is larger than the assembly) |
 
@@ -62,7 +62,8 @@ For assemblies of the same organism, cause 3 is roughly the same in all of them,
 
 - **Off-backbone sequence counts against the score.** If it didn't, a tool could score well by leaving difficult sequence unscaffolded.
 - **Use `--genome_size`** in `score` or `compare` (the expected size of all haplotypes combined, from an independent estimate such as k-mers) to give every assembly the same denominator. Otherwise a tool that throws sequence away gets a smaller denominator and a higher score, and one that outputs lots of debris is penalised.
-- **Switch and misjoin bins are flagged relative to each assembly's own typical bin.** A bin is flagged when its contacts with one other sequence, relative to its own long-range contacts, are more than 4× (`--fold`) the assembly's median bin. This adjusts for the Hi-C library, ploidy and scaffold length, which would otherwise shift the flags.
+- **Switch and misjoin bins are flagged relative to each assembly's own typical bin.** A bin is flagged when two things are each more than 4× (`--fold`) the assembly's median bin: its contacts with one other sequence relative to its own long-range contacts, and those contacts as a share of all the bin's contacts. This adjusts for the Hi-C library, ploidy and scaffold length, which would otherwise shift the flags. The second condition was added after a spike-in test (`tests/crosstalk_spikein.py`, results in `docs/TESTING.md`) showed that the first alone also flags bins that have only lost their own long-range contacts.
+- **Scores made before that change are kept.** They are in `xtalk_q<mapq>/`; scores under the current rule are written to `xtalk_q<mapq>.v2/`, and `compare` reads only those. Rerunning `score` reuses the mapping, so it takes minutes.
 - **Many misjoin flags are probably biological.** On some data tested while developing this script, several of the strongest flagged bins sat at chromosome ends, which tend to contact each other inside the nucleus. They should appear in both assemblies and cancel out when you compare them. Thus, these values are solely for ***interpretation in comparison to another scaffolder***, rather than being a truly objective indication of quality that would stand up to comparison of different organisms.
 
 # `compleasm_copies.py`

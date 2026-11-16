@@ -69,10 +69,14 @@ Subcommands (run in this order, or use 'all'; each step is skipped when already 
            homolog_fraction = homolog / (cis + homolog)
            interchrom_fraction = interchrom / backbone_pairs
            Bin scans (--bin), one rule for both: per bin, own = same-backbone contacts >= --far
-           away, other = contacts with the single most-contacted other sequence. Baseline =
-           the assembly's median other/own over bins with own + other >= --min_hom. Flagged
-           when other >= --min_hom and other/own > --fold * baseline (a self-calibrated
-           threshold: library, ploidy and backbone length shift the baseline, not the flags).
+           away, other = contacts with the single most-contacted other sequence, depth = every
+           contact of the bin the scan could count. Two baselines, each the assembly's median
+           over bins with own + other >= --min_hom: of other/own, and of other/depth. Flagged
+           when other >= --min_hom, other/own > --fold * its baseline AND other/depth > --fold *
+           its baseline (self-calibrated thresholds: library, ploidy and backbone length shift
+           the baselines, not the flags). The second condition keeps out bins whose own far
+           contacts are merely missing: beside a long stretch with no unique mapping, or, in
+           the misjoin scan, inside a phase switch. tests/crosstalk_spikein.py checks both.
              switch   other = one partner backbone; bins >= --min_testable phase-testable;
                       own and other from phase-testable pairs only   -> switch_runs.tsv
              misjoin  other = one other chromosome (all its backbones); every backbone bin;
@@ -684,34 +688,44 @@ def read_bed(path):
             out[n].append((int(s), int(e)))
     return {n: merge(iv) for n, iv in out.items()}
 
-def scan(keys, wrong, own, a):
+def scan(keys, wrong, own, depth, a):
     '''Flag bins that contact one other sequence much more than the assembly's typical bin does.
-    wrong[k]: Counter of contacts per other sequence; own[k]: cis contacts >= --far away.
-    Returns (baseline ratio, bins tested, [(key, other, contacts with other, own)]).'''
+    wrong[k]: Counter of contacts per other sequence; own[k]: cis contacts >= --far away;
+    depth[k]: every contact of the bin that the scan could have counted.
+    A bin is flagged when both hold, each against the assembly's median bin:
+      ratio  other / own   > --fold x median    (its far contacts go elsewhere)
+      share  other / depth > --fold x median    (and the other sequence really receives more)
+    The share is what tells an error from a bin that merely lost its own far contacts: a bin beside
+    a long stretch with no unique mapping, or one inside a phase switch seen by the misjoin scan,
+    has a high ratio but an ordinary share.
+    Returns (median ratio, median share, bins tested, [(key, other, contacts with other, own, depth)]).'''
     vals = []
     for k in keys:
         other, t = max(wrong[k].items(), key=lambda x: x[1]) if wrong.get(k) else (None, 0)
         if t + own[k] >= a.min_hom:
-            vals.append((k, other, t, own[k]))
+            vals.append((k, other, t, own[k], depth[k]))
     if not vals:
-        return 0.0, 0, []
-    ratios = sorted(t / max(o, 1) for k, x, t, o in vals)
-    base = ratios[len(ratios) // 2]
-    flagged = [v for v in vals if v[2] >= a.min_hom and v[2] > a.fold * base * max(v[3], 1)]
-    return base, len(vals), flagged
+        return 0.0, 0.0, 0, []
+    ratios = sorted(t / max(o, 1) for k, x, t, o, d in vals)
+    shares = sorted(t / max(d, 1) for k, x, t, o, d in vals)
+    base, baseShare = ratios[len(ratios) // 2], shares[len(shares) // 2]
+    flagged = [v for v in vals if v[2] >= a.min_hom and v[2] > a.fold * base * max(v[3], 1)
+               and v[2] > a.fold * baseShare * max(v[4], 1)]
+    return base, baseShare, len(vals), flagged
 
 def runs_of(flagged):
-    '''Adjacent flagged bins of one backbone -> [name, first bin, last bin + 1, other, contacts, own]'''
+    '''Adjacent flagged bins of one backbone -> [name, first bin, last bin + 1, other, contacts, own, depth]'''
     runs = []
-    for (name, b), other, t, o in sorted(flagged, key=lambda v: v[0]):
+    for (name, b), other, t, o, d in sorted(flagged, key=lambda v: v[0]):
         if runs and runs[-1][0] == name and runs[-1][2] == b:
             r = runs[-1]
             r[2] = b + 1
             r[3][other] += t
             r[4] += t
             r[5] += o
+            r[6] += d
         else:
-            runs.append([name, b, b + 1, collections.Counter({other: t}), t, o])
+            runs.append([name, b, b + 1, collections.Counter({other: t}), t, o, d])
     return runs
 
 def bin_intervals(keys, B, length):
@@ -736,6 +750,15 @@ def subtract(a, b):
             out.append((cur, e))
     return out
 
+# Bumped when the scoring rule changes. Its outputs get their own folder (xtalk_q<mapq>.v<N>), so
+# scores made under an earlier rule are kept, and 'compare' cannot mix the two.
+#   1  (folder xtalk_q<mapq>) a bin was flagged on its other/own ratio alone
+#   2  a bin must also receive a larger share of its contacts from the other sequence
+SCORE_VERSION = 2
+
+def score_dir(outdir, mapq):
+    return os.path.join(outdir, f"xtalk_q{mapq}.v{SCORE_VERSION}")
+
 CATS = [("C", "consistent_bp"), ("X", "conflict_bp"), ("D", "duplicated_bp"),
         ("U", "untestable_bp"), ("O", "off_backbone_bp")]
 
@@ -757,7 +780,7 @@ def score(a):
     pairs = os.path.join(Mp, "pairs.tsv.gz")
     if not done(os.path.join(Mp, "done.ok")):
         die("run 'map' first")
-    S = os.path.join(a.outdir, f"xtalk_q{a.mapq}")
+    S = score_dir(a.outdir, a.mapq)
     os.makedirs(S, exist_ok=True)
 
     labels = read_labels(a.outdir)
@@ -809,6 +832,8 @@ def score(a):
     per = collections.defaultdict(collections.Counter)
     own = collections.Counter()      # far cis, phase mask applied (switch scan)
     ownAll = collections.Counter()   # far cis, no mask (misjoin scan)
+    depth = collections.Counter()    # every phase-testable cis or homolog contact (switch scan)
+    depthAll = collections.Counter() # every backbone contact, no mask (misjoin scan)
     hom = collections.defaultdict(collections.Counter)    # bin -> partner backbone -> contacts
     trans = collections.defaultdict(collections.Counter)  # bin -> other chromosome -> contacts
     mapPairs = gzip.open(os.path.join(S, "pairs.map.tsv.gz"), "wt", compresslevel=1) if a.contact_map else None
@@ -837,6 +862,8 @@ def score(a):
                 continue
             c["backbone_pairs"] += 1
             ka, kb = (ca, xa // B), (cb, xb // B)
+            depthAll[ka] += 1
+            depthAll[kb] += 1
             homologous = ca != cb and in_hom(ca, cb, xa) and in_hom(cb, ca, xb)
             if ra["chrom"] != rb["chrom"] and not homologous:
                 # structure, not phasing: no mask, so misjoined segments stay visible. Homologous
@@ -860,6 +887,8 @@ def score(a):
             if not (in_phase(ca, xa) and in_phase(cb, xb)):
                 c["dropped_masked"] += 1
                 continue
+            depth[ka] += 1
+            depth[kb] += 1
             if ca != cb:
                 c["homolog"] += 1
                 per[ca]["homolog"] += 1
@@ -885,16 +914,16 @@ def score(a):
             allBins.append((name, b))
             if total(intersect(iv, [(bs, be)])) >= a.min_testable * (be - bs):
                 phaseBins.append((name, b))
-    swBase, swTested, swFlag = scan(phaseBins, hom, own, a)
-    mjBase, mjTested, mjFlag = scan(allBins, trans, ownAll, a)
+    swBase, swShare, swTested, swFlag = scan(phaseBins, hom, own, depth, a)
+    mjBase, mjShare, mjTested, mjFlag = scan(allBins, trans, ownAll, depthAll, a)
     swRuns, mjRuns = runs_of(swFlag), runs_of(mjFlag)
     nm = lambda t: byT[t]["name"]
     for fname, runs, otherName in (("switch_runs.tsv", swRuns, nm), ("misjoin_runs.tsv", mjRuns, str)):
         with open(os.path.join(S, fname), "w") as fh:
-            fh.write("#backbone\tstart\tend\tbins\ttop_other\tcontacts_with_other\town_far_contacts\n")
-            for name, b0, b1, others, t, o in runs:
+            fh.write("#backbone\tstart\tend\tbins\ttop_other\tcontacts_with_other\town_far_contacts\tall_contacts\n")
+            for name, b0, b1, others, t, o, d in runs:
                 fh.write(f"{nm(name)}\t{b0 * B}\t{min(length[name], b1 * B)}\t{b1 - b0}\t"
-                         f"{otherName(others.most_common(1)[0][0])}\t{t}\t{o}\n")
+                         f"{otherName(others.most_common(1)[0][0])}\t{t}\t{o}\t{d}\n")
 
     # every backbone bp in exactly one category; misjoin > switch > duplicated > consistent > untestable
     mjIv = bin_intervals([v[0] for v in mjFlag], B, length)
@@ -949,8 +978,11 @@ def score(a):
         ("backbones_without_partner", prep["backbones_without_partner"]),
         ("possible_chimeras", prep["possible_chimeras"]),
         # diagnostics
-        ("switch_baseline", f"{swBase:.4f}"), ("switch_bins_tested", swTested),
-        ("misjoin_baseline", f"{mjBase:.4f}"), ("misjoin_bins_tested", mjTested),
+        ("score_version", SCORE_VERSION),
+        ("switch_baseline", f"{swBase:.4f}"), ("switch_share_baseline", f"{swShare:.4f}"),
+        ("switch_bins_tested", swTested),
+        ("misjoin_baseline", f"{mjBase:.4f}"), ("misjoin_share_baseline", f"{mjShare:.4f}"),
+        ("misjoin_bins_tested", mjTested),
         ("mapq_min", a.mapq), ("pairs_in", c["pairs_in"]), ("dropped_mapq", c["dropped_mapq"]),
         ("dropped_decoy", c["dropped_decoy"]), ("dropped_unplaced", c["dropped_unplaced"]),
         ("fragment_pairs", c["fragment_pairs"]), ("backbone_pairs", c["backbone_pairs"]),
@@ -993,9 +1025,12 @@ def compare(a):
     cols, table = [], collections.OrderedDict()
     base = [os.path.basename(os.path.normpath(d)) for d in a.dirs]
     for d, b in zip(a.dirs, base):
-        f = os.path.join(d, f"xtalk_q{a.mapq}", "summary.tsv")
+        f = os.path.join(score_dir(d, a.mapq), "summary.tsv")
         if not os.path.exists(f):
-            die(f"{f} not found; run 'score --mapq {a.mapq}' there")
+            old = os.path.join(d, f"xtalk_q{a.mapq}", "summary.tsv")
+            die(f"{f} not found; run 'score --mapq {a.mapq}' there"
+                + (f" ({old} was scored under an earlier rule and is kept as it is; 'score' reuses "
+                   f"the mapping, so it takes minutes)" if os.path.exists(old) else ""))
         # folder name as column, or the path when two folders share a name
         name = b if base.count(b) == 1 else os.path.normpath(d)
         cols.append(name)
@@ -1070,8 +1105,8 @@ def main():
                        help="a bin is tested with >= this many contacts, flagged with >= this many "
                             "contacts with one other sequence [%(default)s]")
         p.add_argument("--fold", type=float, default=4.0,
-                       help="flag a bin when its other/own ratio is > this many times the assembly's "
-                            "median bin ratio [%(default)s]")
+                       help="flag a bin when its other/own ratio and its other/depth share are each > "
+                            "this many times the assembly's median bin [%(default)s]")
         p.add_argument("--min_testable", type=float, default=0.5,
                        help="fraction of a bin that must be phase-testable for the switch scan [%(default)s]")
         p.add_argument("--genome_size", type=int, default=None,
