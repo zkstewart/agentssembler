@@ -128,7 +128,7 @@ Per-chromosome values are in `placed.per_chromosome.tsv` and per-assembly values
 
 # `agp_compare.py`
 
-This script compares two AGP files that scaffold the same set of input contigs or unitigs, such as the agentssembler AGP against the AGP of HapHiC or YaHS. It reports how far the two agree on which contigs belong together, their order and orientation, and where the gaps are. It needs nothing but the two AGPs: no reads, FASTA or reference genome.
+This script compares two AGP files that scaffold the same set of input contigs or unitigs, such as the agentssembler AGP against the AGP of HapHiC or YaHS. It reports how far the two agree on which contigs belong together, their order and orientation, and where the gaps are. It needs nothing but the two AGPs: no reads, FASTA or reference genome. In its reference mode it instead compares one AGP with a reference genome, such as an earlier assembly of the same genome (see "Reference mode" below).
 
 **It measures agreement, not correctness.** Neither AGP is treated as the truth. The first one (A) only supplies the scaffold names, so every result is a place where the two tools made different choices. To decide which tool is right at such a place, look at the Hi-C contact maps of `hic_crosstalk.py`, which does not score order and orientation within a chromosome itself.
 
@@ -161,7 +161,7 @@ All files are written to `--outdir` with the `--prefix` in front.
 | `contingency.tsv` | bp shared between every A scaffold and B scaffold, with unscaffolded sequence as a final row and column. |
 | `blocks.tsv` | Every block with its coordinates in both AGPs and its class. Use this to find where a difference is. |
 | `markers.tsv` | Every shared marker with its position and strand in both AGPs. |
-| `junctions.tsv` | Every junction of A and of B, and what the other AGP does with the same two markers. |
+| `junctions.tsv` | Every junction of A and of B, and what the other AGP does with the same two markers. `within_component` marks a junction that lies inside one contig, not at a join. |
 | `gaps.tsv` | Every gap of A and of B, and its verdict in the other AGP. |
 
 ## Tips for interpretation
@@ -202,7 +202,7 @@ The breakpoint count is the number of junctions that are not `adjacent`. One fli
 | Verdict | Meaning |
 |---|---|
 | `gap_in_both` | The other tool makes the same join and also has a gap there. |
-| `join_gapless_in_other` | The other tool makes the same join without a gap, either directly or through contigs that this tool did not scaffold. `other_components_between` in `gaps.tsv` gives the number of such contigs. |
+| `join_gapless_in_other` | The other tool makes the same join without a gap, either directly or through contigs that this tool did not scaffold. In `gaps.tsv`, `other_components_between` gives the number of such contigs, and `implied_gap_size` the amount of sequence the other tool has there beyond what this tool already has. A negative size means the two sides of the gap overlap in the other tool's layout. |
 | `join_made_orientation_differs` | The same two markers are neighbours in the other AGP, but one is flipped. |
 | `join_not_made_in_other` | The markers on either side of the gap are not neighbours in the other AGP. |
 | `not_assessable` | The gap lies beyond the outermost shared marker of its scaffold. |
@@ -221,6 +221,50 @@ Agentssembler joins most unitigs through their graph overlaps, while Hi-C scaffo
 | orient. | The share of the pair's bp whose strand agrees with the direction of the pair. |
 | inv, reloc | The numbers of inverted and relocated blocks. |
 | other hits | Other A scaffolds with sequence in this B scaffold, in Mb. Any entry here marks a B scaffold that combines sequence of several A scaffolds. |
+
+## Reference mode: comparing an AGP with a reference genome
+
+With `--ref_paf`, one AGP is compared with a reference genome instead of a second AGP. This is meant for cases such as reassembling a genome that already has a chromosome-level assembly. The comparison stays at the level of the AGP's own contigs, so gapless joins are tested as well as gapped ones.
+
+First align the contigs that the AGP is made of to the reference. Then give the alignments to the script along with the AGP:
+
+```bash
+minimap2 -x asm5 -t 16 reference.fa unitigs.fa > unitigs_vs_ref.paf
+python agp_compare.py agentssembler.agp --ref_paf unitigs_vs_ref.paf --labels reference agentssembler -o agp_compare_ref -p Busk
+```
+
+The queries of the PAF must be the contigs named in the AGP (for agentssembler, the input unitigs), not the scaffolds. One PAF therefore serves every AGP built from the same contigs. `asm5` suits a reference of the same individual; use `asm10` or `asm20` for a more distant one.
+
+The alignments say where the reference has each piece of each contig. That layout takes the role of A and the AGP is B, so every table and value described above keeps its meaning, with "A scaffold" read as "reference sequence". The alignments are used as follows:
+
+| Rule | Reason |
+|---|---|
+| Secondary alignments are dropped | Only the best placement of each piece is used. |
+| Alignments covering less than `--min_aln` bp of the contig are ignored (default 10,000) | Short alignments are mostly repeats. A contig shorter than this is never placed. |
+| Where two alignments of one contig overlap, the better one keeps the shared part | Each piece of a contig is placed once. |
+| Alignments with a MAPQ below `--min_mapq` are left out as ambiguous (default 10) | The piece fits two places almost equally well, as where two haplotypes are identical. Its placement would be a guess, so it counts neither for nor against the AGP. |
+
+Points that differ from a comparison of two AGPs:
+
+| Where | How to read it |
+|---|---|
+| Section 1, "placed" | How much of the AGP's scaffolded sequence has a unique place on the reference. The rest is split into ambiguous sequence and sequence with no alignment, and neither is compared. |
+| Section 1, "Reference covered" | The share of the reference that the AGP's scaffolds account for. "Covered more than once" is reference sequence claimed by two scaffolded pieces, which points to duplicated sequence in the AGP. |
+| Section 2 | Each AGP scaffold is matched to a reference sequence. With a phased reference whose names fit `--chrom_regex`, a chromosome-level purity above the B purity is sequence on another haplotype of the right chromosome. |
+| Section 3, "inside one component" | Junctions that lie within a single contig, not at a join between contigs. A difference there was not made by scaffolding: the contig and the reference disagree. |
+| Blocks, `other_scaffold` | `other_haplotype` in the `detail` column is a phase switch relative to the reference. `other_chromosome` is a join between chromosomes. |
+| Section 4, `join_gapless_in_other` | The reference has the two sides of the gap next to each other, so it supports the join. `implied_gap_size` in `gaps.tsv` is the reference sequence between the two sides, less the AGP's own sequence there: an estimate of the true size of the gap. A negative size means the two sides overlap on the reference. |
+| Section 4, `join_not_made_in_other` | The reference does not have the two sides of the gap next to each other. |
+| Section 5, `compl.` | The shared bp as a share of the length of the reference sequence. |
+
+Things to keep in mind:
+
+- **The reference is not the truth unless you know it to be.** A difference means the AGP and the reference disagree. If the reference is another individual, real structural differences are reported in the same way as errors.
+- **A phase switch can be the reference's.** Where the AGP follows one reference haplotype and then another, either assembly may have the switch. The Hi-C maps of `hic_crosstalk.py` can say which.
+- **Ambiguous sequence is not tested.** In a genome with long stretches where the haplotypes are identical, much sequence may be left out. Section 1 says how much.
+- **The reference is known only through the alignments.** Reference sequences with no alignment at all are not counted, and runs of N in the reference are not read.
+- **Contigs missing from the FASTA you aligned have no placement.** For agentssembler these are the short `rf_*` fill pieces, which are not unitigs.
+- **Unplaced reference sequences count as scaffolds.** Every reference sequence with a placed contig is treated as a scaffold. To restrict the comparison to the chromosomes, select them by name with `--scaffold_regex_a`.
 
 ## Some final notes
 

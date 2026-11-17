@@ -10,6 +10,19 @@ B (the scaffolding to be matched onto A, e.g. HapHiC group1).  Neither is
 treated as the truth; A only supplies the names and the x axis.  No reads,
 FASTA or reference genome are needed.
 
+Reference mode (--ref_paf).  One AGP is compared with a reference genome
+instead of a second AGP.  The AGP's components are aligned to the reference
+beforehand, and the alignments (PAF) say where the reference has each piece
+of each component.  That layout takes the role of A, and the AGP is B:
+    minimap2 -x asm5 -t 16 reference.fa components.fa > components_vs_ref.paf
+    agp_compare.py my.agp --ref_paf components_vs_ref.paf -o out -p name
+The PAF queries must be the components named in the AGP (e.g. the unitigs),
+not the scaffolds.  Secondary alignments are dropped, alignments shorter than
+--min_aln are ignored, where two alignments of a component overlap the better
+one keeps the shared part, and alignments with MAPQ below --min_mapq are left
+out of the comparison as ambiguous (the component fits two places almost
+equally well, as in a region where two haplotypes are identical).
+
 Method
 ------
 1. Markers.  Every component is cut at every component boundary used by either
@@ -47,6 +60,8 @@ Example
 -------
   agp_compare.py agentssembler.agp haphic.agp \\
       --labels agentssembler haphic -o out --prefix 13Q010
+  agp_compare.py agentssembler.agp --ref_paf unitigs_vs_ref.paf \\
+      --labels reference agentssembler -o out --prefix 13Q010_vs_ref
 '''
 
 import argparse
@@ -91,14 +106,22 @@ class Gap:
 
 
 class Agp:
-    def __init__(self, path, label, min_components=2, scaffold_regex=None):
+    def __init__(self, path, label, min_components=2, scaffold_regex=None,
+                 layout=None, lengths=None):
         self.path, self.label = path, label
         self.entries = defaultdict(list)     # object -> [Comp | Gap] in order
         self.warnings = []
         self.unknown_orient = 0
-        self._parse()
+        if layout is None:
+            self._parse()
+        else:                                # components placed by alignment
+            for obj, es in layout.items():
+                self.entries[obj] = sorted(es, key=lambda e: e.obj_beg)
         self.obj_len = {o: max(e.obj_end for e in es)
                         for o, es in self.entries.items()}
+        for o in self.obj_len:
+            if lengths and o in lengths:
+                self.obj_len[o] = max(self.obj_len[o], lengths[o])
         self.comps = {o: [e for e in es if isinstance(e, Comp)]
                       for o, es in self.entries.items()}
         self.gaps = {o: [e for e in es if isinstance(e, Gap)]
@@ -155,6 +178,91 @@ class Place:
     def __init__(self, obj, beg, end, strand, comp):
         self.obj, self.beg, self.end = obj, beg, end
         self.strand, self.comp = strand, comp
+
+
+# --------------------------------------------------------------------------
+# reference mode: a layout of the components from their alignments
+# --------------------------------------------------------------------------
+def open_text(path):
+    if path.endswith(".gz"):
+        import gzip
+        return gzip.open(path, "rt")
+    return open(path)
+
+
+def reference_layout(paf, min_aln, min_mapq):
+    """Place component pieces on the reference from a PAF (query = component).
+
+    Returns (layout, reference lengths, counts, ambiguous intervals).  Each
+    kept alignment becomes one Comp whose object is the reference sequence.
+    Per component, alignments are taken best first (most matching bases) and
+    one that overlaps an already taken alignment keeps only its largest free
+    part, provided that is still >= min_aln and at least half of it.
+    """
+    by_query, lengths, stats = defaultdict(list), {}, Counter()
+    with open_text(paf) as fh:
+        for n, line in enumerate(fh, 1):
+            f = line.rstrip("\n").split("\t")
+            if len(f) < 12:
+                sys.exit(f"{paf}:{n}: expected >=12 tab-separated PAF columns")
+            stats["read"] += 1
+            lengths[f[5]] = int(f[6])
+            if "tp:A:S" in f[12:]:
+                stats["secondary"] += 1
+                continue
+            qs, qe = int(f[2]), int(f[3])
+            if qe - qs < min_aln:
+                stats["short"] += 1
+                continue
+            by_query[f[0]].append((int(f[9]), qs, qe, f[4], f[5], int(f[7]),
+                                   int(f[8]), int(f[11])))
+    layout, ambiguous = defaultdict(list), defaultdict(list)
+    for q, alns in by_query.items():
+        taken = []
+        for _, qs, qe, strand, t, ts, te, mapq in sorted(alns, reverse=True):
+            free, pos = [], qs
+            for a, b in sorted(taken):
+                if b <= pos:
+                    continue
+                if a >= qe:
+                    break
+                if a > pos:
+                    free.append((pos, a))
+                pos = max(pos, b)
+            if pos < qe:
+                free.append((pos, qe))
+            cs, ce = max(free, key=lambda x: x[1] - x[0]) if free else (0, 0)
+            if ce - cs < min_aln or (ce - cs) * 2 < qe - qs:
+                stats["overlapped"] += 1
+                continue
+            taken.append((cs, ce))
+            if mapq < min_mapq and mapq != 255:
+                stats["ambiguous"] += 1
+                ambiguous[q].append((cs + 1, ce))
+                continue
+            scale = (te - ts) / (qe - qs)
+            dl, dr = (cs - qs) * scale, (qe - ce) * scale
+            if strand == "-":
+                dl, dr = dr, dl
+            nts, nte = int(round(ts + dl)), int(round(te - dr))
+            if nte <= nts:
+                continue
+            stats["kept"] += 1
+            layout[t].append(Comp(t, nts + 1, nte, q, cs + 1, ce,
+                                  -1 if strand == "-" else 1))
+    return layout, lengths, stats, ambiguous
+
+
+def covered(intervals):
+    """(bp covered at least once, bp of overlap) for 1-based closed intervals."""
+    union = total = 0
+    end = 0
+    for b, e in sorted(intervals):
+        total += e - b + 1
+        if e > end:
+            union += e - max(b, end + 1) + 1
+            end = e
+    return union, total - union
 
 
 # --------------------------------------------------------------------------
@@ -257,8 +365,13 @@ def atomise(agps):
                     if key in pl:
                         dup += e - s + 1
                     else:
-                        ob = c.obj_beg + (s - c.beg if c.strand > 0 else c.end - e)
-                        pl[key] = Place(c.obj, ob, ob + e - s, c.strand, c)
+                        # scale is 1 for an AGP; an alignment's span on the
+                        # reference can differ from its span on the component
+                        scale = (c.obj_end - c.obj_beg + 1) / c.length
+                        off = s - c.beg if c.strand > 0 else c.end - e
+                        ob = c.obj_beg + int(round(off * scale))
+                        oe = ob + max(1, int(round((e - s + 1) * scale))) - 1
+                        pl[key] = Place(c.obj, ob, oe, c.strand, c)
                     i += 1
         if dup:
             agp.warnings.append(
@@ -305,6 +418,7 @@ def build_junctions(src, agp, placement, proj):
                 "unoriented": frozenset((kl, kr)),
                 "gaps": between_gaps, "n_comps": len(between_comps),
                 "seq_bp": pr.beg - pl.end - 1 - gap_bp,
+                "within": pl.comp is pr.comp,
                 "status": None, "other": None,
             })
     return juncs
@@ -363,13 +477,25 @@ def build_blocks(projA, juncsA, plA, plB):
 def main():
     ap = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("agp_a", help="AGP A (supplies scaffold names, e.g. chr1_h1)")
-    ap.add_argument("agp_b", help="AGP B (scaffolds are matched onto A)")
+    ap.add_argument("agp", nargs="+", metavar="AGP",
+                    help="two AGPs: A (supplies scaffold names, e.g. chr1_h1) "
+                         "then B (its scaffolds are matched onto A); or one "
+                         "AGP with --ref_paf")
+    ap.add_argument("--ref_paf", help="reference mode: PAF of the AGP's "
+                    "components (query) aligned to a reference genome "
+                    "(target). The reference takes the role of A")
+    ap.add_argument("--min_aln", type=int, default=10000,
+                    help="reference mode: ignore alignments covering fewer "
+                         "than this many bp of the component [10000]")
+    ap.add_argument("--min_mapq", type=int, default=10,
+                    help="reference mode: alignments with a lower MAPQ are "
+                         "ambiguous and left out of the comparison [10]")
     ap.add_argument("-o", "--outdir", default=".", help="output directory [.]")
     ap.add_argument("-p", "--prefix", default="agp_compare",
                     help="output file prefix [agp_compare]")
-    ap.add_argument("--labels", nargs=2, default=["A", "B"], metavar=("A", "B"),
-                    help="short names for the two AGPs [A B]")
+    ap.add_argument("--labels", nargs=2, metavar=("A", "B"),
+                    help="short names for A and B [A B; reference assembly "
+                         "in reference mode]")
     ap.add_argument("--min_components", type=int, default=2,
                     help="an object with at least this many components is a "
                          "scaffold; smaller objects count as unscaffolded [2]")
@@ -383,9 +509,21 @@ def main():
     ap.add_argument("--no_plot", action="store_true", help="skip the dot plot")
     args = ap.parse_args()
 
-    la, lb = args.labels
-    A = Agp(args.agp_a, la, args.min_components, args.scaffold_regex_a)
-    B = Agp(args.agp_b, lb, args.min_components, args.scaffold_regex_b)
+    ref_mode = bool(args.ref_paf)
+    if len(args.agp) != (1 if ref_mode else 2):
+        ap.error("give one AGP with --ref_paf, or two AGPs without it")
+    la, lb = args.labels or (["reference", "assembly"] if ref_mode else ["A", "B"])
+    if ref_mode:
+        layout, ref_len, aln, ambiguous = reference_layout(
+            args.ref_paf, args.min_aln, args.min_mapq)
+        if not layout:
+            sys.exit(f"{args.ref_paf}: no usable alignments")
+        # every reference sequence counts as a scaffold unless a regex selects
+        A = Agp(args.ref_paf, la, 1, args.scaffold_regex_a, layout, ref_len)
+        B = Agp(args.agp[0], lb, args.min_components, args.scaffold_regex_b)
+    else:
+        A = Agp(args.agp[0], la, args.min_components, args.scaffold_regex_a)
+        B = Agp(args.agp[1], lb, args.min_components, args.scaffold_regex_b)
     plA, plB = atomise([A, B])
     os.makedirs(args.outdir, exist_ok=True)
     out = lambda name: os.path.join(args.outdir, f"{args.prefix}.{name}")
@@ -399,6 +537,17 @@ def main():
     say("AGP comparison")
     say("==============")
     for tag, X in (("A", A), ("B", B)):
+        if ref_mode and tag == "A":
+            say(f"A = {X.label}: components placed on the reference by "
+                f"alignment, {X.path}")
+            say(f"    alignments read {aln['read']}: kept {aln['kept']}, "
+                f"secondary {aln['secondary']}, shorter than "
+                f"{fmt_bp(args.min_aln)} bp {aln['short']},")
+            say(f"    overlapped by a better alignment {aln['overlapped']}, "
+                f"ambiguous (MAPQ < {args.min_mapq}) {aln['ambiguous']}")
+            say(f"    reference sequences with placed components "
+                f"{len(X.scaffolds)} ({fmt_bp(sum(X.obj_len[o] for o in X.scaffolds))} bp)")
+            continue
         ncomp = sum(len(X.comps[o]) for o in X.scaffolds)
         cbp = sum(c.length for o in X.scaffolds for c in X.comps[o])
         ngap = sum(len(X.gaps[o]) for o in X.scaffolds)
@@ -429,7 +578,7 @@ def main():
 
     say("1. Component content")
     say("--------------------")
-    say(f"Component IDs: {len(idsA & idsB)} in both AGPs, {len(idsA - idsB)} "
+    say(f"Component IDs: {len(idsA & idsB)} in both A and B, {len(idsA - idsB)} "
         f"only in A, {len(idsB - idsA)} only in B")
     for only, name in ((idsA - idsB, "A"), (idsB - idsA, "B")):
         if 0 < len(only) <= 10:
@@ -441,16 +590,47 @@ def main():
                 tally[where(key, Y, plo)] += key_len(key)
         tot = sum(tally.values())
         other = "B" if tag == "A" else "A"
-        say(f"Sequence scaffolded in {tag} ({fmt_bp(tot)} bp) is, in {other}:")
+        what = "placed on the reference" if ref_mode and tag == "A" else "scaffolded"
+        say(f"Sequence {what} in {tag} ({fmt_bp(tot)} bp) is, in {other}:")
         for k in ("scaffolded", "unscaffolded", "part not used", "absent"):
-            say(f"    {k:<14}{fmt_bp(tally[k]):>16} bp  {pct(tally[k], tot):>8}")
-    say("  part not used = the component is in the other AGP, but not this part of it")
-    say("  (e.g. a trimmed overlap); absent = the whole component is missing there.")
+            name = "placed" if ref_mode and tag == "B" and k == "scaffolded" else k
+            say(f"    {name:<14}{fmt_bp(tally[k]):>16} bp  {pct(tally[k], tot):>8}")
+        if ref_mode and tag == "B":
+            amb = 0
+            for o in B.scaffolds:
+                for c in B.comps[o]:
+                    amb += sum(max(0, min(c.end, e) - max(c.beg, b) + 1)
+                               for b, e in ambiguous.get(c.cid, ()))
+            unplaced = tally["part not used"] + tally["absent"]
+            say(f"    of the {fmt_bp(unplaced)} bp not placed: {fmt_bp(amb)} bp is "
+                f"ambiguous (MAPQ < {args.min_mapq}),")
+            say(f"    {fmt_bp(unplaced - amb)} bp has no alignment of "
+                f"{fmt_bp(args.min_aln)} bp or more")
+    if ref_mode:
+        say("  In A: part not used = the component is in B, but not this part of it (e.g.")
+        say("  a trimmed overlap); absent = the component is not in B at all.")
+        say("  In B: part not used / absent = this part of the component, or all of it,")
+        say("  has no unique placement on the reference. Such sequence is not compared.")
+    else:
+        say("  part not used = the component is in the other AGP, but not this part of it")
+        say("  (e.g. a trimmed overlap); absent = the whole component is missing there.")
     markers = [k for k in plA if k in plB
                and A.is_scaffold(plA[k].obj) and B.is_scaffold(plB[k].obj)]
     total_bp = sum(key_len(k) for k in markers)
     say(f"Shared markers scaffolded in both: {len(markers)} "
         f"({fmt_bp(total_bp)} bp). All metrics below use these.")
+    if ref_mode:
+        spans = defaultdict(list)
+        for k in markers:
+            spans[plA[k].obj].append((plA[k].beg, plA[k].end))
+        cov = [covered(v) for v in spans.values()]
+        ref_total = sum(A.obj_len[o] for o in A.scaffolds)
+        once, twice = sum(c[0] for c in cov), sum(c[1] for c in cov)
+        say(f"Reference covered by B's scaffolds: {fmt_bp(once)} of "
+            f"{fmt_bp(ref_total)} bp ({pct(once, ref_total)}); covered more than "
+            f"once: {fmt_bp(twice)} bp")
+        say("  (reference sequences with no alignment at all are not in the PAF and so")
+        say("  are not counted)")
     say()
     if not markers:
         say("No sequence is scaffolded in both AGPs; nothing to compare.")
@@ -571,6 +751,10 @@ def main():
         say(f"{len(js)} junctions in {tag}; in {other} the same two markers are:")
         for s in statuses:
             say(f"    {s:<30}{c[s]:>6}  {pct(c[s], len(js)):>8}")
+        inside = sum(1 for j in js if j["within"] and j["status"] != "adjacent")
+        if inside or ref_mode:
+            say(f"    of the {len(js) - c['adjacent']} not adjacent, {inside} lie "
+                f"inside one {tag} component, not at a join")
     nA, nB = len(jA), len(jB)
     shared_or = sum(1 for j in jA if j["status"] == "adjacent")
     shared_un = shared_or + sum(1 for j in jA
@@ -605,6 +789,10 @@ def main():
     gap_rows = []
     for tag, X, plX, projX, js, Y, plY in (("A", A, plA, projA, jA, B, plB),
                                            ("B", B, plB, projB, jB, A, plA)):
+        if ref_mode and tag == "A":
+            say("A: the reference layout has no gaps (runs of N in the reference "
+                "are not read)")
+            continue
         gaps = [g for o in X.scaffolds for g in X.gaps[o]]
         types = Counter((g.kind, g.gap_type, g.evidence) for g in gaps)
         say(f"{tag}: {len(gaps)} gaps, {fmt_bp(sum(g.length for g in gaps))} bp; "
@@ -628,7 +816,7 @@ def main():
                 if j is None:
                     row.update(status="outside_shared_markers", lm="NA", rm="NA",
                                oobj="NA", ogaps="NA", ocomps="NA", obp="NA",
-                               verdict="not_assessable")
+                               size="NA", verdict="not_assessable")
                 else:
                     o = j["other"]
                     oobjs = sorted({plY[j["left"]].obj, plY[j["right"]].obj},
@@ -637,10 +825,14 @@ def main():
                                rm=key_str(j["right"]), oobj=",".join(oobjs),
                                ogaps=len(o["gaps"]) if o else "NA",
                                ocomps=o["n_comps"] if o else "NA",
-                               obp=o["seq_bp"] if o else "NA")
+                               obp=o["seq_bp"] if o else "NA", size="NA")
                     if j["status"] == "adjacent":
                         row["verdict"] = ("gap_in_both" if o["gaps"]
                                           else "join_gapless_in_other")
+                        if not o["gaps"] and len(j["gaps"]) == 1:
+                            # sequence the other side has between the markers,
+                            # less what this side already has there
+                            row["size"] = o["seq_bp"] - j["seq_bp"]
                     elif j["status"] == "adjacent_orientation_differs":
                         row["verdict"] = "join_made_orientation_differs"
                     else:
@@ -662,6 +854,12 @@ def main():
             say(f"    where {other} makes the same join, it places {ncomp} extra "
                 f"components at {withc} of those {len(filled)} gaps")
             say(f"    ({fmt_bp(nbp)} bp of sequence between the flanking markers in {other})")
+            d = sorted(r["size"] for r in filled if r["size"] != "NA")
+            if d:
+                say(f"    size of the {len(d)} gaps that {other} joins without a gap, "
+                    f"implied by {other}: median {fmt_bp(d[len(d) // 2])} bp,")
+                say(f"    range {fmt_bp(d[0])} to {fmt_bp(d[-1])} bp (negative = the "
+                    f"two sides overlap in {other})")
     cons = [j for j in jA if j["status"] == "adjacent"]
     tab = Counter((bool(j["gaps"]), bool(j["other"]["gaps"])) for j in cons)
     say(f"Of the {len(cons)} junctions conserved in both (same ends joined):")
@@ -673,7 +871,10 @@ def main():
     say()
 
     # ---- per-scaffold tables --------------------------------------------
-    a_cbp = {a: sum(c.length for c in A.comps[a]) for a in a_names}
+    if ref_mode:      # a reference sequence is measured by its own length
+        a_cbp = {a: A.obj_len[a] for a in a_names}
+    else:
+        a_cbp = {a: sum(c.length for c in A.comps[a]) for a in a_names}
     b_cbp = {b: sum(c.length for c in B.comps[b]) for b in b_names}
     hdr = [f"{lb}_scaffold", f"{lb}_length", f"{lb}_components", f"best_{la}",
            "shared_bp", "purity", f"{la}_completeness", f"{la}_recall_of_scaffolded",
@@ -776,8 +977,8 @@ def main():
                 key_str(blk["keys"][-1])])) + "\n")
     with open(out("junctions.tsv"), "w") as fh:
         fh.write("\t".join([
-            "source", "scaffold", "left_marker", "right_marker", "gaps",
-            "components_between", "sequence_bp_between", "status_in_other",
+            "source", "scaffold", "left_marker", "right_marker",
+            "within_component", "gaps", "components_between", "sequence_bp_between", "status_in_other",
             "other_scaffold_left", "other_scaffold_right", "other_gaps",
             "other_components_between", "other_sequence_bp_between"]) + "\n")
         for js, X, plY in ((jA, A, plB), (jB, B, plA)):
@@ -785,7 +986,7 @@ def main():
                 o = j["other"]
                 fh.write("\t".join(map(str, [
                     X.label, j["obj"], key_str(j["left"]), key_str(j["right"]),
-                    len(j["gaps"]), j["n_comps"], j["seq_bp"], j["status"],
+                    "yes" if j["within"] else "no", len(j["gaps"]), j["n_comps"], j["seq_bp"], j["status"],
                     plY[j["left"]].obj, plY[j["right"]].obj,
                     len(o["gaps"]) if o else "NA", o["n_comps"] if o else "NA",
                     o["seq_bp"] if o else "NA"])) + "\n")
@@ -795,18 +996,19 @@ def main():
             "left_component", "right_component", "left_shared_marker",
             "right_shared_marker", "junction_status_in_other", "verdict",
             "other_scaffold", "other_gaps", "other_components_between",
-            "other_sequence_bp_between"]) + "\n")
+            "other_sequence_bp_between", "implied_gap_size"]) + "\n")
         for r in gap_rows:
             fh.write("\t".join(map(str, [
                 r["src"], r["obj"], r["beg"], r["end"], r["len"], r["type"],
                 r["left"], r["right"], r["lm"], r["rm"], r["status"],
-                r["verdict"], r["oobj"], r["ogaps"], r["ocomps"], r["obp"]])) + "\n")
+                r["verdict"], r["oobj"], r["ogaps"], r["ocomps"], r["obp"],
+                r["size"]])) + "\n")
 
     # ---- plot -----------------------------------------------------------
     if not args.no_plot:
         try:
             dotplot(out("dotplot.png"), A, B, a_names, b_names, blocks, best_a,
-                    flip, la, lb)
+                    flip, la, lb, ref_mode)
             say(f"Dot plot: {out('dotplot.png')}")
         except ImportError:
             say("Dot plot skipped (matplotlib not available).")
@@ -829,7 +1031,8 @@ CLASS_STYLE = [  # class, colour, legend label
 ]
 
 
-def dotplot(path, A, B, a_names, b_names, blocks, best_a, flip, la, lb):
+def dotplot(path, A, B, a_names, b_names, blocks, best_a, flip, la, lb,
+            ref_mode=False):
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -892,15 +1095,19 @@ def dotplot(path, A, B, a_names, b_names, blocks, best_a, flip, la, lb):
                               label=f"{label} ({len(segs[cls])} blocks)"))
     ax.set_xlim(0, a_total / 1e6)
     ax.set_ylim(0, b_total / 1e6)
-    ax.set_xticks([(a_off[a] + A.obj_len[a] / 2) / 1e6 for a in a_names])
-    ax.set_xticklabels(a_names, rotation=90, fontsize=7, color=ink)
-    ax.set_yticks([(b_off[b] + B.obj_len[b] / 2) / 1e6 for b in b_order])
+    # name only the sequences long enough for a label to fit
+    a_lab = [a for a in a_names if A.obj_len[a] >= 0.004 * a_total]
+    b_lab = [b for b in b_order if B.obj_len[b] >= 0.004 * b_total]
+    ax.set_xticks([(a_off[a] + A.obj_len[a] / 2) / 1e6 for a in a_lab])
+    ax.set_xticklabels(a_lab, rotation=90, fontsize=7, color=ink)
+    ax.set_yticks([(b_off[b] + B.obj_len[b] / 2) / 1e6 for b in b_lab])
     ax.set_yticklabels([f"{b} ({'+' if flip.get(b, 1) > 0 else '-'})"
-                        for b in b_order], fontsize=7, color=ink)
+                        for b in b_lab], fontsize=7, color=ink)
     ax.tick_params(length=0)
     for s in ax.spines.values():
         s.set_color("#c3c2b7")
-    ax.set_xlabel(f"{la} scaffolds", color=ink, fontsize=10)
+    ax.set_xlabel(f"{la} {'sequences' if ref_mode else 'scaffolds'}",
+                  color=ink, fontsize=10)
     ax.set_ylabel(f"{lb} scaffolds, ordered and oriented to match "
                   f"(- = reversed)", color=ink, fontsize=10)
     ax.set_title(f"Shared-marker blocks: {la} vs {lb}", color=ink, fontsize=12,
@@ -910,7 +1117,7 @@ def dotplot(path, A, B, a_names, b_names, blocks, best_a, flip, la, lb):
     for t in leg.get_texts():
         t.set_color(ink)
     ax.text(1.0, 1.005, "each line = one block of markers with identical "
-            "order and orientation in both AGPs", transform=ax.transAxes,
+            "order and orientation in both", transform=ax.transAxes,
             ha="right", va="bottom", fontsize=7, color=muted)
     fig.tight_layout()
     fig.savefig(path, facecolor=surface)
