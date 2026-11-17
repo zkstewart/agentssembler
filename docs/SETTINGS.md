@@ -35,7 +35,7 @@ An allopolyploid's subgenomes are not labelled. Chromosome names come from the r
 
 | Setting | Value | Meaning |
 |---|---|---|
-| `min_within` | 700 | Hi-C pairs/Mb within a chain below which it carries no placement information. Look at `10_groups/chain_stats.tsv` for a low-density class |
+| `min_within` | 0.13 x H, measured (below) | Hi-C pairs/Mb within a chain below which it carries no placement information. Such chains do not seed grouping, are ordered after the rest, and stay unplaced without a link or telomere. Set a number to fix it: `700` is the value the citrus builds used. Look at `10_groups/chain_stats.tsv` for a low-density class |
 | `link_bonus` | 20000 | Order score for honouring a link. Set above the Hi-C differences between orders, so a confirmed link is effectively a hard constraint. This follows from the evidence order, not from tuning |
 | `restore_connectors` | true | Restore dropped unitigs that are the graph path between chain ends (stage 06) |
 | `hops` | 12 | Longest bridge path. Connectors add hops without much sequence: 3 and 8 have each missed a real path, and 16 found the same as 12 |
@@ -71,7 +71,24 @@ Windows that are a fraction of a chromosome cannot be the same bp on yeast, citr
 | Contact map bin | 250 kb | `contact_map.py` |
 | Dosage bin against the reference; runs reported at 4 bins | 500 kb | `dosage.py` |
 
-**Not scaled:** windows set by read length (10 kb depth windows, 5 kb overlaps, 20 kb allele blocks, the 50 kb allele conflict), counts of Hi-C pairs (`min_within`, link and pair minimums), and the fixed windows inside the review and validation scripts (`phase_scan.py`, `sv_candidates.py`, `inversion_test.py`). On a genome far from citrus scale, give those scripts their own values.
+**Not scaled:** windows set by read length (10 kb depth windows, 5 kb overlaps, 20 kb allele blocks, the 50 kb allele conflict), counts of Hi-C pairs (link and pair minimums, `link_bonus`; `min_within` has its own ruler, below), and the fixed windows inside the review and validation scripts (`phase_scan.py`, `sv_candidates.py`, `inversion_test.py`). On a genome far from citrus scale, give those scripts their own values.
+
+## Derived from Hi-C density
+
+A chain is low-information when its Hi-C reads rarely place uniquely, as in a satellite array. That is relative to the library: four times the Hi-C lifts satellite chains over any fixed count. So `min_within` is **0.13 x H**, where H is the length-weighted median within-chain density (`within_per_mb`) of chains at least the seed length long, from `10_groups/chain_stats.tsv`.
+
+| Build | H (pairs/Mb) | 700 as a share of H | 0.13 x H |
+|---|---|---|---|
+| 13Q010 | 5,595 | 0.125 | 727 |
+| irma | 5,446 | 0.129 | 708 |
+| WatsonsChoice | 4,699 | 0.149 | 611 |
+| Busk | 23,267 | 0.030 | 3,025 |
+
+- **On the first three it changes nothing:** no seed chain, and at most 2 chains of 20 kb or more (0.2 Mb), cross the threshold.
+- **On Busk it moves 10 chains (3.2 Mb) below it.** The seven of 100 kb or more have a median repeat fraction of 0.56, against 0.04 above. They are satellite-rich chains that cleared 700 on library depth alone. This rests on one deep library: it is the reason for the ruler, and its only test.
+- **Measured once,** when stage 06 finishes, and kept in `state/hic_density.json`. `reset` to stage 06 or earlier measures it again. A build that had grouped before this existed keeps 700.
+- **The stage 06 report** gives H and the threshold, and raises an alarm when H is under 2,350 (half the lowest run so far).
+- **Within-chain density is not long-range density.** The share of pairs over 100 kb apart ran from 5% (irma) to 38% (WatsonsChoice), so this ruler is not right for the pair minimums and `link_bonus`. They stay fixed.
 
 ## Compute
 

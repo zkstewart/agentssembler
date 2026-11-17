@@ -3,7 +3,7 @@
 # If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 # Group chains by Hi-C under the allele conflict constraint. Reference check is an alarm only. Stops for D05, D06, D14.
 source "$AS_REPO/stages/lib.sh"
-ARGS=(--chroms "$AS_CHROMS" --ploidy "$AS_PLOIDY" --seedLen "$AS_SEED_LEN" --stats 10_groups/chain_stats.tsv --repeat 10_groups/chain_repeat.tsv)
+ARGS=(--chroms "$AS_CHROMS" --ploidy "$AS_PLOIDY" --seedLen "$AS_SEED_LEN" --minWithin "$AS_MIN_WITHIN" --stats 10_groups/chain_stats.tsv --repeat 10_groups/chain_repeat.tsv)
 [ "$AS_HAP_FIRST" = "true" ] && ARGS+=(--hapFirst)
 if collapsed; then
   [ -s 10_groups/shared.txt ] || { if has_rows edits/shared.txt; then cp edits/shared.txt 10_groups/shared.txt; else cp 10_groups/shared.candidates.txt 10_groups/shared.txt; fi; }

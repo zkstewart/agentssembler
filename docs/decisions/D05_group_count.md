@@ -8,7 +8,7 @@
 
 | Signal | Cause | Fix |
 |---|---|---|
-| One group too many, or a chromosome with too few haplotypes | Satellite chains' alignments look like allelic conflicts and block merges | Built in: held out of seeding (`--stats`), conflicts ignored above repeat fraction 0.5 (`--repeat`). Check `max_repeat` and `min_within` |
+| One group too many, or a chromosome with too few haplotypes | Satellite chains' alignments look like allelic conflicts and block merges | Built in: held out of seeding (`--stats`), conflicts ignored above repeat fraction 0.5 (`--repeat`). Check `max_repeat`, and `min_within` in `reports/06_evidence.md`: it follows the library's Hi-C density ([SETTINGS](../SETTINGS.md)) |
 | Two chromosomes merged and another split | A point of thousands of pairs between two chains: organelle reads on nuclear insertions, with the organelle missing from the target | Stage 05 maps with decoys to prevent this ([LESSONS](../LESSONS.md)). Check `09_hic_map/decoys.txt` holds the organelle, and look for such a point in `pairs.tsv.gz` |
 | One chromosome split by haplotype and two others merged | Divergent homologs: Hi-C between them is as weak as between chromosomes | `hap_first: true` clusters directly to chromosomes x ploidy, then gathers the groups into chromosomes, `ploidy` at a time, by allele alignment weighted by identity. It is the default at ploidy 2. **Above ploidy 2 it is off by default and has not been run on real data:** set it in `settings` when chromosome-first grouping shows this signal |
 

@@ -62,7 +62,7 @@ Hi-C to the final chains, keeping pairs at MAPQ >= 1 and NM < 3. **This is the o
 
 ## 06_evidence (about 40 min)
 
-Applies D04 breaks without remapping Hi-C. Restores **connectors**: dropped unitigs that are the graph path between two chain ends (`restore_connectors: true`). Unused ones are dropped again at `11_build`. Then gathers everything grouping needs: reads to the broken chains, allele table, Hi-C density, repeat fraction, telomeres, graph and read links at chain ends, and depth class.
+Applies D04 breaks without remapping Hi-C. Restores **connectors**: dropped unitigs that are the graph path between two chain ends (`restore_connectors: true`). Unused ones are dropped again at `11_build`. Then gathers everything grouping needs: reads to the broken chains, allele table, Hi-C density, repeat fraction, telomeres, graph and read links at chain ends, and depth class. The driver then measures the library's Hi-C density H and sets `min_within` to 0.13 x H for the rest of the build ([SETTINGS](SETTINGS.md)).
 
 ## 07_group, then D05, D06, D14
 

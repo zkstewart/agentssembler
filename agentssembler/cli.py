@@ -7,7 +7,7 @@ from .stages import STAGES, BY_ID, GUIDES
 from . import report, compare
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DEFAULTS = dict(telomere_motif="CCCTAAA", min_within=700, link_bonus=20000, hops=12, restore_connectors=True)
+DEFAULTS = dict(telomere_motif="CCCTAAA", link_bonus=20000, hops=12, restore_connectors=True)
 TOOLS = dict(minimap2="minimap2", samtools="samtools", seqkit="seqkit", bwa="bwa", samblaster="samblaster", filter_bam="filter_bam", juicer_tools="", compleasm="", plot_python="")
 
 def now(): return datetime.datetime.now().isoformat(timespec="seconds")
@@ -52,6 +52,8 @@ def length_scale(w, compute=False):
     if os.path.exists(f): return json.load(open(f))
     fai = f"{w}/08_final_chains/chains.fasta.fai"
     if not compute or not os.path.exists(fai): return None
+    if os.path.exists(f"{w}/state/05_hic_chains.done"):      # a build already under way keeps the windows it began with
+        d = dict(scale=1.0, source="fixed windows: stage 05 had run before the scale was measured"); json.dump(d, open(f, "w")); return d
     L = sorted((int(l.split("\t")[1]) for l in open(fai)), reverse=True); tot = sum(L); acc = 0
     for n50 in L:
         acc += n50
@@ -59,6 +61,29 @@ def length_scale(w, compute=False):
     S = tot / (int(c["chromosomes"]) * int(c["ploidy"])); by_len, by_n50 = S / SCALE_AT, n50 / 1e6
     d = dict(scale=max(round(min(by_len, by_n50), 2), 0.02), source="chains of stage 04", chain_bp=tot, mean_chromosome=round(S), chain_n50=n50,
              limited_by="chain N50" if by_n50 < by_len else "floor" if by_len < 0.02 else "mean chromosome length")
+    json.dump(d, open(f, "w")); return d
+MIN_WITHIN_OF_H = 0.13   # on the three citrus builds of ordinary Hi-C depth, the fixed 700 pairs/Mb was 0.125 to 0.149 of H
+def hic_density(w, compute=False):
+    """min_within, the within-chain Hi-C density below which a chain carries no placement information, as a share of what this library gives.
+    Such chains are low because their reads rarely place uniquely, which is relative: a library four times deeper lifts satellite chains
+    over any fixed count. H is the length-weighted median of within-chain pairs/Mb over chains of at least the seed length, from
+    10_groups/chain_stats.tsv, so it is known once stage 06 is done, and it is kept in state/hic_density.json from then on. `reset` to
+    stage 06 or earlier clears it. `settings.min_within: 700` pins the earlier fixed value."""
+    v = settings(w).get("min_within")
+    if v not in (None, "auto"): return dict(min_within=float(v), source="set in config.yaml or by a decision")
+    f = f"{w}/state/hic_density.json"
+    if os.path.exists(f): return json.load(open(f))
+    st = f"{w}/10_groups/chain_stats.tsv"
+    if not compute or not os.path.exists(st): return None
+    if os.path.exists(f"{w}/state/07_group.done"):           # a build already under way keeps the threshold it grouped with
+        d = dict(min_within=700.0, source="fixed value: stage 07 had run before the density was measured"); json.dump(d, open(f, "w")); return d
+    ls = length_scale(w); seed = 1e6 * (ls["scale"] if ls else 1)
+    R = [(float(r[2]), int(r[1])) for r in (l.split("\t") for l in open(st) if l[0] != "#" and l.strip())]
+    use = sorted(r for r in R if r[1] >= seed) or sorted(R); tot = sum(n for _, n in use); acc = 0; H = 0.0
+    for H, n in use:
+        acc += n
+        if acc >= tot / 2: break
+    d = dict(min_within=float(max(round(MIN_WITHIN_OF_H * H), 1)), source="chain_stats.tsv of stage 06", hic_density=H, share=MIN_WITHIN_OF_H, chains_used=len(use), seed_len=round(seed))
     json.dump(d, open(f, "w")); return d
 def active(w, cond):
     if cond is None: return True
@@ -72,7 +97,7 @@ def stage_env(w):
         AS_UNITIGS=abspath(i["unitigs_fasta"]), AS_GFA=abspath(i["unitigs_gfa"]), AS_READS=abspath(i["corrected_reads"]), AS_HIC_R1=abspath(i["hic_r1"]), AS_HIC_R2=abspath(i["hic_r2"]),
         AS_REFERENCE=abspath(i.get("reference")), AS_BASELINE_AGP=abspath(i.get("baseline_agp")), AS_RAW_BAMS=":".join(abspath(b) for b in (i.get("raw_bams") or [])),
         AS_THREADS=str(comp.get("threads", 16)), AS_MIN_FREE_GB=str(comp.get("min_free_gb", 40)), AS_GUARD_PATH=str(comp.get("guard_path", w)),
-        AS_MOTIF=str(s["telomere_motif"]), AS_MIN_WITHIN=str(s["min_within"]), AS_LINK_BONUS=str(s["link_bonus"]), AS_HOPS=str(s["hops"]), AS_CONNECTORS=str(s["restore_connectors"]).lower(),
+        AS_MOTIF=str(s["telomere_motif"]), AS_LINK_BONUS=str(s["link_bonus"]), AS_HOPS=str(s["hops"]), AS_CONNECTORS=str(s["restore_connectors"]).lower(),
         AS_COLLAPSED=str(s.get("collapsed", "false")).lower(), AS_HAP_FIRST=str(s.get("hap_first", c["ploidy"] == 2)).lower(),
         AS_LINEAGE=str(bus.get("lineage", "")), AS_BUSCO_LIB=abspath(bus.get("library")))
     for k, v in t.items(): e["AS_" + k.upper()] = str(v)
@@ -87,6 +112,8 @@ def stage_env(w):
     if ls:
         k = ls["scale"]; r = lambda x: str(max(int(round(x * k)), 1))
         e.update(AS_SCALE=str(k), AS_SEED_LEN=r(1e6), AS_BREAK_DIST=r(5e5), AS_BREAK_FLANK=r(1e6), AS_BREAK_MIN_SIDE=r(1e5), AS_MAP_BIN=r(2.5e5), AS_DOSAGE_BIN=r(5e5))
+    hd = hic_density(w, compute=os.path.exists(f"{w}/state/06_evidence.done"))
+    if hd: e["AS_MIN_WITHIN"] = f"{hd['min_within']:g}"
     return e
 def done(w, sid): return os.path.exists(f"{w}/state/{sid}.done")
 def pending(w):
@@ -139,6 +166,7 @@ def run_stage(w, st):
         tail = open(logf).read().splitlines()[-15:]
         sys.exit(f"{st.id} failed with exit {rc}. Last lines of {logf}:\n" + "\n".join(tail))
     if st.id == "04_chains": length_scale(w, compute=True)
+    if st.id == "06_evidence": hic_density(w, compute=True)
     report.write(w, st.id, cfg(w), settings(w), lambda cond: active(w, cond))
     json.dump(dict(finished=now(), settings=settings(w)), open(f"{w}/state/{st.id}.done", "w"), default=str)
 
@@ -205,7 +233,7 @@ def cmd_reset(a):
             for p in glob.glob(f"{w}/{pat}"):
                 if st.keep and not a.remap and any(fnmatch.fnmatch(os.path.relpath(p, w), k) for k in st.keep): continue
                 d = f"{arch}/{os.path.relpath(p, w)}"; os.makedirs(os.path.dirname(d), exist_ok=True); shutil.move(p, d)
-        for f in (f"{w}/state/{st.id}.done", f"{w}/reports/{st.id}.md") + ((f"{w}/state/length_scale.json",) if st.id == "04_chains" else ()):
+        for f in (f"{w}/state/{st.id}.done", f"{w}/reports/{st.id}.md") + ((f"{w}/state/length_scale.json",) if st.id == "04_chains" else (f"{w}/state/hic_density.json",) if st.id == "06_evidence" else ()):
             if os.path.exists(f): os.remove(f)
         for g, _ in st.gates if st.id != a.stage or not a.keepDecision else []:
             f = f"{w}/decisions/{g}.yaml"

@@ -92,7 +92,19 @@ def r_evidence(w, c, s):
     L = fai(f"{w}/12_broken/chains.fasta.fai"); K = collections.Counter(r[6] for r in rows(f"{w}/11_ont_chains/chain_class.tsv")); B = collections.Counter()
     for r in rows(f"{w}/11_ont_chains/chain_class.tsv"): B[r[6]] += int(r[1])
     T = sum(1 for r in rows(f"{w}/16_validate/telomeres.chains.tsv") if "T" in r[4])
-    return [f"Chains: {len(L)}, {Mb(sum(L.values()))}, N50 {Mb(n50(L.values()))}", "Depth class: " + ", ".join(f"{k} {K[k]} ({Mb(B[k])})" for k in K), f"Chains with a telomere call: {T}."], []
+    out = [f"Chains: {len(L)}, {Mb(sum(L.values()))}, N50 {Mb(n50(L.values()))}", "Depth class: " + ", ".join(f"{k} {K[k]} ({Mb(B[k])})" for k in K), f"Chains with a telomere call: {T}."]; al = []
+    pin = s.get("min_within") if isinstance(s, dict) else None; f = f"{w}/state/hic_density.json"; mw = None
+    if pin not in (None, "auto"): mw = float(pin); out.append(f"min_within {mw:g} pairs/Mb, set in config.yaml or by a decision.")
+    elif os.path.exists(f):
+        d = json.load(open(f)); mw = d["min_within"]
+        if "hic_density" in d:
+            out.append(f"Hi-C density H = {d['hic_density']:.0f} pairs/Mb within a chain (length-weighted median of the {d['chains_used']} chains of {d['seed_len'] / 1e3:.0f} kb or more). min_within = {d['share']} x H = {mw:g}: a chain below it carries no placement information (SETTINGS, `min_within`).")
+            if d["hic_density"] < 2350: al.append(f"Hi-C density {d['hic_density']:.0f} pairs/Mb is under half the lowest run so far (4,700). Few pairs place anything: expect weak grouping and much left unplaced, and read merge scores with that in mind (D05).")
+        else: out.append(f"min_within {mw:g} pairs/Mb: {d['source']}.")
+    if mw is not None:
+        lo = [(int(r[1]), r[0]) for r in rows(f"{w}/10_groups/chain_stats.tsv") if float(r[2]) < mw]
+        out.append(f"Chains below min_within: {len(lo)}, {Mb(sum(n for n, _ in lo))}; of 1 Mb or more: {sum(n >= 1e6 for n, _ in lo)}. Mostly satellite arrays: they do not seed grouping, and are ordered after the rest.")
+    return out, al
 def r_group(w, c, s):
     G = collections.Counter(); B = collections.Counter(); want = c["chromosomes"] * c["ploidy"]
     for r in rows(f"{w}/10_groups/groups.tsv"): G[r[2]] += 1; B[r[2]] += int(r[1])

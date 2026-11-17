@@ -4,7 +4,7 @@
 '''
 Hi-C log-likelihood of explicit chain orders, to compare hypotheses directly (same decay model as hic_order.py).
 Each hypothesis: name, then oriented chains, e.g. "A chain1+ chain2- chain3+".
-Pairs involving chains listed in the optional fourth argument (chain_stats.tsv, within < 700/Mb) are ignored, as in hic_order.py.
+Pairs involving chains listed in the optional fourth argument (chain_stats.tsv, within below the optional fifth argument, the build's min_within; 700/Mb if not given) are ignored, as in hic_order.py.
 Usage: score_orders.py pairs.tsv.gz chains.fai hypotheses.txt [chain_stats.tsv]
 '''
 import sys, gzip, collections, importlib.util, os
@@ -12,7 +12,8 @@ import numpy as np
 sp = importlib.util.spec_from_file_location("ho", os.path.join(os.path.dirname(os.path.abspath(__file__)), "hic_order.py"))
 ho = importlib.util.module_from_spec(sp); sp.loader.exec_module(ho)
 pairs, fai, hyp = sys.argv[1:4]; GAP = 20000
-low = {l.split("\t")[0] for l in open(sys.argv[4]) if l[0] != "#" and float(l.split("\t")[2]) < 700} if len(sys.argv) > 4 else set()
+MINW = float(sys.argv[5]) if len(sys.argv) > 5 else 700
+low = {l.split("\t")[0] for l in open(sys.argv[4]) if l[0] != "#" and float(l.split("\t")[2]) < MINW} if len(sys.argv) > 4 else set()
 L = {l.split("\t")[0]: int(l.split("\t")[1]) for l in open(fai)}
 H = [l.split() for l in open(hyp) if l.strip() and l[0] != "#"]
 want = {x[:-1] for h in H for x in h[1:]}

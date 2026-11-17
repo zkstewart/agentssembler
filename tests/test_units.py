@@ -154,6 +154,25 @@ class T(unittest.TestCase):
             d = env(chroms, ploidy, chains, extra); open(f"{d}/state/04_chains.done", "w").close()
             self.assertEqual(cli.stage_env(d)["AS_SEED_LEN"], seed)
             if why: self.assertEqual(cli.length_scale(d)["limited_by"], why)
+    def test_hic_density(self):
+        # min_within is 0.13 x H, H the length-weighted median within-chain density of chains at least the seed length long.
+        sys.path.insert(0, R); from agentssembler import cli
+        def env(stats, extra="", done=("04_chains", "06_evidence")):
+            d = tempfile.mkdtemp(); [os.makedirs(f"{d}/{x}") for x in ("state", "08_final_chains", "10_groups", "decisions")]
+            with open(f"{d}/config.yaml", "w") as o: o.write(f"sample: x\nchromosomes: 1\nploidy: 2\ninputs: {{unitigs_fasta: a, unitigs_gfa: b, corrected_reads: c, hic_r1: d, hic_r2: e}}\n{extra}")
+            with open(f"{d}/08_final_chains/chains.fasta.fai", "w") as o: o.write("".join(f"c{i}\t{n}\t0\t0\t0\n" for i, (n, _) in enumerate(stats)))
+            with open(f"{d}/10_groups/chain_stats.tsv", "w") as o: o.write("#chain\tlength\twithin_per_mb\n" + "".join(f"c{i}\t{n}\t{x}\n" for i, (n, x) in enumerate(stats)))
+            for s in done: open(f"{d}/state/{s}.done", "w").close()
+            return d
+        # 72 Mb of chains over 2 haplotypes: scale 1, seeds of 1 Mb. Short dense chains and a long sparse one must not move H off 5000.
+        S = [(10000000, 5000)] * 3 + [(20000000, 6000)] + [(12000000, 4000)] + [(5000000, 100)] + [(500000, 90000)] * 6
+        e = cli.stage_env(env(S)); self.assertEqual(e["AS_MIN_WITHIN"], "650")
+        self.assertNotIn("AS_MIN_WITHIN", cli.stage_env(env(S, done=("04_chains",))))                    # stage 06 not finished: nothing to measure yet
+        self.assertEqual(cli.stage_env(env(S, "settings: {min_within: 700}\n"))["AS_MIN_WITHIN"], "700")  # a number pins it
+        d = env(S); cli.stage_env(d)
+        with open(f"{d}/10_groups/chain_stats.tsv", "a") as o: o.write("big\t900000000\t99999\n")
+        self.assertEqual(cli.stage_env(d)["AS_MIN_WITHIN"], "650")                                         # kept for the whole build
+        self.assertEqual(cli.stage_env(env(S, done=("04_chains", "05_hic_chains", "06_evidence", "07_group")))["AS_MIN_WITHIN"], "700")   # a build that grouped with 700 keeps it
     def test_join_reversal(self):
         with tempfile.TemporaryDirectory() as d:
             # pre: a(1-100) gap b(1-100,-) gap c(1-100). cand closes both gaps with trims. reverse the first only: a and b's facing ends return; b's other trim stays
