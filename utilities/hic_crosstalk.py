@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+# If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''
 hic_crosstalk.py -- compare Hi-C phasing quality (homolog crosstalk, switch errors) and
 inter-chromosome crosstalk between phased assemblies, using one method for all of them,

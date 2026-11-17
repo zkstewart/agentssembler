@@ -125,3 +125,112 @@ This uses the `labels.v2.tsv` file of `hic_crosstalk.py prepare`, so every seque
 | possible_chimeras, anchored_dom_bp | `possible_chimeras` counts copies with less than 90% of their aligned sequence on one reference chromosome. `anchored_dom_bp` is the anchored length with each copy's share aligning to other chromosomes subtracted. **Caution:** a real translocation produces the same signal as a misjoin, so these values are not a measure of error. Check the Hi-C maps and the `hic_crosstalk.py` misjoin runs before treating them as errors. |
 
 Per-chromosome values are in `placed.per_chromosome.tsv` and per-assembly values in `placed.summary.tsv`.
+
+# `agp_compare.py`
+
+This script compares two AGP files that scaffold the same set of input contigs or unitigs, such as the agentssembler AGP against the AGP of HapHiC or YaHS. It reports how far the two agree on which contigs belong together, their order and orientation, and where the gaps are. It needs nothing but the two AGPs: no reads, FASTA or reference genome.
+
+**It measures agreement, not correctness.** Neither AGP is treated as the truth. The first one (A) only supplies the scaffold names, so every result is a place where the two tools made different choices. To decide which tool is right at such a place, look at the Hi-C contact maps of `hic_crosstalk.py`, which does not score order and orientation within a chromosome itself.
+
+```bash
+python agp_compare.py agentssembler.agp haphic.agp --labels agentssembler haphic -o agp_compare -p Busk
+```
+
+Give the AGP with meaningful scaffold names (e.g. `chr1_h1`) first. The scaffolds of the second AGP (B, e.g. `group1`) are then each matched to the A scaffold they share the most sequence with. Only the Python standard library is required; `scipy` (for the one-to-one assignment) and `matplotlib` (for the dot plot) are used when installed.
+
+## How the comparison is made
+
+1. **Markers.** Every contig is cut at each boundary that either AGP uses. A piece used by both AGPs is a shared marker, weighted by its length. This makes the AGPs comparable when one tool uses whole contigs and the other trims or splits them, as agentssembler does when it joins unitigs by their overlaps.
+2. **Scaffold matching.** A table of the bp shared between every A scaffold and every B scaffold gives each B scaffold its best A scaffold.
+3. **Junctions.** Each AGP is reduced to the markers that are scaffolded in both. Two neighbouring markers form a junction, and it is conserved when the same two contig ends are joined in the other AGP.
+4. **Blocks.** A run of conserved junctions is a block: a stretch with identical order and orientation in both AGPs. Each block is then classed by where it sits in the matched B scaffold.
+5. **Gaps.** Each gap is looked up in the other AGP through the junction it lies in.
+
+Sequence that only one tool scaffolded is counted in section 1 of the summary and then set aside, so a contig left out by one tool is never counted as an order or orientation difference.
+
+## Output files
+
+All files are written to `--outdir` with the `--prefix` in front.
+
+| File | Content |
+|---|---|
+| `summary.txt` | The full report, also printed to the screen. Read this first. |
+| `dotplot.png` | Every block drawn as a line, A scaffolds on the x axis and their matched B scaffolds on the y axis, coloured by block class. |
+| `matches_B_to_A.tsv` | One row per B scaffold: its best A scaffold and the agreement values for that pair. |
+| `matches_A_to_B.tsv` | One row per A scaffold: how much of it B scaffolded, and in which B scaffolds. |
+| `contingency.tsv` | bp shared between every A scaffold and B scaffold, with unscaffolded sequence as a final row and column. |
+| `blocks.tsv` | Every block with its coordinates in both AGPs and its class. Use this to find where a difference is. |
+| `markers.tsv` | Every shared marker with its position and strand in both AGPs. |
+| `junctions.tsv` | Every junction of A and of B, and what the other AGP does with the same two markers. |
+| `gaps.tsv` | Every gap of A and of B, and its verdict in the other AGP. |
+
+## Tips for interpretation
+
+The summary has five sections.
+
+**1. Component content** says how much of the sequence scaffolded by one tool is scaffolded, unscaffolded or absent in the other. "Part not used" means the contig is in the other AGP but not that part of it, such as a trimmed overlap. A large unscaffolded value shows that one tool placed sequence the other left as fragments.
+
+**2. Scaffold matching** says whether the two tools formed the same groups.
+
+| Value | Meaning |
+|---|---|
+| Reciprocal best pairs | B scaffolds whose best A scaffold also has them as its best B scaffold. When this equals the number of scaffolds, the two tools found the same chromosomes and haplotypes. |
+| Purity of B scaffolds | The share of shared bp that lies in each B scaffold's best A scaffold. Below 100% means some B scaffolds combine sequence from more than one A scaffold. |
+| Purity of A scaffolds | The same in the other direction. Below 100% means some A scaffolds are divided among several B scaffolds. |
+| Chromosome-level purity | The same as B purity, but counting all haplotypes of a chromosome as one. It is reported when the A names have the form `<chromosome>_h<N>` (`--chrom_regex`). If it is higher than the B purity, the difference is sequence placed on another haplotype of the right chromosome. |
+
+**3. Order and orientation** counts junctions and blocks. Each junction of one AGP gets one of these statuses in the other:
+
+| Status | Meaning |
+|---|---|
+| `adjacent` | The same two contig ends are joined. The tools agree. |
+| `adjacent_orientation_differs` | The two markers are neighbours in both, but one of them is flipped. |
+| `same_scaffold_not_adjacent` | Both markers are in one scaffold of the other AGP, but not next to each other: an order difference. |
+| `different_scaffolds` | The markers are in different scaffolds of the other AGP: a grouping difference. |
+
+The breakpoint count is the number of junctions that are not `adjacent`. One flipped contig inside a scaffold breaks two junctions, and one contig moved elsewhere breaks three, so breakpoints overstate the number of events. The block classes are the better guide to how much sequence is affected:
+
+| Class | Meaning |
+|---|---|
+| `collinear` | In the same place and orientation in both. |
+| `inverted` | In the same place, but in the opposite orientation. |
+| `relocated` | In the matched scaffold, but at a different position along it. |
+| `other_scaffold` | In a B scaffold whose best match is a different A scaffold. The `detail` column of `blocks.tsv` says whether that is another haplotype of the same chromosome or another chromosome. |
+
+**4. Gaps** gives each gap one of these verdicts in the other AGP:
+
+| Verdict | Meaning |
+|---|---|
+| `gap_in_both` | The other tool makes the same join and also has a gap there. |
+| `join_gapless_in_other` | The other tool makes the same join without a gap, either directly or through contigs that this tool did not scaffold. `other_components_between` in `gaps.tsv` gives the number of such contigs. |
+| `join_made_orientation_differs` | The same two markers are neighbours in the other AGP, but one is flipped. |
+| `join_not_made_in_other` | The markers on either side of the gap are not neighbours in the other AGP. |
+| `not_assessable` | The gap lies beyond the outermost shared marker of its scaffold. |
+
+Agentssembler joins most unitigs through their graph overlaps, while Hi-C scaffolders put a gap at every join. A large `join_gapless_in_other` count for the other tool's gaps is therefore expected, and shows how many of its joins agentssembler confirms with sequence.
+
+**5. Per-scaffold matches** lists one row per B scaffold:
+
+| Column | Meaning |
+|---|---|
+| purity | The share of the B scaffold's shared bp that lies in its best A scaffold. |
+| compl. | The share of the A scaffold's sequence that this B scaffold holds. It is lowered both by sequence B placed elsewhere and by sequence B left unscaffolded. |
+| ori | Whether the B scaffold runs in the same direction as the A scaffold (`+`) or is reversed (`-`). This carries no meaning on its own, as the direction of a scaffold is arbitrary. |
+| blocks | The number of blocks in the pair. One block means the two scaffolds are identical over their shared sequence. |
+| collin. | The share of the pair's bp on its collinear backbone, i.e. in the same order in both. |
+| orient. | The share of the pair's bp whose strand agrees with the direction of the pair. |
+| inv, reloc | The numbers of inverted and relocated blocks. |
+| other hits | Other A scaffolds with sequence in this B scaffold, in Mb. Any entry here marks a B scaffold that combines sequence of several A scaffolds. |
+
+## Some final notes
+
+- **What counts as a scaffold.** An object with two or more components is a scaffold (`--min_components`), and anything smaller is unscaffolded. This suits tools like HapHiC that list every leftover contig as its own object. If a tool names all its objects alike, or a real chromosome is a single contig, select the scaffolds by name with `--scaffold_regex_a` or `--scaffold_regex_b`.
+- **Only the direction of the whole B scaffold is adjusted, and it is chosen by order, not by strand.** A scaffold and its reverse complement are the same scaffold, so before a pair is measured the script decides whether to read the B scaffold forwards or backwards (the `ori` column). That is the only adjustment made. Nothing inside the scaffold is moved or flipped, so every difference between the two AGPs remains.
+  - `collin.` and `orient.` measure two separate properties of each block. `collin.` asks whether the block is at the same *position* in the sequence of blocks. `orient.` asks whether the block itself is on the same *strand*. A block can be in the right position and on the wrong strand: this is an inversion in place.
+  - Reading the B scaffold backwards reverses the order of all its blocks and flips the strand of all of them, together. The single choice of direction therefore cannot repair a block that is flipped while its neighbours are not.
+  - The direction is the one that puts the most bp in the same order as A. `orient.` is then measured against that direction, whatever its value turns out to be. If the direction were chosen by strand instead, `orient.` could never fall below 0.5, but an inverted block would then make the order of the whole scaffold appear reversed.
+  - A high `collin.` with a low `orient.` therefore means: the blocks follow one another in the same order in both AGPs, but much of the sequence lies in blocks that are flipped where they stand. A value below 0.5 means that more than half of the pair's bp is in such blocks, which usually comes down to one or two large inverted blocks. The `inverted` rows of `blocks.tsv` say which.
+  - As an example, take a pair of five blocks. Read backwards, all but one small block are in the same order as A, but two blocks holding 59% of the bp are flipped in place. Read backwards, `collin.` is 0.99 and `orient.` is 0.41. Read forwards, `orient.` would be 0.59, but only 56% of the bp would still be in order. The script reports the first reading: the order agrees, and two blocks are inverted.
+- **Two descriptions can fit the same difference.** A scaffold made of two large blocks in swapped order is equally well described as both blocks being inverted in a reversed scaffold. The script reports whichever keeps more bp in order, so check `blocks.tsv` or the dot plot before describing a large difference as an inversion.
+- **Swapping the two AGPs** changes the names, and can change which blocks are called `other_scaffold`, since that depends on the best match of each B scaffold. The junction, breakpoint and block counts stay the same.
+- **Small contigs dominate the counts and large ones the bp.** Most differences between Hi-C scaffolders are short contigs flipped or shifted by a few places, where Hi-C signal is weakest. Compare the block counts with their bp before concluding that two scaffoldings differ substantially.
