@@ -68,10 +68,10 @@ def r_chains(w, c, s):
     if pin not in (None, "auto"): out.append(f"Length scale {float(pin):g}, set in config.yaml. Seeds for grouping are chains of {Mb(1e6 * float(pin))} or more.")
     elif os.path.exists(f):
         d = json.load(open(f)); k = d["scale"]
-        out.append(f"Length scale {k:g}: mean chromosome {Mb(d['mean_chromosome'])} ({Mb(d['chain_bp'])} of chains over {c['chromosomes']} x {c['ploidy']}) against 40 Mb for citrus, chain N50 {Mb(d['chain_n50'])}; set by {d['limited_by']}. "
+        out.append(f"Length scale {k:g}: mean chromosome {Mb(d['mean_chromosome'])} ({Mb(d['chain_bp'])} of chains over {c['chromosomes']} x {c['ploidy']}) against 36 Mb for citrus, chain N50 {Mb(d['chain_n50'])}; set by {d['limited_by']}. "
                    f"It multiplies the chromosome-scale windows: seeds for grouping are chains of {1000 * k:.0f} kb or more, chimera tests look {500 * k:.0f} kb each side of a junction, contact maps use {250 * k:.0f} kb bins (SETTINGS, `length_scale`).")
         if d["limited_by"] == "chain N50": al.append(f"The length scale is held down by a chain N50 of {Mb(d['chain_n50'])}: chains are short for chromosomes of {Mb(d['mean_chromosome'])}, so expect many chains per group and a slow ordering.")
-        if k > 1.5 or k < 0.67: al.append(f"Length scale {k:g} is outside anything run so far (citrus, about 0.8 to 1.1). The scaled windows are untested: read the chimera table and the seed count with that in mind.")
+        if k > 1.5 or k < 0.67: al.append(f"Length scale {k:g} is outside anything run so far (citrus, 0.97 to 1.03). The scaled windows are untested: read the chimera table and the seed count with that in mind.")
     return out, al
 def r_hic(w, c, s):
     p = f"{w}/10_groups/chain_breaks.tsv"; V = list(rows(p)); inv = lambda x: x[:-1] + ("-" if x[-1] == "+" else "+")

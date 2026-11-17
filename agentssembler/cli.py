@@ -40,7 +40,7 @@ def settings(w):
     s = dict(DEFAULTS); c = cfg(w); s.update(c.get("settings") or {})
     for d in decisions(w).values(): s.update(d.get("set") or {})
     return s
-SCALE_AT = 40e6      # mean chromosome length of the citrus genomes the fixed windows were chosen on, to the nearest 10 Mb
+SCALE_AT = 36e6      # mean chromosome length of the citrus genomes the fixed windows were chosen on: four builds measured 35.0 to 37.1 Mb
 def length_scale(w, compute=False):
     """How long this sample's chromosomes are, relative to citrus. Seed length, chimera windows and bin sizes are chromosome-scale and are
     multiplied by it. Mean chromosome length is chain bp over chromosomes x ploidy, so it is known once stage 04 is done, and it is kept in

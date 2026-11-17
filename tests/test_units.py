@@ -137,19 +137,19 @@ class T(unittest.TestCase):
             self.assertEqual(sorted(l.split("\t")[0] for l in open(f"{d}/out/chains.agp")).count("s.g03"), 0)
             self.assertIn("t.g02+\ta2-", open(f"{d}/out/end_links.tsv").read())
     def test_length_scale(self):
-        # Chromosome-scale windows follow mean chromosome length (chain bp over chromosomes x ploidy), anchored at 40 Mb = 1.
+        # Chromosome-scale windows follow mean chromosome length (chain bp over chromosomes x ploidy), anchored at 36 Mb = 1.
         sys.path.insert(0, R); from agentssembler import cli
         def env(chroms, ploidy, chains, extra=""):
             d = tempfile.mkdtemp(); os.makedirs(f"{d}/state"); os.makedirs(f"{d}/08_final_chains"); os.makedirs(f"{d}/decisions")
             with open(f"{d}/config.yaml", "w") as o: o.write(f"sample: x\nchromosomes: {chroms}\nploidy: {ploidy}\ninputs: {{unitigs_fasta: a, unitigs_gfa: b, corrected_reads: c, hic_r1: d, hic_r2: e}}\n{extra}")
             with open(f"{d}/08_final_chains/chains.fasta.fai", "w") as o: o.write("".join(f"c{i}\t{n}\t0\t0\t0\n" for i, n in enumerate(chains)))
             return d
-        d = env(9, 2, [10000000] * 72); self.assertNotIn("AS_SEED_LEN", cli.stage_env(d))              # stage 04 not finished: nothing to measure yet
+        d = env(9, 2, [9000000] * 72); self.assertNotIn("AS_SEED_LEN", cli.stage_env(d))              # stage 04 not finished: nothing to measure yet
         open(f"{d}/state/04_chains.done", "w").close(); e = cli.stage_env(d)
         self.assertEqual([e[k] for k in ("AS_SCALE", "AS_SEED_LEN", "AS_BREAK_DIST", "AS_BREAK_FLANK", "AS_BREAK_MIN_SIDE", "AS_MAP_BIN", "AS_DOSAGE_BIN")], ["1.0", "1000000", "500000", "1000000", "100000", "250000", "500000"])
         with open(f"{d}/08_final_chains/chains.fasta.fai", "a") as o: o.write("more\t500000000\t0\t0\t0\n")
         self.assertEqual(cli.stage_env(d)["AS_SEED_LEN"], "1000000")                                        # kept for the whole build
-        for chroms, ploidy, chains, extra, seed, why in ((16, 1, [750000] * 16, "", "20000", "floor"), (23, 2, [30000000] * 207, "", "3380000", "mean chromosome length"),
+        for chroms, ploidy, chains, extra, seed, why in ((16, 1, [500000] * 16, "", "20000", "floor"), (23, 2, [30000000] * 207, "", "3750000", "mean chromosome length"),
                                                         (21, 1, [2000000] * 7000, "", "2000000", "chain N50"), (16, 1, [750000] * 16, "settings: {length_scale: 1}\n", "1000000", None)):
             d = env(chroms, ploidy, chains, extra); open(f"{d}/state/04_chains.done", "w").close()
             self.assertEqual(cli.stage_env(d)["AS_SEED_LEN"], seed)

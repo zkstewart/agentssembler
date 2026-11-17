@@ -8,7 +8,7 @@ of the chain, and both sides talk to the same other chains.
                  at other positions (insulation).
   partner_cos    cosine between left- and right-flank contact profiles over other chains (--flank bp), each
                  side normalised; a chimera has two different chromosomes' profiles.
-Sides shorter than --minSide are not tested. Output sorted by cross_ratio. The defaults suit chromosomes of about 40 Mb; the driver
+Sides shorter than --minSide are not tested. Output sorted by cross_ratio. The defaults suit chromosomes of about 36 Mb; the driver
 scales all three with the sample's length scale.
 Usage: chain_breaks.py pairs.tsv.gz chains.agp out.tsv [--dist 500000 --flank 1000000 --minSide 100000]
 '''

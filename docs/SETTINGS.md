@@ -56,9 +56,9 @@ Set automatically, so the scripts have no sample-specific defaults. Rounded to w
 
 ## Derived from the length scale
 
-Windows that are a fraction of a chromosome cannot be the same bp on yeast, citrus and wheat. They are multiplied by the **length scale: mean chromosome length over 40 Mb**, where mean chromosome length is the bp of the stage 04 chains over `chromosomes` x `ploidy`. Citrus is about 1 (13Q010: 38 Mb, so 0.95), and a diploid citrus build moves by under a fifth from the fixed values used before.
+Windows that are a fraction of a chromosome cannot be the same bp on yeast, citrus and wheat. They are multiplied by the **length scale: mean chromosome length over 36 Mb**, where mean chromosome length is the bp of the stage 04 chains over `chromosomes` x `ploidy`. The anchor is citrus: four builds measured 35.0 to 37.1 Mb, so 0.97 to 1.03, and at most one chain of about 1 Mb changed sides of the seed length against the fixed 1 Mb used before.
 
-- **Held down by chain N50,** so that seeds are never longer than half the chain bases can reach: a 14 Gb genome with 2 Mb chains gets 2, not 17. The stage 04 report says when this applies.
+- **Held down by chain N50,** so that seeds are never longer than half the chain bases can reach: a 14 Gb genome with 2 Mb chains gets 2, not 19. The stage 04 report says when this applies.
 - **Never below 0.02.**
 - **Measured once,** when stage 04 finishes, and kept in `state/length_scale.json` for the rest of the build. `reset` to stage 04 or earlier measures it again.
 - **Underestimated when most of the genome is collapsed,** since shared sequence is counted once: by up to half at ploidy 2.

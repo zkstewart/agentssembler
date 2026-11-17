@@ -51,7 +51,7 @@ Three changes followed the citrus builds: `hap_first` at any ploidy, a dosage fo
 - **Unit tests** cover them on made-up data: `test_hap_first_any_ploidy` and `test_shared_dosage`.
 - **Ploidy 2 should be unchanged.** The derived depth values are the same numbers, and `hic_group.py` gave byte-identical groups, chromosomes, shared table and log to the version before it on 60 simulated diploids (15 seeds, both grouping modes, with and without shared chains; `PYTHONHASHSEED` fixed, since rows of equal length are otherwise written in set order). A simulation is not a genome: run a diploid spec before relying on this.
 - **13Q010 will differ.** At ploidy 3 the highest tail depth is now 4 x haplotype depth, not 3, and the `high` depth class starts at 3.68 x, not 2.68. Chains between those bounds can now be tail candidates. Re-run its spec and read the differences in `12_shared/tails.tsv`.
-- **The length scale** ([SETTINGS](SETTINGS.md)) is pinned to 1 in both specs, so they replay with the fixed windows their builds used. A new citrus build measures about 0.8 to 1.1 and will not match an old one exactly. `test_length_scale` covers the arithmetic only.
+- **The length scale** ([SETTINGS](SETTINGS.md)) is pinned to 1 in both specs, so they replay with the fixed windows their builds used. A new citrus build measures 0.97 to 1.03: on the four builds measured, that moved at most one chain of about 1 Mb across the seed length, so expect a near match with an old build, not an exact one. `test_length_scale` covers the arithmetic only.
 - **Ploidy 4 and 6** grouped, gathered and chose dosage haplotypes correctly on simulated data with clean Hi-C. That shows the code does what it says, and nothing about a real autopolyploid.
 
 ## Spike-in test of `hic_crosstalk.py`
