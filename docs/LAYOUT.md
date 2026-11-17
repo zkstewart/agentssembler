@@ -118,8 +118,8 @@ Only `pairs.tsv.gz` is read later, by any stage or review script. When it was li
 |---|---|
 | `chain_breaks.tsv` | 05, read at D04 |
 | `alleles.pairs.tsv`, `alleles.blocks.tsv`, `chain_stats.tsv`, `chain_repeat.tsv`, `end_links.tsv`, `shared.candidates.txt` | 06 |
-| `groups.tsv`, `groups.chroms.tsv`, `groups.shared.tsv` **[C]**, `hic_group.log`, `shared.txt` **[C]**, `eval_groups.txt` **[ref]**, `chain_forks.txt` **[C]** | 07 |
-| `final.tsv`, `final.chroms.tsv`, `final.shared.tsv` **[C]** | 08, the groups after `edits/group_edits.tsv` |
+| `groups.tsv`, `groups.chroms.tsv`, `groups.shared.tsv` **[C]**, `groups.dosage.tsv` **[C]** (above ploidy 2, and only if a shared chain is in fewer haplotypes than its chromosome has), `hic_group.log`, `shared.txt` **[C]**, `eval_groups.txt` **[ref]**, `chain_forks.txt` **[C]** | 07 |
+| `final.tsv`, `final.chroms.tsv`, `final.shared.tsv` **[C]**, `final.dosage.tsv` **[C]** | 08, the groups after `edits/group_edits.tsv` |
 
 Groups are `g01`, `g02`, ... and chromosomes `c1`, `c2`, ..., both numbered by size (T19).
 

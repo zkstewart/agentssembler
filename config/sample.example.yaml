@@ -2,7 +2,8 @@
 # and keep resolving from there on every later command. Absolute paths are safer if anything may move.
 sample: MySample        # used in file names
 chromosomes: 9          # haploid number
-ploidy: 2
+ploidy: 2               # haplotypes that are distinct alleles of each other. Not always the textbook ploidy: an allotetraploid is
+                        # 2 with the whole haploid number above, and an inbred line is 1. See docs/SETTINGS.md.
 
 inputs:
   unitigs_fasta: /data/sample/p_utg.fasta     # hifiasm unitigs

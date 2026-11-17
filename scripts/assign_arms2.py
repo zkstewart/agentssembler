@@ -2,12 +2,12 @@
 # This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
 # If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''
-Diploid bridge choice for junctions adjacent in a chain order. An earlier rule rejected any
-path holding a chain the other haplotype used, so a path through a true 2x node always counted as reused and the 1x arm
+Bridge choice for junctions adjacent in a chain order, for every haplotype at once. An earlier rule rejected any
+path holding a chain another haplotype used, so a path through a true 2x node always counted as reused and the 1x arm
 beside that node was given to both haplotypes.
 
-Each chain has a copy target from its depth outside the graph overlaps at both ends: 2 when depth >= --twoX, else 1. A chain
-with no sequence outside its overlaps carries no weight. Junctions sharing candidate chains are solved together. A solution
+Each chain has a copy target from its depth outside the graph overlaps at both ends: 1 below --twoX, else depth over --hap
+rounded, from 2 to --ploidy. At ploidy 2 that is 1 or 2. A chain with no sequence outside its overlaps carries no weight. Junctions sharing candidate chains are solved together. A solution
 scores + interior bp for a chain used as often as its target and - interior bp per use above the target. Ties go to the most
 observations, counting reads through the path's joins and Hi-C pairs between its chains and the group's own chains.
 
@@ -21,13 +21,14 @@ Interior depth for chains in candidate paths is written to --depth; chains that 
 
 Usage: assign_arms2.py --order order.tsv --bridges graph.bridges.tsv --ranked choices_base.tsv --groups groups.tsv
          --links links.tsv --agp chains.agp --gfa unitigs.gfa --paf ont_vs_chains.paf.gz --out choices.tsv
-         --report report.tsv --depth depth.tsv --unused unused.tsv
+         --report report.tsv --depth depth.tsv --unused unused.tsv --twoX X --hap H --ploidy N --minAllele A --maxPair M
 '''
 import argparse, collections, gzip, itertools
 ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
 for x in ("order", "bridges", "ranked", "groups", "links", "agp", "gfa", "paf", "out", "report", "depth", "unused"):
     ap.add_argument("--" + x, required=True)
 ap.add_argument("--twoX", type=float, required=True, help="interior depth at or above this is 2x: 1.5 x haplotype depth")
+ap.add_argument("--hap", type=float, required=True, help="haplotype depth"); ap.add_argument("--ploidy", type=int, required=True, help="the most haplotypes one chain can serve")
 ap.add_argument("--minAllele", type=float, required=True, help="alternative chain at this depth or above is a real allele")
 ap.add_argument("--maxPair", type=float, required=True, help="two alternatives whose depths sum to at most this are two alleles of one locus")
 ap.add_argument("--ratio", type=float, default=2.0); ap.add_argument("--minObs", type=int, default=5)
@@ -105,8 +106,8 @@ for l in gzip.open(a.paf, "rt"):
 W = {}; T = {}; D = {}
 for c in need:
     w = max(iv[c][1] - iv[c][0], 0); W[c] = w; D[c] = cov[c] / w if w else float("nan")
-    T[c] = 2 if w and D[c] >= a.twoX else 1
-# a chain near 2x with a real alternative in the same junction is the larger of two alleles, not one 2x chain
+    T[c] = min(max(int(round(D[c] / a.hap)), 2), max(a.ploidy, 2)) if w and D[c] >= a.twoX else 1
+# a chain near 2x with a real alternative in the same junction is the larger of two alleles, not one 2x chain; likewise one step down at 3x and above
 sib = collections.defaultdict(set)
 for g, ps in J.values():
     sets = [{z[:-1] for z in p} for p in ps]
@@ -116,7 +117,7 @@ for g, ps in J.values():
                 keep = any(c in u and not (u & t) for u in sets)
                 if keep: sib[c] |= {x for x in t if not any(c in u and x in u for u in sets)}
 for c in need:
-    if T[c] == 2 and any(W[x] and D[x] >= a.minAllele and D[c] + D[x] <= a.maxPair for x in sib[c]): T[c] = 1
+    if T[c] >= 2 and any(W[x] and D[x] >= a.minAllele and D[c] + D[x] <= a.maxPair + (T[c] - 2) * a.hap for x in sib[c]): T[c] -= 1
 with open(a.depth, "w") as o:
     o.write("#chain\tlength\tinterior\tdepth\ttarget\n")
     for c in sorted(need): o.write(f"{c}\t{L[c]}\t{W[c]}\t{D[c]:.1f}\t{T[c] if W[c] else '.'}\n")

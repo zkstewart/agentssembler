@@ -6,12 +6,29 @@ Everything goes in the config (`config/sample.example.yaml`), except the values 
 
 | Setting | How to set it |
 |---|---|
-| `chromosomes`, `ploidy` | Known biology. Ask the user if unsure |
+| `chromosomes`, `ploidy` | Known biology, but see "What to enter for a polyploid or an inbred sample" below. Ask the user if unsure |
 | `hap_depth` | Main histogram peak ([D01](decisions/D01_haplotype_depth.md), which lists the values used so far) |
-| `repeat_depth` | About 4.4 x `hap_depth` (D01) |
+| `repeat_depth` | Above anything the haplotypes can share: the larger of 4.4 and `ploidy` + 1.4, times `hap_depth` (D01). That is 4.4 x up to ploidy 3 and 5.4 x at ploidy 4 |
 | `collapsed` | Long unitigs near 2x, with or without a visible peak (D01) |
-| `hap_first` | Defaults to true at ploidy 2. Pairing of groups into chromosomes is implemented for ploidy 2 only |
+| `hap_first` | Defaults to true at ploidy 2, and false above it. Can be set true at any ploidy ([D05](decisions/D05_group_count.md)), but only ploidy 2 has been run |
 | `telomere_motif` | `CCCTAAA` is the plant default; `CCCTAA` is the vertebrate type. Confirm for other taxa |
+
+## What to enter for a polyploid or an inbred sample
+
+`ploidy` is the number of haplotypes that are **alleles of each other and distinct in the unitigs**, and `chromosomes` is the number of sets of them. That is not always the textbook ploidy.
+
+| Sample | `chromosomes` | `ploidy` | Why |
+|---|---|---|---|
+| Diploid or triploid, heterozygous | Haploid number | 2 or 3 | The tested cases |
+| Allopolyploid, heterozygous (subgenomes pair only within themselves) | Haploid number of the whole genome: 26 for cotton, not 13 | 2 | Homeologs are different chromosomes. They share no Hi-C, so entering 13 and 4 asks grouping to merge chromosomes that never touch |
+| Allopolyploid, inbred | As above | 1 | Each subgenome's two copies are identical and collapsed |
+| Diploid, inbred or doubled haploid | Haploid number | 1 | The main depth peak is both copies together. Entering 2 makes almost everything shared |
+| Autopolyploid, heterozygous | Haploid number of one set | 4, 6, ... | Set `collapsed: true` at D01 if any long unitigs sit at 2x or more. Shared chains then get a dosage ([D14](decisions/D14_shared_chains.md)) |
+| Autopolyploid from a recent doubling (two pairs of identical haplotypes) | Haploid number of one set | 2 | It is a diploid at twice the depth |
+
+**None of the rows below the first has been run on real data.** `ploidy: 1` and ploidies above 3 are exercised only by unit tests on made-up data. Read the histogram at D01 before trusting the row you chose: the number of depth peaks in long unitigs says how many haplotypes the unitigs separate. If the peaks disagree with the config, tell the user, change `ploidy` in `WORK/config.yaml` and `reset 04_chains`.
+
+An allopolyploid's subgenomes are not labelled. Chromosome names come from the reference, if it holds both subgenomes.
 
 ## Defaults
 
@@ -24,16 +41,17 @@ Everything goes in the config (`config/sample.example.yaml`), except the values 
 
 ## Derived from `hap_depth`
 
-Set automatically, so the scripts have no sample-specific defaults. Rounded to whole numbers.
+Set automatically, so the scripts have no sample-specific defaults. Rounded to whole numbers. Bounds on shared sequence rise with `ploidy`, since up to that many haplotypes can carry one collapsed chain. The second column is the value at ploidy 2, which the diploid genomes were built with. The triploid was built with those values too, before the bounds followed ploidy: its tail candidates may differ on a rebuild.
 
-| Value | Multiple | Used by |
-|---|---|---|
-| 1x lower bound | 0.64 | `chain_class.py` |
-| Shared range | 1.54 to 2.68 | `chain_class.py`, `restore_arms.py` |
-| 2x threshold | 1.5 | `assign_arms2.py`, `make_tails.py` |
-| Highest tail depth | 3 | `make_tails.py` |
-| Real allele | 0.36 | `assign_arms2.py` |
-| Largest allele pair sum | 2.68 | `assign_arms2.py` |
+| Value | Multiple at ploidy 2 | In general | Used by |
+|---|---|---|---|
+| 1x lower bound | 0.64 | 0.64 | `chain_class.py` |
+| Shared range | 1.54 to 2.68 | 1.54 to `ploidy` + 0.68 | `chain_class.py`, `restore_arms.py` |
+| 2x threshold | 1.5 | 1.5 | `assign_arms2.py`, `make_tails.py` |
+| Copy target of an arm or tail chain | 1 or 2 | 1 below the 2x threshold, else depth over `hap_depth` rounded, from 2 to `ploidy` | `assign_arms2.py`, `make_tails.py` |
+| Highest tail depth | 3 | `ploidy` + 1 | `make_tails.py` |
+| Real allele | 0.36 | 0.36 | `assign_arms2.py` |
+| Largest allele pair sum | 2.68 | 2.68, plus 1 for each copy of the target above 2 | `assign_arms2.py` |
 
 ## Compute
 

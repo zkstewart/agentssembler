@@ -62,5 +62,6 @@ Each error made while building this is told in the guide where it applies: D01 (
 ## Open questions
 
 - **Are a gap locus's own reads rare, or do they go to a cleaner sibling copy?** See [IMPROVING](IMPROVING.md).
-- **Is collapsed handling sound above ploidy 2?** It is generalised in code, but only ploidy 2 has been run.
+- **Is collapsed handling sound above ploidy 2?** Only ploidy 2 has been run. Above it, a shared chain gets a dosage and goes to that many haplotypes ([D14](decisions/D14_shared_chains.md)), and arm and tail targets rise to the ploidy. Unit tests on made-up data cover this. Whether Hi-C, alleles and graph links choose the right haplotypes on a real autotetraploid, with its short chains, is not known.
+- **Does anything work outside heterozygous citrus?** `ploidy: 1`, allopolyploids and mostly collapsed genomes have config recipes ([SETTINGS](SETTINGS.md)) and no run behind them.
 - **Juicebox edits:** the route back into the AGP has not been exercised.

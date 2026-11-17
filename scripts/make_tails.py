@@ -8,7 +8,7 @@ the flank they link to, with the gap kept beyond them.
 
 Candidates are simple paths through unassigned chains from each gap end, and from each scaffold end without an outward telomere,
 over graph links with overlap >= --minOverlap. A path ends before any chain that fails a test:
-  copy limit   target from depth outside graph overlaps (2 at >= --twoX, else 1), less uses in the chosen bridges
+  copy limit   target from depth outside graph overlaps (1 below --twoX, else depth over --hap rounded, from 2 to --ploidy), less uses in the chosen bridges
   repeat       class repeat, or depth >= --maxDepth
   chromosome   Hi-C to another chromosome at >= --minPairs and >= --ratio times this chromosome's
 
@@ -26,7 +26,8 @@ import os, argparse, collections, gzip, itertools
 ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
 for x in ("order", "junctions", "placement", "links", "groups", "chroms", "choices", "telomeres", "hic", "class", "agp", "gfa", "paf", "out", "report"):
     ap.add_argument("--" + x, required=True)
-ap.add_argument("--twoX", type=float, required=True, help="1.5 x haplotype depth"); ap.add_argument("--maxDepth", type=float, required=True, help="3 x haplotype depth")
+ap.add_argument("--twoX", type=float, required=True, help="1.5 x haplotype depth"); ap.add_argument("--maxDepth", type=float, required=True, help="(ploidy + 1) x haplotype depth")
+ap.add_argument("--hap", type=float, required=True, help="haplotype depth"); ap.add_argument("--ploidy", type=int, required=True, help="the most haplotypes one chain can serve")
 ap.add_argument("--exclude", help="chains, first column, not to walk through: connectors have no sequence of their own to offer")
 ap.add_argument("--minOverlap", type=int, default=5000); ap.add_argument("--maxHops", type=int, default=8)
 ap.add_argument("--minPairs", type=int, default=20); ap.add_argument("--ratio", type=float, default=2.0)
@@ -127,7 +128,7 @@ for l in gzip.open(a.paf, "rt"):
 W = {}; D = {}; T = {}
 for c in iv:
     w = max(iv[c][1] - iv[c][0], 0); W[c] = w; D[c] = cov[c] / w if w else float("nan")
-    T[c] = 2 if w and D[c] >= a.twoX else 1
+    T[c] = min(max(int(round(D[c] / a.hap)), 2), max(a.ploidy, 2)) if w and D[c] >= a.twoX else 1
 cap = {c: T[c] - used[c] if W[c] else 9 for c in iv}      # a chain with nothing outside its overlaps adds no sequence, so no limit
 
 stops = collections.Counter(); stop_notes = {}

@@ -7,7 +7,7 @@ ARGS=(--chroms "$AS_CHROMS" --ploidy "$AS_PLOIDY" --stats 10_groups/chain_stats.
 [ "$AS_HAP_FIRST" = "true" ] && ARGS+=(--hapFirst)
 if collapsed; then
   [ -s 10_groups/shared.txt ] || { if has_rows edits/shared.txt; then cp edits/shared.txt 10_groups/shared.txt; else cp 10_groups/shared.candidates.txt 10_groups/shared.txt; fi; }
-  ARGS+=(--shared 10_groups/shared.txt)
+  ARGS+=(--shared 10_groups/shared.txt --classDepth 11_ont_chains/chain_class.tsv --hap "$AS_HAP" --endLinks 10_groups/end_links.tsv)
 fi
 if [ ! -s 10_groups/groups.tsv ]; then python3 "$S/hic_group.py" 12_broken/links.tsv 10_groups/alleles.pairs.tsv 12_broken/chains.fasta.fai 10_groups/groups "${ARGS[@]}" | tee 10_groups/hic_group.log; fi
 if has_ref; then

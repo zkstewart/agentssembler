@@ -19,7 +19,7 @@ class T(unittest.TestCase):
                 if f.endswith(".sh"): continue
                 self.assertIsNone(pat.search(l), f"{f}:{i}: {l.strip()[:80]}")
     def test_sample_settings_required(self):
-        for s, flags in (("copy_number.py", ["--hap", "--repeat", "--fai"]), ("round2.py", ["--hap", "--repeat"]), ("make_tails.py", ["--twoX", "--maxDepth"]), ("assign_arms2.py", ["--twoX", "--minAllele", "--maxPair"]), ("restore_arms.py", ["--lo", "--hi"]), ("dosage.py", ["--ploidy"])):
+        for s, flags in (("copy_number.py", ["--hap", "--repeat", "--fai"]), ("round2.py", ["--hap", "--repeat"]), ("make_tails.py", ["--twoX", "--maxDepth", "--hap", "--ploidy"]), ("assign_arms2.py", ["--twoX", "--minAllele", "--maxPair", "--hap", "--ploidy"]), ("restore_arms.py", ["--lo", "--hi"]), ("dosage.py", ["--ploidy"])):
             r = run(s); self.assertNotEqual(r.returncode, 0, s)
             for x in flags: self.assertIn(x, r.stderr, f"{s}: {x} should be required")
     def test_overlap_longer_than_unitig(self):
@@ -83,6 +83,59 @@ class T(unittest.TestCase):
             self.assertIn("x\t5\tg02", open(f"{d}/o.tsv").read()); self.assertIn("y\t5\tc1", open(f"{d}/o.shared.tsv").read())
             open(f"{d}/e", "w").write("x\tgroup\twith:y\tr\n")
             self.assertNotEqual(run("apply_group_edits.py", f"{d}/g", f"{d}/e", f"{d}/o").returncode, 0)
+    def test_hap_first_any_ploidy(self):
+        # Two chromosomes of three haplotypes. a1 and b1 align over more bp than any true allele pair, but at 9% divergence:
+        # identity weighting keeps them apart, and plain bp (--deWeight 0) does not.
+        with tempfile.TemporaryDirectory() as d:
+            N = [f"{c}{i}" for c in "ab" for i in (1, 2, 3)]
+            open(f"{d}/fai", "w").write("".join(f"{n}\t{2000000 + 1000 * i}\t0\t0\t0\n" for i, n in enumerate(N)))
+            open(f"{d}/links", "w").write("".join(f"{n}\t.\t1000\n" for n in N))
+            al = [(x, y, 1500000, 0.01) for c in "ab" for x, y in ((f"{c}1", f"{c}2"), (f"{c}1", f"{c}3"), (f"{c}2", f"{c}3"))] + [("a1", "b1", 1900000, 0.09)]
+            open(f"{d}/al", "w").write("".join(f"{x}\t{y}\t{n}\t{n}\t{de}\t3\n" for x, y, n, de in al))
+            def chroms(*extra):
+                r = run("hic_group.py", f"{d}/links", f"{d}/al", f"{d}/fai", f"{d}/o", "--chroms", "2", "--ploidy", "3", "--hapFirst", *extra); self.assertEqual(r.returncode, 0, r.stderr)
+                g = {l.split("\t")[0]: l.rstrip().split("\t")[2] for l in open(f"{d}/o.tsv") if l[0] != "#"}; ch = dict(l.split() for l in open(f"{d}/o.chroms.tsv"))
+                return sorted(sorted(n for n in N if ch[g[n]] == c) for c in set(ch.values())), r.stdout
+            got, log = chroms(); self.assertEqual(got, [["a1", "a2", "a3"], ["b1", "b2", "b3"]], log); self.assertNotIn("WARNING", log)
+            self.assertNotEqual(chroms("--deWeight", "0")[0], got)
+    def test_shared_dosage(self):
+        # Two chromosomes of four haplotypes. s is at 2x with Hi-C to a1 and a3; t is at 2x with graph links to a2 and a4; u is at 4x.
+        with tempfile.TemporaryDirectory() as d:
+            N = [f"{c}{i}" for c in "ab" for i in (1, 2, 3, 4)]; L = {n: 2800000 - 100000 * i for i, n in enumerate(N)}; L.update(s=400000, t=300000, u=200000)
+            g = {n: f"g{i + 1:02d}" for i, n in enumerate(N)}                          # groups are numbered by size
+            open(f"{d}/fai", "w").write("".join(f"{n}\t{x}\t0\t0\t0\n" for n, x in L.items()))
+            lk = [(n, ".", 1000) for n in L] + [(x, y, 50 if x[0] == y[0] else 1) for i, x in enumerate(N) for y in N[i + 1:]]
+            lk += [("s", n, 200 if n in ("a1", "a3") else 10 if n[0] == "a" else 1) for n in N] + [(c, n, 50 if n[0] == "a" else 1) for c in "tu" for n in N]
+            open(f"{d}/links", "w").write("".join(f"{x}\t{y}\t{n}\n" for x, y, n in lk))
+            open(f"{d}/al", "w").write("".join(f"{x}\t{y}\t1500000\t1500000\t0.01\t3\n" for i, x in enumerate(N) for y in N[i + 1:] if x[0] == y[0]))
+            open(f"{d}/sh", "w").write("s\nt\nu\n")
+            open(f"{d}/cls", "w").write("#chain\tlength\tmedian_depth\n" + "".join(f"{n}\t{L[n]}\t{30}\n" for n in N) + "s\t400000\t61\nt\t300000\t59\nu\t200000\t118\n")
+            open(f"{d}/el", "w").write("#end_a\tend_b\treads\tq_gap_median\tgraph_overlap\nt+\ta2-\t5\t0\t6000\nt-\ta4+\t5\t0\t6000\n")
+            r = run("hic_group.py", f"{d}/links", f"{d}/al", f"{d}/fai", f"{d}/g", "--chroms", "2", "--ploidy", "4", "--shared", f"{d}/sh", "--classDepth", f"{d}/cls", "--hap", "30", "--endLinks", f"{d}/el")
+            self.assertEqual(r.returncode, 0, r.stderr)
+            D = {l.split("\t")[0]: l.rstrip().split("\t") for l in open(f"{d}/g.dosage.tsv") if l[0] != "#"}
+            self.assertEqual({k: (v[4], v[5], v[8]) for k, v in D.items()}, {"s": ("2", "g01,g03", "hic"), "t": ("2", "g02,g04", "graph")})
+            # without depth, as at ploidy 2, every shared chain is in every haplotype and no dosage file is written
+            r = run("hic_group.py", f"{d}/links", f"{d}/al", f"{d}/fai", f"{d}/n", "--chroms", "2", "--ploidy", "4", "--shared", f"{d}/sh"); self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertFalse(os.path.exists(f"{d}/n.dosage.tsv"))
+            # a hand edit names the haplotypes; hic_group's call for t is carried over; a plain shared edit means every haplotype
+            open(f"{d}/e", "w").write("s\tshared_in\twith:a1,g02\tgraph position\n")
+            r = run("apply_group_edits.py", f"{d}/g", f"{d}/e", f"{d}/f"); self.assertEqual(r.returncode, 0, r.stderr)
+            F = {l.split("\t")[0]: l.rstrip().split("\t") for l in open(f"{d}/f.dosage.tsv") if l[0] != "#"}
+            self.assertEqual((F["s"][5], F["s"][8], F["t"][5]), ("g01,g02", "edit", "g02,g04"))
+            open(f"{d}/e2", "w").write("s\tshared_in\tg01,g05\ttwo chromosomes\n"); self.assertNotEqual(run("apply_group_edits.py", f"{d}/g", f"{d}/e2", f"{d}/x").returncode, 0)
+            open(f"{d}/e3", "w").write("t\tshared\twith:a1\tall four\n"); r = run("apply_group_edits.py", f"{d}/g", f"{d}/e3", f"{d}/y"); self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertNotIn("\nt\t", open(f"{d}/y.dosage.tsv").read())
+            # copies: only in the named haplotypes; a pair to a haplotype without a copy is dropped
+            open(f"{d}/agp", "w").write("".join(f"{n}\t1\t{x}\t1\tW\tu_{n}\t1\t{x}\t+\n" for n, x in L.items()))
+            with gzip.open(f"{d}/pairs.gz", "wt") as o: o.write("s\t5\ta1\t9\ns\t5\ta3\t9\ns\t5\ts\t90\nu\t5\ta4\t9\ns\t7\tt\t8\n")
+            for x in ("st", "tel"): open(f"{d}/{x}", "w").write("".join(f"{n}\t0\n" for n in L))
+            os.mkdir(f"{d}/out"); r = run("make_shared_copies.py", f"{d}/f", f"{d}/agp", f"{d}/fai", f"{d}/pairs.gz", f"{d}/el", f"{d}/st", f"{d}/tel", f"{d}/out"); self.assertEqual(r.returncode, 0, r.stderr)
+            cp = sorted(l.split("\t")[0] for l in open(f"{d}/out/groups.tsv") if "." in l.split("\t")[0])
+            self.assertEqual(cp, ["s.g01", "s.g02", "t.g02", "t.g04", "u.g01", "u.g02", "u.g03", "u.g04"])
+            self.assertEqual(gzip.open(f"{d}/out/pairs.tsv.gz", "rt").read(), "s.g01\t5\ta1\t9\ns.g01\t5\ts.g01\t90\ns.g02\t5\ts.g02\t90\nu.g04\t5\ta4\t9\ns.g02\t7\tt.g02\t8\n")
+            self.assertEqual(sorted(l.split("\t")[0] for l in open(f"{d}/out/chains.agp")).count("s.g03"), 0)
+            self.assertIn("t.g02+\ta2-", open(f"{d}/out/end_links.tsv").read())
     def test_join_reversal(self):
         with tempfile.TemporaryDirectory() as d:
             # pre: a(1-100) gap b(1-100,-) gap c(1-100). cand closes both gaps with trims. reverse the first only: a and b's facing ends return; b's other trim stays

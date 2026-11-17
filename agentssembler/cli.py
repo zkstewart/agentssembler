@@ -58,8 +58,11 @@ def stage_env(w):
     for k, v in t.items(): e["AS_" + k.upper()] = str(v)
     if s.get("hap_depth"):
         h = float(s["hap_depth"]); r = lambda x: str(round(x))
-        e.update(AS_HAP=str(s["hap_depth"]), AS_REPEAT=str(s.get("repeat_depth") or round(4.4 * h)), AS_TWO_X=r(1.5 * h), AS_MAX_DEPTH=r(3 * h), AS_MIN_ALLELE=r(0.36 * h), AS_MAX_PAIR=r(2.68 * h),
-                 AS_RESTORE_LO=r(1.54 * h), AS_RESTORE_HI=r(2.68 * h), AS_ONE_LO=r(0.64 * h), AS_SHARED_LO=r(1.54 * h), AS_SHARED_HI=r(2.68 * h))
+        # Collapsed sequence can be carried by up to `ploidy` haplotypes, so every "above shared" bound sits that far up. At ploidy 2 these are the
+        # multiples the citrus genomes were built with: 4.4, 3 and 2.68.
+        P = max(int(c["ploidy"]), 2)
+        e.update(AS_HAP=str(s["hap_depth"]), AS_REPEAT=str(s.get("repeat_depth") or round(max(4.4, P + 1.4) * h)), AS_TWO_X=r(1.5 * h), AS_MAX_DEPTH=r((P + 1) * h), AS_MIN_ALLELE=r(0.36 * h), AS_MAX_PAIR=r(2.68 * h),
+                 AS_RESTORE_LO=r(1.54 * h), AS_RESTORE_HI=r((P + 0.68) * h), AS_ONE_LO=r(0.64 * h), AS_SHARED_LO=r(1.54 * h), AS_SHARED_HI=r((P + 0.68) * h))
     return e
 def done(w, sid): return os.path.exists(f"{w}/state/{sid}.done")
 def pending(w):

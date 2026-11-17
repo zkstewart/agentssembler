@@ -44,13 +44,14 @@ def r_depth(w, c, s):
     if h:
         twin = sum(L[u] for u, (p, k) in M.items() if p < 0.64 * h and 0.64 * h <= k < 1.54 * h)
         low = sum(L[u] for u, (p, k) in M.items() if k < 0.64 * h)
-        two = sorted(((L[u], u, p) for u, (p, k) in M.items() if 1.54 * h <= p <= 2.68 * h and k <= 2.68 * h), reverse=True)
+        P = max(int(c["ploidy"]), 2); hi = (P + 0.68) * h; span = "About 2x" if P == 2 else f"From 2x to {P}x"
+        two = sorted(((L[u], u, p) for u, (p, k) in M.items() if 1.54 * h <= p <= hi and k <= hi), reverse=True)
         out += [f"Taking {h}x as a candidate haplotype depth (main bin in long unitigs; check it):",
                 f"- Below 0.64x alone but 1x as a class, one haplotype represented more than once: {Mb(twin)}.",
                 f"- Below 0.64x even as a class, truly low depth: {Mb(low)}.",
-                f"- About 2x in both primary and class depth, candidates for collapse: {len(two)} unitigs, {Mb(sum(x[0] for x in two))}, of which graph degree at least 2 at both ends: {Mb(sum(x[0] for x in two if deg[(x[1], '+')] >= 2 and deg[(x[1], '-')] >= 2))}."]
+                f"- {span} in both primary and class depth, candidates for collapse: {len(two)} unitigs, {Mb(sum(x[0] for x in two))}, of which graph degree at least 2 at both ends: {Mb(sum(x[0] for x in two if deg[(x[1], '+')] >= 2 and deg[(x[1], '-')] >= 2))}."]
         out += [f"  - {u} {Mb(n)} at {p:.0f}x, degree {deg[(u, '+')]},{deg[(u, '-')]}" for n, u, p in two[:8]]
-    out.append("Set hap_depth, repeat_depth (about 4.4 x hap_depth) and collapsed. See D01.")
+    out.append(f"Set hap_depth, repeat_depth (about {max(4.4, max(int(c['ploidy']), 2) + 1.4):.1f} x hap_depth: above anything {c['ploidy']} haplotypes can share) and collapsed. See D01.")
     return out, []
 def r_chains(w, c, s):
     out = []; al = []
@@ -106,8 +107,13 @@ def r_group(w, c, s):
     if h:
         W = collections.defaultdict(list)
         for r in rows(f"{w}/11_ont_chains/depth.windows.tsv"): W[r[0]].append(float(r[3]))
-        hub = [f"{u} ({st.median(W[u][len(W[u]) // 3:2 * len(W[u]) // 3]):.0f}x)" for u in Un if len(W[u]) >= 6 and 1.54 * h <= st.median(W[u][len(W[u]) // 3:2 * len(W[u]) // 3]) <= 2.68 * h]
-        if hub: out.append(f"Unassigned with 2x depth in their middle third, candidates only; test each with review/hub_depth.py (D14): {', '.join(hub)}.")
+        hub = [f"{u} ({st.median(W[u][len(W[u]) // 3:2 * len(W[u]) // 3]):.0f}x)" for u in Un if len(W[u]) >= 6 and 1.54 * h <= st.median(W[u][len(W[u]) // 3:2 * len(W[u]) // 3]) <= (max(int(c["ploidy"]), 2) + 0.68) * h]
+        if hub: out.append(f"Unassigned with {'2x' if int(c['ploidy']) <= 2 else '2x or more'} depth in their middle third, candidates only; test each with review/hub_depth.py (D14): {', '.join(hub)}.")
+    dos = list(rows(f"{w}/10_groups/groups.dosage.tsv"))
+    if dos:
+        K = collections.Counter(r[8] for r in dos); arb = [f"{r[0]} ({r[4]} of {r[4] if r[6] == '.' else int(r[4]) + len(r[6].split(','))}, {r[3]}x)" for r in dos if r[8] == "arbitrary"]
+        out.append(f"Shared chains in fewer haplotypes than their chromosome has (10_groups/groups.dosage.tsv): {len(dos)}, {Mb(sum(int(r[1]) for r in dos))}; settled by " + ", ".join(f"{k} {v}" for k, v in sorted(K.items())) + ".")
+        if arb: al.append(f"{len(arb)} shared chains whose haplotypes nothing separates: {', '.join(arb[:12])}{' ...' if len(arb) > 12 else ''}. Each is a guess. Test with graph position and interior depth, then name the haplotypes with a shared_in edit or unassign the chain (D14).")
     forks = f"{w}/10_groups/chain_forks.txt"
     if os.path.exists(forks):
         n = sum(1 for l in open(forks) if l.startswith("HUB"))
@@ -116,7 +122,9 @@ def r_group(w, c, s):
     return out, al
 def r_bridges(w, c, s):
     B = list(rows(f"{w}/12_shared/graph.bridges.tsv")); y = sum(r[2] == "yes" for r in B); T = list(rows(f"{w}/12_shared/graph.tips.tsv"))
-    return [f"Bridges: {len(B)}, within a group {y}. Tips: {len(T)} (12_shared/graph.tips.tsv). A telomeric tip needs a graph link and a free end: add it to edits/group_edits.tsv and edits/order_links.tsv, then `reset 08_bridges`."], []
+    al = []; cl = f"{w}/12_shared/copies.log"; wn = [l for l in open(cl) if l.startswith("# WARNING")] if os.path.exists(cl) else []
+    if wn: al.append(f"{len(wn)} warnings in 12_shared/copies.log about the haplotypes given to shared chains, such as a graph link into a haplotype that was left out. Read them (D14).")
+    return [f"Bridges: {len(B)}, within a group {y}. Tips: {len(T)} (12_shared/graph.tips.tsv). A telomeric tip needs a graph link and a free end: add it to edits/group_edits.tsv and edits/order_links.tsv, then `reset 08_bridges`."], al
 def r_order(w, c, s):
     out = []; al = []
     for f, lab in ((f"{w}/12_shared/eval_order.txt", "Reference alarm"),):
