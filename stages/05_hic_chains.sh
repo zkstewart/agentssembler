@@ -27,4 +27,4 @@ if [ ! -s pairs.tsv.gz ]; then
   mv pairs.tsv.gz.part pairs.tsv.gz
 fi
 cd ..
-step 10_groups/chain_breaks.tsv python3 "$S/chain_breaks.py" 09_hic_map/pairs.tsv.gz 08_final_chains/chains.agp 10_groups/chain_breaks.tsv
+step 10_groups/chain_breaks.tsv python3 "$S/chain_breaks.py" 09_hic_map/pairs.tsv.gz 08_final_chains/chains.agp 10_groups/chain_breaks.tsv --dist "$AS_BREAK_DIST" --flank "$AS_BREAK_FLANK" --minSide "$AS_BREAK_MIN_SIDE"

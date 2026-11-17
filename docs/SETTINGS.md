@@ -11,6 +11,7 @@ Everything goes in the config (`config/sample.example.yaml`), except the values 
 | `repeat_depth` | Above anything the haplotypes can share: the larger of 4.4 and `ploidy` + 1.4, times `hap_depth` (D01). That is 4.4 x up to ploidy 3 and 5.4 x at ploidy 4 |
 | `collapsed` | Long unitigs near 2x, with or without a visible peak (D01) |
 | `hap_first` | Defaults to true at ploidy 2, and false above it. Can be set true at any ploidy ([D05](decisions/D05_group_count.md)), but only ploidy 2 has been run |
+| `length_scale` | Left out, it is measured after stage 04 (below). Set a number to fix it: `1` gives the windows the citrus genomes were built with |
 | `telomere_motif` | `CCCTAAA` is the plant default; `CCCTAA` is the vertebrate type. Confirm for other taxa |
 
 ## What to enter for a polyploid or an inbred sample
@@ -52,6 +53,25 @@ Set automatically, so the scripts have no sample-specific defaults. Rounded to w
 | Highest tail depth | 3 | `ploidy` + 1 | `make_tails.py` |
 | Real allele | 0.36 | 0.36 | `assign_arms2.py` |
 | Largest allele pair sum | 2.68 | 2.68, plus 1 for each copy of the target above 2 | `assign_arms2.py` |
+
+## Derived from the length scale
+
+Windows that are a fraction of a chromosome cannot be the same bp on yeast, citrus and wheat. They are multiplied by the **length scale: mean chromosome length over 40 Mb**, where mean chromosome length is the bp of the stage 04 chains over `chromosomes` x `ploidy`. Citrus is about 1 (13Q010: 38 Mb, so 0.95), and a diploid citrus build moves by under a fifth from the fixed values used before.
+
+- **Held down by chain N50,** so that seeds are never longer than half the chain bases can reach: a 14 Gb genome with 2 Mb chains gets 2, not 17. The stage 04 report says when this applies.
+- **Never below 0.02.**
+- **Measured once,** when stage 04 finishes, and kept in `state/length_scale.json` for the rest of the build. `reset` to stage 04 or earlier measures it again.
+- **Underestimated when most of the genome is collapsed,** since shared sequence is counted once: by up to half at ploidy 2.
+- **Untested away from 1.** The stage 04 report raises an alarm below 0.67 or above 1.5.
+
+| Value | At scale 1 | Used by |
+|---|---|---|
+| Seed length for grouping | 1 Mb | `hic_group.py --seedLen` |
+| Chimera test: reach each side of a junction, flank for the contact profile, shortest side tested | 500 kb, 1 Mb, 100 kb | `chain_breaks.py` |
+| Contact map bin | 250 kb | `contact_map.py` |
+| Dosage bin against the reference; runs reported at 4 bins | 500 kb | `dosage.py` |
+
+**Not scaled:** windows set by read length (10 kb depth windows, 5 kb overlaps, 20 kb allele blocks, the 50 kb allele conflict), counts of Hi-C pairs (`min_within`, link and pair minimums), and the fixed windows inside the review and validation scripts (`phase_scan.py`, `sv_candidates.py`, `inversion_test.py`). On a genome far from citrus scale, give those scripts their own values.
 
 ## Compute
 

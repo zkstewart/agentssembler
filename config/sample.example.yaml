@@ -22,6 +22,7 @@ inputs:
 settings:
   telomere_motif: CCCTAAA
   # hap_first: true     # defaults to true at ploidy 2
+  # length_scale: 1     # measured from the chains when left out; 1 fixes the citrus windows
 
 # Full paths, or names on PATH. juicer_tools, compleasm and plot_python are optional; steps using them are skipped when unset.
 tools:

@@ -36,7 +36,7 @@ Three things look like mistakes and are not:
 |---|---|---|
 | `config.yaml` | `init` | A copy of the config you gave. This copy is the one every later command reads. `init` never replaces it: to change a setting, edit it and `reset` from the earliest stage affected |
 | `README.md` | `init`, then you | Status of the build, from `config/handover_templates/README.md`. Keep it current, and complete it at D13 |
-| `state/` | driver | `STAGE.done` per finished stage, holding the settings it ran with; `base_dir`, the directory `init` was run in, from which relative config paths resolve |
+| `state/` | driver | `STAGE.done` per finished stage, holding the settings it ran with; `base_dir`, the directory `init` was run in, from which relative config paths resolve; `length_scale.json`, measured when stage 04 finishes ([SETTINGS](SETTINGS.md)) |
 | `decisions/` | `decide` | `Dnn.yaml` per recorded decision: who, when, reason, settings, and a checksum of every edit file at that moment |
 | `edits/` | `init`, then you | Every hand edit, each row with its reason. See below |
 | `reports/` | driver | `STAGE.md` per finished stage. `02_map_unitigs.md` and `01_inputs.md` are short by design |

@@ -8,7 +8,8 @@ of the chain, and both sides talk to the same other chains.
                  at other positions (insulation).
   partner_cos    cosine between left- and right-flank contact profiles over other chains (--flank bp), each
                  side normalised; a chimera has two different chromosomes' profiles.
-Sides shorter than --minSide are not tested. Output sorted by cross_ratio.
+Sides shorter than --minSide are not tested. Output sorted by cross_ratio. The defaults suit chromosomes of about 40 Mb; the driver
+scales all three with the sample's length scale.
 Usage: chain_breaks.py pairs.tsv.gz chains.agp out.tsv [--dist 500000 --flank 1000000 --minSide 100000]
 '''
 import gzip, argparse, collections, bisect, math
@@ -37,7 +38,7 @@ out = []
 for c, us in J.items():
     if len(us) < 2: continue
     arr = np.asarray(W[c]) if W[c] else np.zeros((0, 2))
-    grid = np.arange(a.dist // 2, max(L[c] - a.dist // 2, a.dist // 2 + 1), 100000)
+    grid = np.arange(a.dist // 2, max(L[c] - a.dist // 2, a.dist // 2 + 1), max(a.dist // 5, 1))
     bg = np.array([crossing(arr, g) for g in grid]) if len(grid) else np.array([0])
     med = max(float(np.median(bg)), 1.0)
     tr = T[c]

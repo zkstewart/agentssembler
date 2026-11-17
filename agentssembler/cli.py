@@ -40,6 +40,26 @@ def settings(w):
     s = dict(DEFAULTS); c = cfg(w); s.update(c.get("settings") or {})
     for d in decisions(w).values(): s.update(d.get("set") or {})
     return s
+SCALE_AT = 40e6      # mean chromosome length of the citrus genomes the fixed windows were chosen on, to the nearest 10 Mb
+def length_scale(w, compute=False):
+    """How long this sample's chromosomes are, relative to citrus. Seed length, chimera windows and bin sizes are chromosome-scale and are
+    multiplied by it. Mean chromosome length is chain bp over chromosomes x ploidy, so it is known once stage 04 is done, and it is kept in
+    state/length_scale.json from then on: a threshold must not move between stages of one build. `reset` to stage 04 or earlier clears it.
+    Capped so that seeds are never longer than the chain N50, and floored at 0.02. `settings.length_scale: 1` pins the citrus values."""
+    c = cfg(w); v = (c.get("settings") or {}).get("length_scale")
+    if v not in (None, "auto"): return dict(scale=float(v), source="set in config.yaml")
+    f = f"{w}/state/length_scale.json"
+    if os.path.exists(f): return json.load(open(f))
+    fai = f"{w}/08_final_chains/chains.fasta.fai"
+    if not compute or not os.path.exists(fai): return None
+    L = sorted((int(l.split("\t")[1]) for l in open(fai)), reverse=True); tot = sum(L); acc = 0
+    for n50 in L:
+        acc += n50
+        if acc >= tot / 2: break
+    S = tot / (int(c["chromosomes"]) * int(c["ploidy"])); by_len, by_n50 = S / SCALE_AT, n50 / 1e6
+    d = dict(scale=max(round(min(by_len, by_n50), 2), 0.02), source="chains of stage 04", chain_bp=tot, mean_chromosome=round(S), chain_n50=n50,
+             limited_by="chain N50" if by_n50 < by_len else "floor" if by_len < 0.02 else "mean chromosome length")
+    json.dump(d, open(f, "w")); return d
 def active(w, cond):
     if cond is None: return True
     if cond == "raw": return bool(cfg(w)["inputs"].get("raw_bams"))
@@ -63,6 +83,10 @@ def stage_env(w):
         P = max(int(c["ploidy"]), 2)
         e.update(AS_HAP=str(s["hap_depth"]), AS_REPEAT=str(s.get("repeat_depth") or round(max(4.4, P + 1.4) * h)), AS_TWO_X=r(1.5 * h), AS_MAX_DEPTH=r((P + 1) * h), AS_MIN_ALLELE=r(0.36 * h), AS_MAX_PAIR=r(2.68 * h),
                  AS_RESTORE_LO=r(1.54 * h), AS_RESTORE_HI=r((P + 0.68) * h), AS_ONE_LO=r(0.64 * h), AS_SHARED_LO=r(1.54 * h), AS_SHARED_HI=r((P + 0.68) * h))
+    ls = length_scale(w, compute=os.path.exists(f"{w}/state/04_chains.done"))
+    if ls:
+        k = ls["scale"]; r = lambda x: str(max(int(round(x * k)), 1))
+        e.update(AS_SCALE=str(k), AS_SEED_LEN=r(1e6), AS_BREAK_DIST=r(5e5), AS_BREAK_FLANK=r(1e6), AS_BREAK_MIN_SIDE=r(1e5), AS_MAP_BIN=r(2.5e5), AS_DOSAGE_BIN=r(5e5))
     return e
 def done(w, sid): return os.path.exists(f"{w}/state/{sid}.done")
 def pending(w):
@@ -114,6 +138,7 @@ def run_stage(w, st):
     if rc:
         tail = open(logf).read().splitlines()[-15:]
         sys.exit(f"{st.id} failed with exit {rc}. Last lines of {logf}:\n" + "\n".join(tail))
+    if st.id == "04_chains": length_scale(w, compute=True)
     report.write(w, st.id, cfg(w), settings(w), lambda cond: active(w, cond))
     json.dump(dict(finished=now(), settings=settings(w)), open(f"{w}/state/{st.id}.done", "w"), default=str)
 
@@ -180,7 +205,7 @@ def cmd_reset(a):
             for p in glob.glob(f"{w}/{pat}"):
                 if st.keep and not a.remap and any(fnmatch.fnmatch(os.path.relpath(p, w), k) for k in st.keep): continue
                 d = f"{arch}/{os.path.relpath(p, w)}"; os.makedirs(os.path.dirname(d), exist_ok=True); shutil.move(p, d)
-        for f in (f"{w}/state/{st.id}.done", f"{w}/reports/{st.id}.md"):
+        for f in (f"{w}/state/{st.id}.done", f"{w}/reports/{st.id}.md") + ((f"{w}/state/length_scale.json",) if st.id == "04_chains" else ()):
             if os.path.exists(f): os.remove(f)
         for g, _ in st.gates if st.id != a.stage or not a.keepDecision else []:
             f = f"{w}/decisions/{g}.yaml"

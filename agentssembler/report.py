@@ -1,7 +1,7 @@
 # This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
 # If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """One short report per stage: the numbers to look at, alarms, and what to decide. Reports describe; they never decide."""
-import collections, glob, gzip, os, re, statistics as st
+import collections, glob, gzip, json, os, re, statistics as st
 from .stages import BY_ID, GUIDES
 
 def rows(p, comment="#"):
@@ -30,7 +30,8 @@ def r_depth(w, c, s):
     C = [(r[0], float(r[2]), float(r[6])) for r in rows(f"{w}/04_copynumber/class_depth.tsv")]
     out = []
     o, _ = hist("Primary depth, all unitigs", [(p, 10000) for _, p, _c in C]); out += o
-    o, peak = hist("Primary depth, unitigs of 1 Mb or more", [(p, 10000) for u, p, _c in C if L.get(u, 0) >= 1000000]); out += o
+    long = min(1000000, n50(L.values())) if L else 1000000      # a genome whose unitigs never reach 1 Mb still needs a histogram of its long ones
+    o, peak = hist(f"Primary depth, unitigs of {'1 Mb' if long == 1000000 else f'{long / 1e3:.0f} kb (their N50)'} or more", [(p, 10000) for u, p, _c in C if L.get(u, 0) >= long]); out += o
     o, _ = hist("Class depth, adding near-identical copies, all unitigs", [(k, 10000) for _, _p, k in C]); out += o
     # Everything below uses the main peak in long unitigs, and only describes. The peak is a candidate for hap_depth, not a decision.
     h = peak + 2 if peak else 0
@@ -63,6 +64,14 @@ def r_chains(w, c, s):
     V = list(rows(f"{w}/07_chains2/joins.verify.tsv")); low = [r for r in V if int(r[5]) < 10]; br = [r for r in V if int(r[5]) < 3]
     out.append(f"Joins {len(V)}; under 3 reads {len(br)} (broken by rule); under 10 reads {len(low)} (review in joins.verify.tsv).")
     if os.path.exists(f"{w}/07_chains2/restored_arms.tsv"): out.append(f"Restored arms: {sum(1 for _ in rows(f'{w}/07_chains2/restored_arms.tsv'))}.")
+    pin = s.get("length_scale") if isinstance(s, dict) else None; f = f"{w}/state/length_scale.json"
+    if pin not in (None, "auto"): out.append(f"Length scale {float(pin):g}, set in config.yaml. Seeds for grouping are chains of {Mb(1e6 * float(pin))} or more.")
+    elif os.path.exists(f):
+        d = json.load(open(f)); k = d["scale"]
+        out.append(f"Length scale {k:g}: mean chromosome {Mb(d['mean_chromosome'])} ({Mb(d['chain_bp'])} of chains over {c['chromosomes']} x {c['ploidy']}) against 40 Mb for citrus, chain N50 {Mb(d['chain_n50'])}; set by {d['limited_by']}. "
+                   f"It multiplies the chromosome-scale windows: seeds for grouping are chains of {1000 * k:.0f} kb or more, chimera tests look {500 * k:.0f} kb each side of a junction, contact maps use {250 * k:.0f} kb bins (SETTINGS, `length_scale`).")
+        if d["limited_by"] == "chain N50": al.append(f"The length scale is held down by a chain N50 of {Mb(d['chain_n50'])}: chains are short for chromosomes of {Mb(d['mean_chromosome'])}, so expect many chains per group and a slow ordering.")
+        if k > 1.5 or k < 0.67: al.append(f"Length scale {k:g} is outside anything run so far (citrus, about 0.8 to 1.1). The scaled windows are untested: read the chimera table and the seed count with that in mind.")
     return out, al
 def r_hic(w, c, s):
     p = f"{w}/10_groups/chain_breaks.tsv"; V = list(rows(p)); inv = lambda x: x[:-1] + ("-" if x[-1] == "+" else "+")

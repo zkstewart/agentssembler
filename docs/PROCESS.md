@@ -54,6 +54,7 @@ Primary depth per unitig, and sequence-class depth adding near-identical copies.
 3. **Round 2.** Drops contained and high-copy chains, and adds exact end-to-end overlaps as links. 13Q010: 567 chains to 273.
 4. **Join verification.** Reads across every join. Under 3 reads breaks it.
 5. **Restored arms** if collapsed. Arms next to a collapsed node were dropped because reads land on the node, which loses an allele. They return in stage 06.
+6. **Length scale.** Mean chromosome length over 40 Mb, measured from the final chains and kept for the build. It multiplies the chromosome-scale windows of later stages ([SETTINGS](SETTINGS.md)). The report gives it, and an alarm when it is far from the citrus value of about 1.
 
 ## 05_hic_chains, then D04 (about 1.6 h)
 

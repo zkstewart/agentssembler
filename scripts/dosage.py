@@ -44,6 +44,6 @@ for l in open(a.fai):
             else: runs.append([r, len(k), b, b + 1, set(k)])
 T = sum(cn.values())
 print("copies\twindows\tfraction"); [print(k, v, f"{v/T:.3f}", sep="\t") for k, v in sorted(cn.items())]
-print(f"runs of >= 2 Mb away from {a.ploidy} copies:")
+print(f"runs of >= {4 * a.bin / 1e6:g} Mb away from {a.ploidy} copies:")
 for r, c, x, y, k in runs:
-    if (y - x) * a.bin >= 2000000: print(f"{r}\t{x*a.bin/1e6:.1f}-{y*a.bin/1e6:.1f}\tcopies={c}\t{','.join(sorted(k))}")
+    if y - x >= 4: print(f"{r}\t{x*a.bin/1e6:.1f}-{y*a.bin/1e6:.1f}\tcopies={c}\t{','.join(sorted(k))}")
