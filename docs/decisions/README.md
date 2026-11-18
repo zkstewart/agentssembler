@@ -23,7 +23,7 @@ Decisions are recorded in `WORK/decisions/`, with a checksum of every edit file 
 | [D15](D15_arm_phase.md) | Which arm goes where? | `10_arms_tails` | Reporting, mostly |
 | [D16](D16_tails.md) | Is a tangle hiding a haplotype's route? Then, should a tail be placed? | `10_arms_tails` | High |
 | [D11](D11_gap_closures.md) | Which gaps need more than the automatic fill? | `12_fill` | Low |
-| [D18](D18_raw_read_joins.md) | Which read-derived joins survive raw reads? | `13_rawreads` | Medium, needs raw BAMs |
+| [D18](D18_raw_read_joins.md) | Which read-derived joins survive raw reads? | `13_rawreads` | Medium, needs raw reads |
 | [D12](D12_sv_calls.md) | Is an SV candidate real? | `15_validate` | High |
 | [D13](D13_user_decisions.md) | What belongs to the user? | `15_validate` | The user's |
 

@@ -49,4 +49,4 @@ cp $T/$AS_SAMPLE.graph.unplaced.fasta $F/$AS_SAMPLE.final.unplaced.fasta; "$AS_S
 python3 "$S/agp_stats.py" $F/$AS_SAMPLE.final.agp | tee $F/stats.txt
 # Where reads go past each gap edge, for D11. Candidates only.
 if collapsed; then TP=($R/ont_vs_target.h*.paf.gz); else TP=($R/ont_vs_target.paf.gz); fi
-step $R/gap_tails.tsv python3 "$S/review/gap_tails.py" $AGP $READS $T/target.fasta $R/gap_tails.tsv --paf "${TP[@]}" --minimap2 "$AS_MINIMAP2" --preset "$AS_READ_PRESET" --threads "$AS_THREADS"
+step $R/gap_tails.tsv python3 "$S/review/gap_tails.py" $AGP $READS $T/target.fasta $R/gap_tails.tsv --paf "${TP[@]}" --minimap2 "$AS_MINIMAP2" --seqkit "$AS_SEQKIT" --preset "$AS_READ_PRESET" --threads "$AS_THREADS"

@@ -1,7 +1,7 @@
 # This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
 # If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """Driver: runs stages in order, stops at each decision gate, writes a report for the reader. See AGENTS.md."""
-import argparse, datetime, fnmatch, glob, hashlib, json, os, shutil, subprocess, sys
+import argparse, datetime, fnmatch, glob, gzip, hashlib, json, os, shutil, subprocess, sys
 import yaml
 from .stages import STAGES, BY_ID, GUIDES
 from . import report, compare
@@ -85,9 +85,18 @@ def hic_density(w, compute=False):
         if acc >= tot / 2: break
     d = dict(min_within=float(max(round(MIN_WITHIN_OF_H * H), 1)), source="chain_stats.tsv of stage 06", hic_density=H, share=MIN_WITHIN_OF_H, chains_used=len(use), seed_len=round(seed))
     json.dump(d, open(f, "w")); return d
+def raw_reads(c):
+    """Raw basecalled read files: inputs.raw_reads, plus inputs.raw_bams, its earlier name."""
+    i = c["inputs"]; return list(i.get("raw_reads") or []) + list(i.get("raw_bams") or [])
+def read_format(p):
+    """bam for BAM, CRAM or SAM (by extension); otherwise fasta or fastq from the first character, gzipped or not; None if neither."""
+    if p.endswith((".bam", ".cram", ".sam")): return "bam"
+    with open(p, "rb") as f: gz = f.read(2) == b"\x1f\x8b"
+    with (gzip.open(p, "rb") if gz else open(p, "rb")) as f: c = f.read(1)
+    return {b">": "fasta", b"@": "fastq"}.get(c)
 def active(w, cond):
     if cond is None: return True
-    if cond == "raw": return bool(cfg(w)["inputs"].get("raw_bams"))
+    if cond == "raw": return bool(raw_reads(cfg(w)))
     if cond == "collapsed": return str(settings(w).get("collapsed")).lower() == "true"
     raise ValueError(cond)
 def stage_env(w):
@@ -95,7 +104,7 @@ def stage_env(w):
     abspath = lambda p: os.path.abspath(p) if p else ""
     e = dict(os.environ); e.update(AS_WORK=w, AS_REPO=REPO, AS_SAMPLE=str(c["sample"]), AS_CHROMS=str(c["chromosomes"]), AS_PLOIDY=str(c["ploidy"]),
         AS_UNITIGS=abspath(i["unitigs_fasta"]), AS_GFA=abspath(i["unitigs_gfa"]), AS_READS=abspath(i["corrected_reads"]), AS_HIC_R1=abspath(i["hic_r1"]), AS_HIC_R2=abspath(i["hic_r2"]),
-        AS_REFERENCE=abspath(i.get("reference")), AS_BASELINE_AGP=abspath(i.get("baseline_agp")), AS_RAW_BAMS=":".join(abspath(b) for b in (i.get("raw_bams") or [])),
+        AS_REFERENCE=abspath(i.get("reference")), AS_BASELINE_AGP=abspath(i.get("baseline_agp")), AS_RAW_READS=":".join(abspath(b) for b in raw_reads(c)),
         AS_THREADS=str(comp.get("threads", 16)), AS_MIN_FREE_GB=str(comp.get("min_free_gb", 40)), AS_GUARD_PATH=str(comp.get("guard_path", w)),
         AS_MOTIF=str(s["telomere_motif"]), AS_LINK_BONUS=str(s["link_bonus"]), AS_HOPS=str(s["hops"]), AS_CONNECTORS=str(s["restore_connectors"]).lower(),
         AS_READ_PRESET=str(s["read_preset"]), AS_RAW_PRESET=str(s["raw_preset"]),
@@ -134,8 +143,12 @@ def cmd_init(a):
         if k not in c: sys.exit(f"config lacks {k}")
     for k in ("unitigs_fasta", "unitigs_gfa", "corrected_reads", "hic_r1", "hic_r2"):
         if not os.path.exists(c["inputs"].get(k, "")): sys.exit(f"input {k}: {c['inputs'].get(k)} not found")
-    for p in c["inputs"].get("raw_bams") or []:
-        if not os.path.exists(p): sys.exit(f"raw BAM not found: {p}")
+    if os.path.getsize(c["inputs"]["corrected_reads"]) and read_format(c["inputs"]["corrected_reads"]) not in ("fasta", "fastq"):
+        sys.exit(f"input corrected_reads: {c['inputs']['corrected_reads']} is not FASTA or FASTQ (gzipped or not). Convert a BAM with `samtools fastq`.")
+    for p in raw_reads(c):
+        if not os.path.exists(p): sys.exit(f"raw reads not found: {p}")
+        if read_format(p) is None: sys.exit(f"raw reads: {p} is not BAM, CRAM, SAM, FASTQ or FASTA (gzipped or not)")
+        if ":" in p: sys.exit(f"raw reads: {p}: a path with ':' cannot be passed to the stages")
     for d in ("state", "decisions", "edits", "reports", "logs"): os.makedirs(f"{w}/{d}", exist_ok=True)
     shutil.copyfile(a.config, f"{w}/config.yaml")
     open(f"{w}/state/base_dir", "w").write(os.getcwd() + "\n")

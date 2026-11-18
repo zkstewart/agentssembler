@@ -40,7 +40,7 @@ An allopolyploid's subgenomes are not labelled. Chromosome names come from the r
 | `restore_connectors` | true | Restore dropped unitigs that are the graph path between chain ends (stage 06) |
 | `hops` | 12 | Longest bridge path. Connectors add hops without much sequence: 3 and 8 have each missed a real path, and 16 found the same as 12 |
 | `read_preset` | `lr:hq` | minimap2 preset for `corrected_reads` wherever they are mapped (stages 02, 04, 06, 08, 12, 15). `lr:hq` suits corrected or Q20 nanopore reads and HiFi; `map-hifi` is minimap2's own HiFi preset. Set it before stage 02: a mapping that exists is kept. Only corrected nanopore reads with `lr:hq` have been run |
-| `raw_preset` | `lr:hq` | The same for the reads streamed from `raw_bams` (stage 13). `map-ont` suits older, less accurate basecalls |
+| `raw_preset` | `lr:hq` | The same for the reads streamed from `raw_reads` (stage 13). `map-ont` suits older, less accurate basecalls |
 
 ## Derived from `hap_depth`
 

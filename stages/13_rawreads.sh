@@ -1,14 +1,14 @@
 #!/bin/bash
 # This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
 # If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
-# Optional, with raw basecalled BAMs. Streams reads >= 5 kb from the BAMs to minimap2: never write a raw FASTA. Compares raw with corrected reads at gaps and control sites, re-fills from raw reads near gaps, audits every read-derived join. Stops for D18.
+# Optional, with raw basecalled reads (BAM, CRAM, or FASTQ or FASTA, gzipped or not). Streams reads >= 5 kb to minimap2: never write a raw FASTA. Compares raw with corrected reads at gaps and control sites, re-fills from raw reads near gaps, audits every read-derived join. Stops for D18.
 source "$AS_REPO/stages/lib.sh"
-has_raw || { log "no raw BAMs: nothing to do"; exit 0; }
+has_raw || { log "no raw reads: nothing to do"; exit 0; }
 A=17_raw_reads; T=13_scaffold; R=14_readfill; F=15_final; mkdir -p $A/fill; AGP=$T/$AS_SAMPLE.graph.agp; MM="$AS_MINIMAP2"
-IFS=: read -r -a BAMS <<< "$AS_RAW_BAMS"
+IFS=: read -r -a RAWS <<< "$AS_RAW_READS"
 stream() { # stream TAB|- : FASTA of reads >= 5 kb to stdout
-  local tab="$1"; for b in "${BAMS[@]}"; do "$AS_SAMTOOLS" view -@ 2 "$b"; done | awk -F'\t' -v tab="$tab" 'BEGIN{OFS="\t"; if(tab!="-") cmd="gzip -1 > " tab}
-    {l=length($10); if(tab!="-"){q="NA";for(i=12;i<=NF;i++)if($i~/^qs:f:/){q=substr($i,6);break}; print $1,l,q | cmd} if(l>=5000) print ">"$1"\n"$10}'
+  local tab="$1"; for b in "${RAWS[@]}"; do raw_records "$b"; done | awk -F'\t' -v tab="$tab" 'BEGIN{OFS="\t"; if(tab!="-") cmd="gzip -1 > " tab}
+    {l=length($2); if(tab!="-") print $1,l,$3 | cmd; if(l>=5000) print ">"$1"\n"$2}'
 }
 map_stream() { # OUT target tab
   local o="$1" t="$2" tab="$3"; [ -s "$o" ] && { log "skip, exists: $o"; return 0; }
@@ -48,7 +48,7 @@ for p in pafs:
         if s[5] in G and any(int(s[7]) < b + 60000 and int(s[8]) > a - 60000 for a, b in G[s[5]]): ids.add(s[0])
 open(out, "w").write("\n".join(sorted(ids)) + "\n")
 PY
-  for b in "${BAMS[@]}"; do "$AS_SAMTOOLS" view -@ 4 -N $A/neargap.ids "$b" | awk -F'\t' '{print ">"$1"\n"$10}'; done > $A/neargap.part; mv $A/neargap.part $A/neargap.fasta
+  for b in "${RAWS[@]}"; do raw_records "$b" $A/neargap.ids | awk -F'\t' '{print ">"$1"\n"$2}'; done > $A/neargap.part; mv $A/neargap.part $A/neargap.fasta
 fi
 # re-fill the current final AGP from raw reads, then map to the candidate with CIGARs for the audit
 cat $F/$AS_SAMPLE.final.fasta $F/$AS_SAMPLE.final.unplaced.fasta > $A/fill/in.fasta; "$AS_SAMTOOLS" faidx $A/fill/in.fasta
@@ -87,7 +87,7 @@ fi
 python3 "$S/rawreads/audit_joins.py" --agp $A/fill/candidate.agp --paf "${AUD[@]}" "${REPORTS[@]}" --minimap2 "$MM" --hapDepth "$AS_HAP" --out $A/audit.tsv
 # Raw reads past each gap edge: correction loses reads near gaps, so these often say more than 14_readfill/gap_tails.tsv
 if collapsed; then TP=($A/fill/raw.h*.paf.gz); else TP=($A/fill/raw.paf.gz); fi
-step $A/gap_tails.tsv python3 "$S/review/gap_tails.py" $F/$AS_SAMPLE.final.agp $A/neargap.fasta $A/fill/in.fasta $A/gap_tails.tsv --paf "${TP[@]}" --minimap2 "$MM" --preset "$AS_RAW_PRESET" --threads "$AS_THREADS"
+step $A/gap_tails.tsv python3 "$S/review/gap_tails.py" $F/$AS_SAMPLE.final.agp $A/neargap.fasta $A/fill/in.fasta $A/gap_tails.tsv --paf "${TP[@]}" --minimap2 "$MM" --seqkit "$AS_SEQKIT" --preset "$AS_RAW_PRESET" --threads "$AS_THREADS"
 # Do raw reads phase the arms labelled arbitrary (D15)? Same mapping, so this costs minutes.
 if collapsed; then
   HS=$(haps_of $AGP); PP=(); SF=(); for h in $HS; do PP+=($A/raw_vs_target.$h.paf.gz); SF+=(_$h); done

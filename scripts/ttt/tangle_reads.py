@@ -6,7 +6,7 @@ an anchor's tangle-facing end, in the stage-02 read-to-unitig PAF. Reads from ta
 prefix.anchors.tsv); give several prefixes to cover several tangles in one alignment. Aligning only these reads keeps GraphAligner
 to hours rather than days, and the reads are aligned to the whole graph, so look-alike copies elsewhere still compete for them.
 Usage: tangle_reads.py ont_vs_unitigs.paf.gz prefix[,prefix...] out_ids.txt [--window 200000]
-Then: seqkit grep -f out_ids.txt corrected_reads.fasta -o tangle_reads.fasta'''
+Then: seqkit grep -f out_ids.txt corrected_reads.fasta | seqkit fq2fa -o tangle_reads.fasta'''
 import argparse, gzip
 p = argparse.ArgumentParser(); p.add_argument("paf"); p.add_argument("prefixes"); p.add_argument("out")
 p.add_argument("--window", type=int, default=200000); a = p.parse_args()
