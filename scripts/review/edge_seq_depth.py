@@ -63,14 +63,17 @@ with open(a.out + ".hits.tsv", "w") as o:
 with open(a.out + ".strict.tsv", "w") as o:
     o.write("kind\tscaffold\tpos\tside\tdist\tseq_depth\n")
     for n, v in D.items(): o.write("\t".join(n.split("|")) + f"\t{v:.1f}\n")
-ctl = st.median(v for n, v in D.items() if n.startswith("ctl"))
-print(f"control median sequence depth {ctl:.1f}")
+cv = sorted(x for n, x in D.items() if n.startswith("ctl"))
+ctl = st.median(cv) if cv else 0
+if ctl > 0: print(f"control median sequence depth {ctl:.1f}")
+elif cv: print(f"WARNING: control median sequence depth is 0 over {len(cv)} control windows, so ratios to it are NA. The reads must come from the whole genome, not only near gaps; check --frac too.")
+else: print("WARNING: no control windows (no 'ctl' rows in the sites table, or all were skipped), so ratios to control are NA.")
+def row(label, v, ratio):   # ratio: the median's ratio to the control median, or None to compute it
+    q = lambda f: v[int(f * (len(v) - 1))]
+    rel = f"{ratio if ratio else q(.5) / ctl:.2f}\t{sum(x < .5 * ctl for x in v) / len(v):.2f}\t{sum(x > 2 * ctl for x in v) / len(v):.2f}" if ctl > 0 else "NA\tNA\tNA"
+    print(f"{label}\t{len(v)}\t{q(.1):.0f}\t{q(.25):.0f}\t{q(.5):.0f}\t{q(.75):.0f}\t{q(.9):.0f}\t{rel}")
 print("dist_kb\tn\tp10\tq1\tmedian\tq3\tp90\t(ratio to control median)\tfrac_under_0.5x\tfrac_over_2x")
 for d in DIST:
     v = sorted(x for n, x in D.items() if n.startswith("gap") and n.endswith(f"|{d}"))
-    if v:
-        q = lambda f: v[int(f * (len(v) - 1))]
-        print(f"{d // 1000}-{d // 1000 + 5}\t{len(v)}\t{q(.1):.0f}\t{q(.25):.0f}\t{q(.5):.0f}\t{q(.75):.0f}\t{q(.9):.0f}\t{q(.5) / ctl:.2f}\t{sum(x < .5 * ctl for x in v) / len(v):.2f}\t{sum(x > 2 * ctl for x in v) / len(v):.2f}")
-v = sorted(x for n, x in D.items() if n.startswith("ctl"))
-q = lambda f: v[int(f * (len(v) - 1))]
-print(f"control\t{len(v)}\t{q(.1):.0f}\t{q(.25):.0f}\t{q(.5):.0f}\t{q(.75):.0f}\t{q(.9):.0f}\t1.00\t{sum(x < .5 * ctl for x in v) / len(v):.2f}\t{sum(x > 2 * ctl for x in v) / len(v):.2f}")
+    if v: row(f"{d // 1000}-{d // 1000 + 5}", v, None)
+if cv: row("control", cv, 1.0)
