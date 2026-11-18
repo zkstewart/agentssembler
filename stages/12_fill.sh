@@ -4,13 +4,13 @@
 # Reads across gaps, then the first final files. Collapsed samples map per haplotype to masked targets and leave --target off, since excision would treat true shared copies as false duplication. Stops for D11.
 source "$AS_REPO/stages/lib.sh"
 T=13_scaffold; R=14_readfill; F=15_final; mkdir -p $R $F; AGP=$T/$AS_SAMPLE.graph.agp; READS=00_inputs/ont_corrected_reads.fasta
-RF=(--seqkit "$AS_SEQKIT" --minimap2 "$AS_MINIMAP2")
+RF=(--seqkit "$AS_SEQKIT" --minimap2 "$AS_MINIMAP2" --preset "$AS_READ_PRESET")
 if collapsed; then
   [ -s $R/target.masked.tsv ] || python3 "$S/mask_shared.py" $AGP $T/target.fasta $R/target
   HAPS=$(haps_of $AGP); agps=(); fills=()
   for h in $HAPS; do
     "$AS_SAMTOOLS" faidx $R/target.$h.fasta
-    map_paf $R/ont_vs_target.$h.paf.gz -x lr:hq -t "$AS_THREADS" --secondary=no $R/target.$h.fasta $READS
+    map_paf $R/ont_vs_target.$h.paf.gz -x "$AS_READ_PRESET" -t "$AS_THREADS" --secondary=no $R/target.$h.fasta $READS
   done
   n=$(echo $HAPS | wc -w); t=$(( AS_THREADS / n )); [ $t -ge 1 ] || t=1
   for h in $HAPS; do
@@ -38,7 +38,7 @@ if collapsed; then
   fi
   sort -t$'\t' -k1,1 -k2,2n $R/merged.agp > $F/$AS_SAMPLE.final.agp
 else
-  map_paf $R/ont_vs_target.paf.gz -x lr:hq -t "$AS_THREADS" --secondary=no $T/target.fasta $READS
+  map_paf $R/ont_vs_target.paf.gz -x "$AS_READ_PRESET" -t "$AS_THREADS" --secondary=no $T/target.fasta $READS
   [ -s $R/$AS_SAMPLE.graph.agp ] || python3 "$S/readfill.py" --agp $AGP --fasta $T/$AS_SAMPLE.graph.fasta --paf $R/ont_vs_target.paf.gz --reads $READS --out $R/$AS_SAMPLE.graph "${RF[@]}" --threads "$AS_THREADS" --target $T/target.fasta > $R/fill.log 2>&1
   cp $R/$AS_SAMPLE.graph.agp $F/$AS_SAMPLE.final.agp; cp $R/$AS_SAMPLE.graph.fills.fasta $R/fills.fasta
 fi
@@ -49,4 +49,4 @@ cp $T/$AS_SAMPLE.graph.unplaced.fasta $F/$AS_SAMPLE.final.unplaced.fasta; "$AS_S
 python3 "$S/agp_stats.py" $F/$AS_SAMPLE.final.agp | tee $F/stats.txt
 # Where reads go past each gap edge, for D11. Candidates only.
 if collapsed; then TP=($R/ont_vs_target.h*.paf.gz); else TP=($R/ont_vs_target.paf.gz); fi
-step $R/gap_tails.tsv python3 "$S/review/gap_tails.py" $AGP $READS $T/target.fasta $R/gap_tails.tsv --paf "${TP[@]}" --minimap2 "$AS_MINIMAP2" --threads "$AS_THREADS"
+step $R/gap_tails.tsv python3 "$S/review/gap_tails.py" $AGP $READS $T/target.fasta $R/gap_tails.tsv --paf "${TP[@]}" --minimap2 "$AS_MINIMAP2" --preset "$AS_READ_PRESET" --threads "$AS_THREADS"

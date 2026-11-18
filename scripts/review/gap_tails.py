@@ -4,11 +4,11 @@
 '''Where do reads go when they run off a gap edge? For each gap, takes reads aligned up to a flank's end with at least --minTail unaligned bases beyond it, maps those tails
 to the whole assembly including unplaced sequence, and lists destinations per edge. A destination shared by several reads is a candidate for what belongs in the gap. Tail destinations often lie
 inside a chain, past an overlap with the flank, which chain_end_links.py does not count. Candidates only: test the graph path, the homolog and the Hi-C.
-Usage: gap_tails.py final.agp reads.fasta all_sequence.fasta out.tsv --paf a.paf.gz [b.paf.gz] [--minimap2 minimap2] [--threads 8]'''
+Usage: gap_tails.py final.agp reads.fasta all_sequence.fasta out.tsv --paf a.paf.gz [b.paf.gz] [--minimap2 minimap2] [--preset lr:hq] [--threads 8]'''
 import argparse, collections, gzip, os, subprocess, tempfile
 p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
 for x in "agp reads fasta out".split(): p.add_argument(x)
-p.add_argument("--paf", nargs="+", required=True); p.add_argument("--minimap2", default="minimap2"); p.add_argument("--threads", default="8")
+p.add_argument("--paf", nargs="+", required=True); p.add_argument("--minimap2", default="minimap2"); p.add_argument("--preset", default="lr:hq", help="minimap2 preset for the reads"); p.add_argument("--threads", default="8")
 p.add_argument("--minTail", type=int, default=2000); p.add_argument("--edge", type=int, default=3000); p.add_argument("--minQ", type=int, default=20); a = p.parse_args()
 G = collections.defaultdict(list)
 for l in open(a.agp):
@@ -43,7 +43,7 @@ for l in open(a.reads):
         flush(); name = l[1:].split()[0]; seq = []
     else: seq.append(l.strip())
 flush(); tmp.close()
-paf = subprocess.run([a.minimap2, "-x", "lr:hq", "-t", a.threads, "--secondary=no", a.fasta, tmp.name], capture_output=True, text=True, check=True).stdout
+paf = subprocess.run([a.minimap2, "-x", a.preset, "-t", a.threads, "--secondary=no", a.fasta, tmp.name], capture_output=True, text=True, check=True).stdout
 os.unlink(tmp.name)
 D = collections.defaultdict(lambda: collections.defaultdict(list)); N = collections.Counter()
 for k, v in T.items():

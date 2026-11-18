@@ -11,14 +11,14 @@ step 06_chains/chains.agp python3 "$S/build_chains.py" --keep 05_nonredundant/ke
 [ -s 06_chains/chains.fasta ] || agp2fa 06_chains/chains.agp "$U" 06_chains/chains.fasta
 [ -s 06_chains/chains.fasta.fai ] || "$AS_SAMTOOLS" faidx 06_chains/chains.fasta
 map_paf 06_chains/chains_self.paf.gz -x asm5 -c -t "$AS_THREADS" -K 200M -D --dual=no --secondary=yes -N 20 -p 0.3 06_chains/chains.fasta 06_chains/chains.fasta
-map_paf 06_chains/ont_vs_chains.paf.gz -x lr:hq -t "$AS_THREADS" --secondary=no 06_chains/chains.fasta "$R"
+map_paf 06_chains/ont_vs_chains.paf.gz -x "$AS_READ_PRESET" -t "$AS_THREADS" --secondary=no 06_chains/chains.fasta "$R"
 step 06_chains/depth.windows.tsv python3 "$S/unitig_depth.py" 06_chains/ont_vs_chains.paf.gz 06_chains/chains.fasta.fai 06_chains/depth
 step 07_chains2/kept2.txt python3 "$S/round2.py" 06_chains/chains.agp 06_chains/chains.fasta.fai 06_chains/depth.windows.tsv 06_chains/chains_self.paf.gz 05_nonredundant/kept.txt 07_chains2 --hap "$AS_HAP" --repeat "$AS_REPEAT"
 [ -s 07_chains2/links.gfa ] || cat <(grep '^L' "$G") 07_chains2/dovetails.gfa > 07_chains2/links.gfa
 step 07_chains2/chains.agp python3 "$S/build_chains.py" --keep 07_chains2/kept2.txt --gfa 07_chains2/links.gfa --fai "$F" --out 07_chains2/chains
 [ -s 07_chains2/chains.fasta ] || agp2fa 07_chains2/chains.agp "$U" 07_chains2/chains.fasta
 [ -s 07_chains2/chains.fasta.fai ] || "$AS_SAMTOOLS" faidx 07_chains2/chains.fasta
-map_paf 07_chains2/ont_vs_chains.paf.gz -x lr:hq -c -t "$AS_THREADS" --secondary=no 07_chains2/chains.fasta "$R"
+map_paf 07_chains2/ont_vs_chains.paf.gz -x "$AS_READ_PRESET" -c -t "$AS_THREADS" --secondary=no 07_chains2/chains.fasta "$R"
 step 07_chains2/joins.verify.tsv python3 "$S/verify_joins.py" 07_chains2/ont_vs_chains.paf.gz 07_chains2/chains.joins.tsv 07_chains2/joins.verify.tsv
 if collapsed; then step 07_chains2/restored_arms.tsv python3 "$S/restore_arms.py" 04_copynumber/copy_number.tsv 07_chains2/kept2.txt 07_chains2/repeat_chains.txt "$G" 07_chains2/restored_arms.tsv --lo "$AS_RESTORE_LO" --hi "$AS_RESTORE_HI"; fi
 # rule: under 3 spanning reads breaks the join. Further breaks go in edits/join_breaks.txt.

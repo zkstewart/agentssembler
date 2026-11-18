@@ -14,5 +14,5 @@ else
 fi
 step $D/graph.bridges.tsv python3 "$S/chain_bridges.py" $D/end_links.tsv $D/groups.tsv $D/graph --hops "$AS_HOPS"
 if collapsed; then step $D/base.bridges.tsv python3 "$S/assign_arms.py" prepare $D/graph.bridges.tsv $D/base.bridges.tsv; B=$D/base.bridges.tsv; else B=$D/graph.bridges.tsv; fi
-step 13_scaffold/bridges/choices.tsv python3 "$S/choose_bridges.py" "$B" 10_groups/end_links.tsv 12_broken/chains.fasta 11_ont_chains/ont_vs_chains.paf.gz 00_inputs/ont_corrected_reads.fasta 13_scaffold/bridges
+step 13_scaffold/bridges/choices.tsv python3 "$S/choose_bridges.py" "$B" 10_groups/end_links.tsv 12_broken/chains.fasta 11_ont_chains/ont_vs_chains.paf.gz 00_inputs/ont_corrected_reads.fasta 13_scaffold/bridges --preset "$AS_READ_PRESET" --minimap2 "$AS_MINIMAP2" --seqkit "$AS_SEQKIT"
 rm -f 13_scaffold/bridges/reads.fasta

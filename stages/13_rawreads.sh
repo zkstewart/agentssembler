@@ -13,7 +13,7 @@ stream() { # stream TAB|- : FASTA of reads >= 5 kb to stdout
 map_stream() { # OUT target tab
   local o="$1" t="$2" tab="$3"; [ -s "$o" ] && { log "skip, exists: $o"; return 0; }
   guard; log "stream map: $o"
-  stream "$tab" | "$MM" -x lr:hq -t "$AS_THREADS" --secondary=no "$t" - 2> "$o.log" | gzip -1 > "$o.part" &
+  stream "$tab" | "$MM" -x "$AS_RAW_PRESET" -t "$AS_THREADS" --secondary=no "$t" - 2> "$o.log" | gzip -1 > "$o.part" &
   local p=$!
   while kill -0 $p 2>/dev/null; do f=$(df -B1G "$AS_GUARD_PATH" | awk 'NR==2{print $4}'); if [ "$f" -lt "$AS_MIN_FREE_GB" ]; then kill $p; pkill -P $$ || true; echo "ERROR: disk guard" >&2; exit 3; fi; sleep 30; done
   wait $p; gzip -t "$o.part"; mv "$o.part" "$o"
@@ -52,13 +52,13 @@ PY
 fi
 # re-fill the current final AGP from raw reads, then map to the candidate with CIGARs for the audit
 cat $F/$AS_SAMPLE.final.fasta $F/$AS_SAMPLE.final.unplaced.fasta > $A/fill/in.fasta; "$AS_SAMTOOLS" faidx $A/fill/in.fasta
-RF=(--seqkit "$AS_SEQKIT" --minimap2 "$MM"); AUD=(); REPORTS=()
+RF=(--seqkit "$AS_SEQKIT" --minimap2 "$MM" --preset "$AS_RAW_PRESET"); AUD=(); REPORTS=()
 if collapsed; then
   python3 "$S/mask_shared.py" $F/$AS_SAMPLE.final.agp $A/fill/in.fasta $A/fill/target
   HAPS=$(haps_of $AGP)
   for h in $HAPS; do
     "$AS_SAMTOOLS" faidx $A/fill/target.$h.fasta
-    map_paf $A/fill/raw.$h.paf.gz -x lr:hq -t "$AS_THREADS" --secondary=no $A/fill/target.$h.fasta $A/neargap.fasta
+    map_paf $A/fill/raw.$h.paf.gz -x "$AS_RAW_PRESET" -t "$AS_THREADS" --secondary=no $A/fill/target.$h.fasta $A/neargap.fasta
     other=$(echo $HAPS | tr ' ' '\n' | grep -vx "$h" | sed 's/^/_/;s/$/$/' | paste -sd'|')
     d=$A/fill/$h; mkdir -p $d; awk -F'\t' -v h=_$h '$1~/^#/||$1 ~ h"$"' $F/$AS_SAMPLE.final.agp > $d/in.agp
     grep '^>' $A/fill/in.fasta | sed 's/^>//' | awk '{print $1}' | grep -Ev "$other" > $d/names.txt
@@ -71,7 +71,7 @@ if collapsed; then
   done
   for h in $HAPS; do grep -v '^#' $A/fill/$h/fill.agp; done > $A/fill/candidate.agp; cat $A/fill/h*/fill.fills.fasta > $A/fill/fills.fasta
 else
-  map_paf $A/fill/raw.paf.gz -x lr:hq -t "$AS_THREADS" --secondary=no $A/fill/in.fasta $A/neargap.fasta
+  map_paf $A/fill/raw.paf.gz -x "$AS_RAW_PRESET" -t "$AS_THREADS" --secondary=no $A/fill/in.fasta $A/neargap.fasta
   python3 "$S/readfill.py" --agp $F/$AS_SAMPLE.final.agp --fasta $A/fill/in.fasta --paf $A/fill/raw.paf.gz --reads $A/neargap.fasta --out $A/fill/fill --target $A/fill/in.fasta "${RF[@]}" --threads "$AS_THREADS" > $A/fill/fill.log 2>&1
   cp $A/fill/fill.agp $A/fill/candidate.agp; cp $A/fill/fill.fills.fasta $A/fill/fills.fasta
   REPORTS+=(--report raw=$A/fill/fill.report.tsv,$A/fill/in.fasta --report corrected=$R/$AS_SAMPLE.graph.report.tsv,$T/$AS_SAMPLE.graph.fasta)
@@ -80,14 +80,14 @@ agp2fa $A/fill/candidate.agp 00_inputs/unitigs.fasta,$R/fills.fasta,$A/fill/fill
 cat $A/fill/candidate.fasta $F/$AS_SAMPLE.final.unplaced.fasta > $A/fill/audit.fasta
 if collapsed; then
   python3 "$S/mask_shared.py" $A/fill/candidate.agp $A/fill/audit.fasta $A/fill/audit
-  for h in $(haps_of $AGP); do map_paf $A/fill/audit.$h.paf.gz -x lr:hq -c --eqx -t "$AS_THREADS" --secondary=no $A/fill/audit.$h.fasta $A/neargap.fasta; AUD+=($A/fill/audit.$h.paf.gz); done
+  for h in $(haps_of $AGP); do map_paf $A/fill/audit.$h.paf.gz -x "$AS_RAW_PRESET" -c --eqx -t "$AS_THREADS" --secondary=no $A/fill/audit.$h.fasta $A/neargap.fasta; AUD+=($A/fill/audit.$h.paf.gz); done
 else
-  map_paf $A/fill/audit.paf.gz -x lr:hq -c --eqx -t "$AS_THREADS" --secondary=no $A/fill/audit.fasta $A/neargap.fasta; AUD+=($A/fill/audit.paf.gz)
+  map_paf $A/fill/audit.paf.gz -x "$AS_RAW_PRESET" -c --eqx -t "$AS_THREADS" --secondary=no $A/fill/audit.fasta $A/neargap.fasta; AUD+=($A/fill/audit.paf.gz)
 fi
 python3 "$S/rawreads/audit_joins.py" --agp $A/fill/candidate.agp --paf "${AUD[@]}" "${REPORTS[@]}" --minimap2 "$MM" --hapDepth "$AS_HAP" --out $A/audit.tsv
 # Raw reads past each gap edge: correction loses reads near gaps, so these often say more than 14_readfill/gap_tails.tsv
 if collapsed; then TP=($A/fill/raw.h*.paf.gz); else TP=($A/fill/raw.paf.gz); fi
-step $A/gap_tails.tsv python3 "$S/review/gap_tails.py" $F/$AS_SAMPLE.final.agp $A/neargap.fasta $A/fill/in.fasta $A/gap_tails.tsv --paf "${TP[@]}" --minimap2 "$MM" --threads "$AS_THREADS"
+step $A/gap_tails.tsv python3 "$S/review/gap_tails.py" $F/$AS_SAMPLE.final.agp $A/neargap.fasta $A/fill/in.fasta $A/gap_tails.tsv --paf "${TP[@]}" --minimap2 "$MM" --preset "$AS_RAW_PRESET" --threads "$AS_THREADS"
 # Do raw reads phase the arms labelled arbitrary (D15)? Same mapping, so this costs minutes.
 if collapsed; then
   HS=$(haps_of $AGP); PP=(); SF=(); for h in $HS; do PP+=($A/raw_vs_target.$h.paf.gz); SF+=(_$h); done

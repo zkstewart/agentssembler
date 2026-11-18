@@ -62,7 +62,7 @@ The stage scripts read everything from `AS_*` variables, so a stage runs anywher
 ## What must match
 
 - **The same input files.** A mapping to a different unitig FASTA gives no error, only wrong depths.
-- **minimap2 2.27 or later**, for `-x lr:hq`.
+- **minimap2 2.27 or later**, for `-x lr:hq`, and the same preset: `AS_READ_PRESET` in `env.sh`.
 - **Stage 05 only: the same chains.** Compare `08_final_chains/chains.fasta.fai` on both sides before mapping, and again before using `pairs.tsv.gz` (T16).
 
 ## Reusing another build's mappings
