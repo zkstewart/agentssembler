@@ -3,11 +3,11 @@
 # If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 # Group chains by Hi-C under the allele conflict constraint. Reference check is an alarm only. Stops for D05, D06, D14.
 source "$AS_REPO/stages/lib.sh"
-ARGS=(--chroms "$AS_CHROMS" --ploidy "$AS_PLOIDY" --stats 10_groups/chain_stats.tsv --repeat 10_groups/chain_repeat.tsv)
+ARGS=(--chroms "$AS_CHROMS" --ploidy "$AS_PLOIDY" --seedLen "$AS_SEED_LEN" --minWithin "$AS_MIN_WITHIN" --stats 10_groups/chain_stats.tsv --repeat 10_groups/chain_repeat.tsv)
 [ "$AS_HAP_FIRST" = "true" ] && ARGS+=(--hapFirst)
 if collapsed; then
   [ -s 10_groups/shared.txt ] || { if has_rows edits/shared.txt; then cp edits/shared.txt 10_groups/shared.txt; else cp 10_groups/shared.candidates.txt 10_groups/shared.txt; fi; }
-  ARGS+=(--shared 10_groups/shared.txt)
+  ARGS+=(--shared 10_groups/shared.txt --classDepth 11_ont_chains/chain_class.tsv --hap "$AS_HAP" --endLinks 10_groups/end_links.tsv)
 fi
 if [ ! -s 10_groups/groups.tsv ]; then python3 "$S/hic_group.py" 12_broken/links.tsv 10_groups/alleles.pairs.tsv 12_broken/chains.fasta.fai 10_groups/groups "${ARGS[@]}" | tee 10_groups/hic_group.log; fi
 if has_ref; then

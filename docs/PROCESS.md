@@ -2,7 +2,7 @@
 
 ## The whole run
 
-1. **Before starting,** check the inputs: `p_utg` FASTA and GFA from the same hifiasm run, corrected reads, Hi-C, and raw BAMs if you have them. Know the chromosome number and ploidy, and ask the user if unsure. Tell the user which read sets must stay on disk until the end: stages 02, 04, 06, 08, 12, 13 and 15 use reads. Set `compute.guard_path` to the drive that fills first.
+1. **Before starting,** check the inputs: `p_utg` FASTA and GFA from the same hifiasm run, corrected reads, Hi-C, and raw BAMs if you have them. Know the chromosome number and ploidy, and ask the user if unsure. For a polyploid or an inbred sample, what to enter is not always the textbook figure ([SETTINGS](SETTINGS.md)). Tell the user which read sets must stay on disk until the end: stages 02, 04, 06, 08, 12, 13 and 15 use reads. Set `compute.guard_path` to the drive that fills first.
 2. **Run and decide, in a loop.** `agentssembler run WORK` stops at each decision. Read the report and guide, inspect the evidence, put any change in an `edits/` file with its reason, record the decision, and run again. A report's alarm is a prompt to look, not a verdict.
 3. **Go back when evidence says to.** `agentssembler reset WORK STAGE` undoes that stage and everything after it, keeping what it replaces in `WORK/archive/<timestamp>/`. Do not copy a directory to a `_v2` name instead ([LAYOUT.md](LAYOUT.md), "Re-running"). It is often cheaper than it looks: mappings stay unless `--remap`. Busk went back from validation to fork breaks at stage 06, and that took h1's missing genes from 19 to 7.
 4. **Hand over at D13.** Give the user the final AGP and FASTA, unplaced sequence, Juicebox files, SV table, curation targets, every open choice with your recommendation, and the limits of the result. Propose here anything outside the process that might help this assembly, with its evidence; the user decides whether to trial it. Stop there: adoption and risk are theirs.
@@ -54,6 +54,7 @@ Primary depth per unitig, and sequence-class depth adding near-identical copies.
 3. **Round 2.** Drops contained and high-copy chains, and adds exact end-to-end overlaps as links. 13Q010: 567 chains to 273.
 4. **Join verification.** Reads across every join. Under 3 reads breaks it.
 5. **Restored arms** if collapsed. Arms next to a collapsed node were dropped because reads land on the node, which loses an allele. They return in stage 06.
+6. **Length scale.** Mean chromosome length over 36 Mb, measured from the final chains and kept for the build. It multiplies the chromosome-scale windows of later stages ([SETTINGS](SETTINGS.md)). The report gives it, and an alarm when it is far from the citrus value of about 1.
 
 ## 05_hic_chains, then D04 (about 1.6 h)
 
@@ -61,11 +62,11 @@ Hi-C to the final chains, keeping pairs at MAPQ >= 1 and NM < 3. **This is the o
 
 ## 06_evidence (about 40 min)
 
-Applies D04 breaks without remapping Hi-C. Restores **connectors**: dropped unitigs that are the graph path between two chain ends (`restore_connectors: true`). Unused ones are dropped again at `11_build`. Then gathers everything grouping needs: reads to the broken chains, allele table, Hi-C density, repeat fraction, telomeres, graph and read links at chain ends, and depth class.
+Applies D04 breaks without remapping Hi-C. Restores **connectors**: dropped unitigs that are the graph path between two chain ends (`restore_connectors: true`). Unused ones are dropped again at `11_build`. Then gathers everything grouping needs: reads to the broken chains, allele table, Hi-C density, repeat fraction, telomeres, graph and read links at chain ends, and depth class. The driver then measures the library's Hi-C density H and sets `min_within` to 0.13 x H for the rest of the build ([SETTINGS](SETTINGS.md)).
 
 ## 07_group, then D05, D06, D14
 
-Hi-C clustering under the allele-conflict constraint: two chains that are alleles cannot share a group. Diploids use `hap_first`, because chromosome-first clustering failed on divergent homologs. If collapsed, also scans for chains running through a fork (`10_groups/chain_forks.txt`), which cannot be seen until groups exist. **Check:** chromosomes x ploidy groups, bridges within groups, at most 2 telomeric ends each, and any `HUB` rows: a break costs a read mapping, so settle them before ordering.
+Hi-C clustering under the allele-conflict constraint: two chains that are alleles cannot share a group. Diploids use `hap_first`, because chromosome-first clustering failed on divergent homologs. Above ploidy 2, shared chains also get a dosage: which of the haplotypes carry them ([D14](decisions/D14_shared_chains.md)). If collapsed, also scans for chains running through a fork (`10_groups/chain_forks.txt`), which cannot be seen until groups exist. **Check:** chromosomes x ploidy groups, bridges within groups, at most 2 telomeric ends each, and any `HUB` rows: a break costs a read mapping, so settle them before ordering.
 
 ## 08_bridges, then D07
 

@@ -1,7 +1,7 @@
 # This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
 # If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """One short report per stage: the numbers to look at, alarms, and what to decide. Reports describe; they never decide."""
-import collections, glob, gzip, os, re, statistics as st
+import collections, glob, gzip, json, os, re, statistics as st
 from .stages import BY_ID, GUIDES
 
 def rows(p, comment="#"):
@@ -30,7 +30,8 @@ def r_depth(w, c, s):
     C = [(r[0], float(r[2]), float(r[6])) for r in rows(f"{w}/04_copynumber/class_depth.tsv")]
     out = []
     o, _ = hist("Primary depth, all unitigs", [(p, 10000) for _, p, _c in C]); out += o
-    o, peak = hist("Primary depth, unitigs of 1 Mb or more", [(p, 10000) for u, p, _c in C if L.get(u, 0) >= 1000000]); out += o
+    long = min(1000000, n50(L.values())) if L else 1000000      # a genome whose unitigs never reach 1 Mb still needs a histogram of its long ones
+    o, peak = hist(f"Primary depth, unitigs of {'1 Mb' if long == 1000000 else f'{long / 1e3:.0f} kb (their N50)'} or more", [(p, 10000) for u, p, _c in C if L.get(u, 0) >= long]); out += o
     o, _ = hist("Class depth, adding near-identical copies, all unitigs", [(k, 10000) for _, _p, k in C]); out += o
     # Everything below uses the main peak in long unitigs, and only describes. The peak is a candidate for hap_depth, not a decision.
     h = peak + 2 if peak else 0
@@ -44,13 +45,14 @@ def r_depth(w, c, s):
     if h:
         twin = sum(L[u] for u, (p, k) in M.items() if p < 0.64 * h and 0.64 * h <= k < 1.54 * h)
         low = sum(L[u] for u, (p, k) in M.items() if k < 0.64 * h)
-        two = sorted(((L[u], u, p) for u, (p, k) in M.items() if 1.54 * h <= p <= 2.68 * h and k <= 2.68 * h), reverse=True)
+        P = max(int(c["ploidy"]), 2); hi = (P + 0.68) * h; span = "About 2x" if P == 2 else f"From 2x to {P}x"
+        two = sorted(((L[u], u, p) for u, (p, k) in M.items() if 1.54 * h <= p <= hi and k <= hi), reverse=True)
         out += [f"Taking {h}x as a candidate haplotype depth (main bin in long unitigs; check it):",
                 f"- Below 0.64x alone but 1x as a class, one haplotype represented more than once: {Mb(twin)}.",
                 f"- Below 0.64x even as a class, truly low depth: {Mb(low)}.",
-                f"- About 2x in both primary and class depth, candidates for collapse: {len(two)} unitigs, {Mb(sum(x[0] for x in two))}, of which graph degree at least 2 at both ends: {Mb(sum(x[0] for x in two if deg[(x[1], '+')] >= 2 and deg[(x[1], '-')] >= 2))}."]
+                f"- {span} in both primary and class depth, candidates for collapse: {len(two)} unitigs, {Mb(sum(x[0] for x in two))}, of which graph degree at least 2 at both ends: {Mb(sum(x[0] for x in two if deg[(x[1], '+')] >= 2 and deg[(x[1], '-')] >= 2))}."]
         out += [f"  - {u} {Mb(n)} at {p:.0f}x, degree {deg[(u, '+')]},{deg[(u, '-')]}" for n, u, p in two[:8]]
-    out.append("Set hap_depth, repeat_depth (about 4.4 x hap_depth) and collapsed. See D01.")
+    out.append(f"Set hap_depth, repeat_depth (about {max(4.4, max(int(c['ploidy']), 2) + 1.4):.1f} x hap_depth: above anything {c['ploidy']} haplotypes can share) and collapsed. See D01.")
     return out, []
 def r_chains(w, c, s):
     out = []; al = []
@@ -62,6 +64,14 @@ def r_chains(w, c, s):
     V = list(rows(f"{w}/07_chains2/joins.verify.tsv")); low = [r for r in V if int(r[5]) < 10]; br = [r for r in V if int(r[5]) < 3]
     out.append(f"Joins {len(V)}; under 3 reads {len(br)} (broken by rule); under 10 reads {len(low)} (review in joins.verify.tsv).")
     if os.path.exists(f"{w}/07_chains2/restored_arms.tsv"): out.append(f"Restored arms: {sum(1 for _ in rows(f'{w}/07_chains2/restored_arms.tsv'))}.")
+    pin = s.get("length_scale") if isinstance(s, dict) else None; f = f"{w}/state/length_scale.json"
+    if pin not in (None, "auto"): out.append(f"Length scale {float(pin):g}, set in config.yaml. Seeds for grouping are chains of {Mb(1e6 * float(pin))} or more.")
+    elif os.path.exists(f):
+        d = json.load(open(f)); k = d["scale"]
+        out.append(f"Length scale {k:g}: mean chromosome {Mb(d['mean_chromosome'])} ({Mb(d['chain_bp'])} of chains over {c['chromosomes']} x {c['ploidy']}) against 36 Mb for citrus, chain N50 {Mb(d['chain_n50'])}; set by {d['limited_by']}. "
+                   f"It multiplies the chromosome-scale windows: seeds for grouping are chains of {1000 * k:.0f} kb or more, chimera tests look {500 * k:.0f} kb each side of a junction, contact maps use {250 * k:.0f} kb bins (SETTINGS, `length_scale`).")
+        if d["limited_by"] == "chain N50": al.append(f"The length scale is held down by a chain N50 of {Mb(d['chain_n50'])}: chains are short for chromosomes of {Mb(d['mean_chromosome'])}, so expect many chains per group and a slow ordering.")
+        if k > 1.5 or k < 0.67: al.append(f"Length scale {k:g} is outside anything run so far (citrus, 0.97 to 1.03). The scaled windows are untested: read the chimera table and the seed count with that in mind.")
     return out, al
 def r_hic(w, c, s):
     p = f"{w}/10_groups/chain_breaks.tsv"; V = list(rows(p)); inv = lambda x: x[:-1] + ("-" if x[-1] == "+" else "+")
@@ -82,7 +92,19 @@ def r_evidence(w, c, s):
     L = fai(f"{w}/12_broken/chains.fasta.fai"); K = collections.Counter(r[6] for r in rows(f"{w}/11_ont_chains/chain_class.tsv")); B = collections.Counter()
     for r in rows(f"{w}/11_ont_chains/chain_class.tsv"): B[r[6]] += int(r[1])
     T = sum(1 for r in rows(f"{w}/16_validate/telomeres.chains.tsv") if "T" in r[4])
-    return [f"Chains: {len(L)}, {Mb(sum(L.values()))}, N50 {Mb(n50(L.values()))}", "Depth class: " + ", ".join(f"{k} {K[k]} ({Mb(B[k])})" for k in K), f"Chains with a telomere call: {T}."], []
+    out = [f"Chains: {len(L)}, {Mb(sum(L.values()))}, N50 {Mb(n50(L.values()))}", "Depth class: " + ", ".join(f"{k} {K[k]} ({Mb(B[k])})" for k in K), f"Chains with a telomere call: {T}."]; al = []
+    pin = s.get("min_within") if isinstance(s, dict) else None; f = f"{w}/state/hic_density.json"; mw = None
+    if pin not in (None, "auto"): mw = float(pin); out.append(f"min_within {mw:g} pairs/Mb, set in config.yaml or by a decision.")
+    elif os.path.exists(f):
+        d = json.load(open(f)); mw = d["min_within"]
+        if "hic_density" in d:
+            out.append(f"Hi-C density H = {d['hic_density']:.0f} pairs/Mb within a chain (length-weighted median of the {d['chains_used']} chains of {d['seed_len'] / 1e3:.0f} kb or more). min_within = {d['share']} x H = {mw:g}: a chain below it carries no placement information (SETTINGS, `min_within`).")
+            if d["hic_density"] < 2350: al.append(f"Hi-C density {d['hic_density']:.0f} pairs/Mb is under half the lowest run so far (4,700). Few pairs place anything: expect weak grouping and much left unplaced, and read merge scores with that in mind (D05).")
+        else: out.append(f"min_within {mw:g} pairs/Mb: {d['source']}.")
+    if mw is not None:
+        lo = [(int(r[1]), r[0]) for r in rows(f"{w}/10_groups/chain_stats.tsv") if float(r[2]) < mw]
+        out.append(f"Chains below min_within: {len(lo)}, {Mb(sum(n for n, _ in lo))}; of 1 Mb or more: {sum(n >= 1e6 for n, _ in lo)}. Mostly satellite arrays: they do not seed grouping, and are ordered after the rest.")
+    return out, al
 def r_group(w, c, s):
     G = collections.Counter(); B = collections.Counter(); want = c["chromosomes"] * c["ploidy"]
     for r in rows(f"{w}/10_groups/groups.tsv"): G[r[2]] += 1; B[r[2]] += int(r[1])
@@ -106,8 +128,13 @@ def r_group(w, c, s):
     if h:
         W = collections.defaultdict(list)
         for r in rows(f"{w}/11_ont_chains/depth.windows.tsv"): W[r[0]].append(float(r[3]))
-        hub = [f"{u} ({st.median(W[u][len(W[u]) // 3:2 * len(W[u]) // 3]):.0f}x)" for u in Un if len(W[u]) >= 6 and 1.54 * h <= st.median(W[u][len(W[u]) // 3:2 * len(W[u]) // 3]) <= 2.68 * h]
-        if hub: out.append(f"Unassigned with 2x depth in their middle third, candidates only; test each with review/hub_depth.py (D14): {', '.join(hub)}.")
+        hub = [f"{u} ({st.median(W[u][len(W[u]) // 3:2 * len(W[u]) // 3]):.0f}x)" for u in Un if len(W[u]) >= 6 and 1.54 * h <= st.median(W[u][len(W[u]) // 3:2 * len(W[u]) // 3]) <= (max(int(c["ploidy"]), 2) + 0.68) * h]
+        if hub: out.append(f"Unassigned with {'2x' if int(c['ploidy']) <= 2 else '2x or more'} depth in their middle third, candidates only; test each with review/hub_depth.py (D14): {', '.join(hub)}.")
+    dos = list(rows(f"{w}/10_groups/groups.dosage.tsv"))
+    if dos:
+        K = collections.Counter(r[8] for r in dos); arb = [f"{r[0]} ({r[4]} of {r[4] if r[6] == '.' else int(r[4]) + len(r[6].split(','))}, {r[3]}x)" for r in dos if r[8] == "arbitrary"]
+        out.append(f"Shared chains in fewer haplotypes than their chromosome has (10_groups/groups.dosage.tsv): {len(dos)}, {Mb(sum(int(r[1]) for r in dos))}; settled by " + ", ".join(f"{k} {v}" for k, v in sorted(K.items())) + ".")
+        if arb: al.append(f"{len(arb)} shared chains whose haplotypes nothing separates: {', '.join(arb[:12])}{' ...' if len(arb) > 12 else ''}. Each is a guess. Test with graph position and interior depth, then name the haplotypes with a shared_in edit or unassign the chain (D14).")
     forks = f"{w}/10_groups/chain_forks.txt"
     if os.path.exists(forks):
         n = sum(1 for l in open(forks) if l.startswith("HUB"))
@@ -116,7 +143,9 @@ def r_group(w, c, s):
     return out, al
 def r_bridges(w, c, s):
     B = list(rows(f"{w}/12_shared/graph.bridges.tsv")); y = sum(r[2] == "yes" for r in B); T = list(rows(f"{w}/12_shared/graph.tips.tsv"))
-    return [f"Bridges: {len(B)}, within a group {y}. Tips: {len(T)} (12_shared/graph.tips.tsv). A telomeric tip needs a graph link and a free end: add it to edits/group_edits.tsv and edits/order_links.tsv, then `reset 08_bridges`."], []
+    al = []; cl = f"{w}/12_shared/copies.log"; wn = [l for l in open(cl) if l.startswith("# WARNING")] if os.path.exists(cl) else []
+    if wn: al.append(f"{len(wn)} warnings in 12_shared/copies.log about the haplotypes given to shared chains, such as a graph link into a haplotype that was left out. Read them (D14).")
+    return [f"Bridges: {len(B)}, within a group {y}. Tips: {len(T)} (12_shared/graph.tips.tsv). A telomeric tip needs a graph link and a free end: add it to edits/group_edits.tsv and edits/order_links.tsv, then `reset 08_bridges`."], al
 def r_order(w, c, s):
     out = []; al = []
     for f, lab in ((f"{w}/12_shared/eval_order.txt", "Reference alarm"),):

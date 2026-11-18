@@ -2,7 +2,8 @@
 # and keep resolving from there on every later command. Absolute paths are safer if anything may move.
 sample: MySample        # used in file names
 chromosomes: 9          # haploid number
-ploidy: 2
+ploidy: 2               # haplotypes that are distinct alleles of each other. Not always the textbook ploidy: an allotetraploid is
+                        # 2 with the whole haploid number above, and an inbred line is 1. See docs/SETTINGS.md.
 
 inputs:
   unitigs_fasta: /data/sample/p_utg.fasta     # hifiasm unitigs
@@ -21,6 +22,10 @@ inputs:
 settings:
   telomere_motif: CCCTAAA
   # hap_first: true     # defaults to true at ploidy 2
+  # length_scale: 1     # measured from the chains when left out; 1 fixes the citrus windows
+  # min_within: 700     # measured as 0.13 x the library's Hi-C density when left out; 700 fixes the citrus value
+  # read_preset: lr:hq  # minimap2 preset for corrected_reads; map-hifi for HiFi reads in FASTA
+  # raw_preset: lr:hq   # minimap2 preset for raw_bams
 
 # Full paths, or names on PATH. juicer_tools, compleasm and plot_python are optional; steps using them are skipped when unset.
 tools:

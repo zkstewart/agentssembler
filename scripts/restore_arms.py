@@ -2,14 +2,14 @@
 # This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
 # If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''
-Diploid fork. copy_number.py and round2.py drop a unitig whose windows are covered by near-identical kept copies at the
+Fork beside a collapsed node. copy_number.py and round2.py drop a unitig whose windows are covered by near-identical kept copies at the
 depth-implied k. Next to a collapsed node that is wrong: arms overlap the node by much of their length, so reads there
 land on the node and the arm's depth is depressed. If a flank of a bubble carries both haplotypes, both must pass
 through it, so the bubble needs two paths whatever the arm depths say.
 
 Restores a removed unitig when it has a kept sibling sharing all its graph neighbours at both ends, and at least one
 of those flanking neighbours is collapsed (primary depth from --lo to --hi). Unitigs listed as repeat chains stay out.
-Usage: restore_arms.py copy_number.tsv kept2.txt repeat_chains.txt unitigs.gfa out.tsv --lo L --hi H (about 1.54 and 2.68 x haplotype depth)
+Usage: restore_arms.py copy_number.tsv kept2.txt repeat_chains.txt unitigs.gfa out.tsv --lo L --hi H (about 1.54 and ploidy + 0.68 x haplotype depth)
 '''
 import argparse, collections
 p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)

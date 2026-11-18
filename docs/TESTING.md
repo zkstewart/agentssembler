@@ -44,6 +44,17 @@ Differences understood:
 
 **If a saved build's reads are gone,** `--missingReadsOk --to 11_build` stands in an empty read file and seeds the saved bridge choices. Do not read bridge choices from such a run: stage 08 chooses bridges with reads. Without seeding, an empty read file gave no read support at the 19 bridges, chose different arms and changed the scaffolds, which looked like a regression. With them seeded, 13Q010's scaffolds were identical.
 
+## Ploidy above 2, and what has not been re-run
+
+Three changes followed the citrus builds: `hap_first` at any ploidy, a dosage for shared chains, and depth bounds that rise with ploidy ([SETTINGS](SETTINGS.md)). **No regression has been run since.**
+
+- **Unit tests** cover them on made-up data: `test_hap_first_any_ploidy` and `test_shared_dosage`.
+- **Ploidy 2 should be unchanged.** The derived depth values are the same numbers, and `hic_group.py` gave byte-identical groups, chromosomes, shared table and log to the version before it on 60 simulated diploids (15 seeds, both grouping modes, with and without shared chains; `PYTHONHASHSEED` fixed, since rows of equal length are otherwise written in set order). A simulation is not a genome: run a diploid spec before relying on this.
+- **13Q010 will differ.** At ploidy 3 the highest tail depth is now 4 x haplotype depth, not 3, and the `high` depth class starts at 3.68 x, not 2.68. Chains between those bounds can now be tail candidates. Re-run its spec and read the differences in `12_shared/tails.tsv`.
+- **`min_within`** is pinned to 700 in both specs. On copies of four builds' `chain_stats.tsv`, the driver measured 727, 611, 708 and 3,025 (13Q010, WatsonsChoice, irma, Busk), matching the table in [SETTINGS](SETTINGS.md). `test_hic_density` covers the arithmetic.
+- **The length scale** ([SETTINGS](SETTINGS.md)) is pinned to 1 in both specs, so they replay with the fixed windows their builds used. A new citrus build measures 0.97 to 1.03: on the four builds measured, that moved at most one chain of about 1 Mb across the seed length, so expect a near match with an old build, not an exact one. A work directory already past stage 05 keeps scale 1. `test_length_scale` covers the arithmetic only.
+- **Ploidy 4 and 6** grouped, gathered and chose dosage haplotypes correctly on simulated data with clean Hi-C. That shows the code does what it says, and nothing about a real autopolyploid.
+
 ## Spike-in test of `hic_crosstalk.py`
 
 `tests/crosstalk_spikein.py` asks whether the Hi-C score in `utilities/` finds errors known to be there. It writes four spiked copies of an assembly (nothing wrong; phase switches; misjoins and one inversion; duplication, fragmentation and removal), scores each, and checks every category against the truth. `demo` does this on a simulated genome in about 20 minutes on 16 threads. `mutate` and `evaluate` do it on a real assembly, which is the stronger test: the script's help gives the commands.

@@ -5,11 +5,11 @@
 A read counts only if it covers at least 90% of the window at 97% identity or better: with looser rules any transposon fragment counts, and the test cannot report absence. Control sites should sit near 1-2 x haplotype depth; check that first.
 Satellite windows make base-level alignment crawl: run once without --loose and without -c to get a loose table, then pass it with --maxLoose (about 10 x haplotype depth) to skip them.
 Writes PREFIX.strict.tsv, and PREFIX.hits.tsv (window, read) for tracing where those reads are placed.
-Usage: edge_seq_depth.py cmp.sites.tsv genome.fasta PREFIX --bam a.bam [b.bam] --frac 0.2 --minimap2 M --samtools S [--controls 150] [--loose table --maxLoose D]'''
+Usage: edge_seq_depth.py cmp.sites.tsv genome.fasta PREFIX --bam a.bam [b.bam] --frac 0.2 --minimap2 M --samtools S [--preset lr:hq] [--controls 150] [--loose table --maxLoose D]'''
 import argparse, collections, random, statistics as st, subprocess
 p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
 p.add_argument("sites"); p.add_argument("fasta"); p.add_argument("out"); p.add_argument("--bam", nargs="+", required=True); p.add_argument("--frac", type=float, default=0.1)
-p.add_argument("--minimap2", required=True); p.add_argument("--samtools", required=True); p.add_argument("--controls", type=int, default=150); p.add_argument("--threads", default="4"); p.add_argument("--loose"); p.add_argument("--maxLoose", type=float, default=1e12); a = p.parse_args()
+p.add_argument("--minimap2", required=True); p.add_argument("--samtools", required=True); p.add_argument("--controls", type=int, default=150); p.add_argument("--threads", default="4"); p.add_argument("--preset", default="lr:hq", help="minimap2 preset for the reads"); p.add_argument("--loose"); p.add_argument("--maxLoose", type=float, default=1e12); a = p.parse_args()
 LOOSE = {}
 if a.loose:
     for l in open(a.loose):
@@ -45,7 +45,7 @@ with open(a.out + ".windows.fa", "w") as o:
                 names[n] = 1; o.write(f">{n}\n{q}\n")
 print(f"windows {len(names)}; gap sites whose inside was not N (coordinates off if many): {bad} of {len(G)}", flush=True)
 stream = " ; ".join(f"{a.samtools} view -@ 2 -s {a.frac} {b}" for b in a.bam)
-cmd = f"( {stream} ) | awk -F'\\t' 'length($10)>=5000{{print \">\"$1\"\\n\"$10}}' | {a.minimap2} -x lr:hq -t {a.threads} -c --secondary=yes -N 20 -p 0.5 {a.out}.windows.fa - 2>/dev/null"
+cmd = f"( {stream} ) | awk -F'\\t' 'length($10)>=5000{{print \">\"$1\"\\n\"$10}}' | {a.minimap2} -x {a.preset} -t {a.threads} -c --secondary=yes -N 20 -p 0.5 {a.out}.windows.fa - 2>/dev/null"
 P = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, text=True)
 best = collections.defaultdict(dict)
 for l in P.stdout:

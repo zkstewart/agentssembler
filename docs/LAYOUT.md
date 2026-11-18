@@ -36,7 +36,7 @@ Three things look like mistakes and are not:
 |---|---|---|
 | `config.yaml` | `init` | A copy of the config you gave. This copy is the one every later command reads. `init` never replaces it: to change a setting, edit it and `reset` from the earliest stage affected |
 | `README.md` | `init`, then you | Status of the build, from `config/handover_templates/README.md`. Keep it current, and complete it at D13 |
-| `state/` | driver | `STAGE.done` per finished stage, holding the settings it ran with; `base_dir`, the directory `init` was run in, from which relative config paths resolve |
+| `state/` | driver | `STAGE.done` per finished stage, holding the settings it ran with; `base_dir`, the directory `init` was run in, from which relative config paths resolve; `length_scale.json`, measured when stage 04 finishes, and `hic_density.json`, when stage 06 finishes ([SETTINGS](SETTINGS.md)) |
 | `decisions/` | `decide` | `Dnn.yaml` per recorded decision: who, when, reason, settings, and a checksum of every edit file at that moment |
 | `edits/` | `init`, then you | Every hand edit, each row with its reason. See below |
 | `reports/` | driver | `STAGE.md` per finished stage. `02_map_unitigs.md` and `01_inputs.md` are short by design |
@@ -118,8 +118,8 @@ Only `pairs.tsv.gz` is read later, by any stage or review script. When it was li
 |---|---|
 | `chain_breaks.tsv` | 05, read at D04 |
 | `alleles.pairs.tsv`, `alleles.blocks.tsv`, `chain_stats.tsv`, `chain_repeat.tsv`, `end_links.tsv`, `shared.candidates.txt` | 06 |
-| `groups.tsv`, `groups.chroms.tsv`, `groups.shared.tsv` **[C]**, `hic_group.log`, `shared.txt` **[C]**, `eval_groups.txt` **[ref]**, `chain_forks.txt` **[C]** | 07 |
-| `final.tsv`, `final.chroms.tsv`, `final.shared.tsv` **[C]** | 08, the groups after `edits/group_edits.tsv` |
+| `groups.tsv`, `groups.chroms.tsv`, `groups.shared.tsv` **[C]**, `groups.dosage.tsv` **[C]** (above ploidy 2, and only if a shared chain is in fewer haplotypes than its chromosome has), `hic_group.log`, `shared.txt` **[C]**, `eval_groups.txt` **[ref]**, `chain_forks.txt` **[C]** | 07 |
+| `final.tsv`, `final.chroms.tsv`, `final.shared.tsv` **[C]**, `final.dosage.tsv` **[C]** | 08, the groups after `edits/group_edits.tsv` |
 
 Groups are `g01`, `g02`, ... and chromosomes `c1`, `c2`, ..., both numbered by size (T19).
 
