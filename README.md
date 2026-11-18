@@ -56,19 +56,18 @@ In addition to biological information including:
 Then provide a prompt to start the agent on the assembly process. An example is given below with `<your answer>` segments for you to fill your personalised information:
 
 ```text
-Within the directory at `<my working directory>` you will find files to be used as input to the `agentssembler` genome assembly pipeline. Specifically, the input files are:
+Within the directory at `<my working directory>` you will find files to be used as input to the `agentssembler` genome assembly pipeline. Specifically, the input files can be found at:
 
-- `<location of hifiasm utg gfa>` as output by hifiasm
-- `<location of hi-c data>` containing the paired Hi-C reads
-- `<location of nanopore data>` containing the corrected nanopore reads (from dorado correct)
-- `<location of raw nanopore data>` containing the raw nanopore reads
-- `<location of reference genome>` which is a closely related reference genome
+- `<location of hifiasm utg gfa and fasta>` contains the unitigs GFA as output by hifiasm, as well as a FASTA extracted from that GFA.
+- `<location of hi-c data>` contains the paired Hi-C reads.
+- `<location of nanopore data>` contains corrected nanopore reads in FASTA format <OPTIONAL: and raw reads in BAM format>.
+- `<location of reference genome>` which is a related reference genome.
 
 The goal of this project is to assemble a genome of <my organism>. It is expected to be a <ploidy level> and have <number> chromosomes.
 
 The `agentssembler` GitHub repository is located at `<cloned location>`. Contained within are Python scripts for performing various operations such as read alignment to the hifiasm unitigs. There is also an extensive amount of documentation detailing the process and pipeline to be followed; the `README.md` and `AGENTS.md` files are intended to be starting points for you to explore the repository and understand the intended methodology to be applied.
 
-After exploring the repository, please begin by initialising a directory at `<my intended work directory>` with a suitable config file and beginning the pipeline. As much as possible, I would like you to adhere to the layout and process described by `agentssembler`. Of course, any unexpected bugs or issues should be dealt with appropriately. Otherwise, the pipeline should be followed through to its completion. Each decision point in the pipeline will be an opportunity for us to decide whether we must deviate at all from the `agentssembler` process. Ideally, we will stick to the established pipeline, but if a deviation is required in order to improve genome quality, it should be done in a way that can be plugged back into the following steps to continue with the `agentssembler` process.
+After exploring the repository, please begin by initialising a directory at `<my intended work directory>` with a suitable config file and beginning the pipeline. As much as possible, I would like you to adhere to the layout and process described by `agentssembler`. Of course, any unexpected bugs or issues should be dealt with appropriately and according to your best judgement. Otherwise, the pipeline should be followed through to its completion. Each decision point in the pipeline will be an opportunity to evaluate whether a deviation from the standard `agentssembler` process could result in a better assembly outcome. You can make a note of these ideas, and raise them as suggestions at the end of the pipeline if applicable. Otherwise, the goal is to adhere to the established pipeline as much as possible and follow it through until the assembly output has been generated.
 ```
 
 # Getting started (for agents)
