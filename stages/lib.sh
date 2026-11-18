@@ -40,6 +40,24 @@ agp2fa() { python3 "$S/agp_to_fasta.py" "$1" "$2" "$3.part"; mv "$3.part" "$3"; 
 has_rows() { [ -s "$1" ] && grep -qv '^#' "$1"; }
 collapsed() { [ "$AS_COLLAPSED" = "true" ]; }
 has_ref() { [ -n "${AS_REFERENCE:-}" ]; }
-has_raw() { [ -n "${AS_RAW_BAMS:-}" ]; }
+has_raw() { [ -n "${AS_RAW_READS:-}" ]; }
+# raw_kind FILE: sam for BAM, CRAM or SAM (by extension); otherwise fastq or fasta, from the first character, gzipped or not
+raw_kind() {
+  case "$1" in
+    *.bam|*.cram|*.sam) echo sam ;;
+    *) local c; c=$(gzip -cdf -- "$1" 2>/dev/null | head -c1 || true); if [ "$c" = "@" ]; then echo fastq; else echo fasta; fi ;;
+  esac
+}
+# raw_records FILE [IDS]: id, sequence and mean Q per read, tab-separated; only the reads named in IDS when given.
+# Q is the qs:f tag of a BAM, the mean error probability of a FASTQ as a Phred score, and NA when unknown.
+_raw_pick() { if [ -n "$2" ]; then "$AS_SEQKIT" grep -j 4 -f "$2" "$1"; else "$AS_SEQKIT" seq -j 4 "$1"; fi; }
+raw_records() {
+  local f="$1" ids="${2:-}"
+  case "$(raw_kind "$f")" in
+    sam) "$AS_SAMTOOLS" view -@ 2 ${ids:+-N "$ids"} "$f" | awk -F'\t' 'BEGIN{OFS="\t"} {q="NA"; for(i=12;i<=NF;i++) if($i~/^qs:f:/){q=substr($i,6); break}; print $1,$10,q}' ;;
+    fastq) _raw_pick "$f" "$ids" | "$AS_SEQKIT" fx2tab -i -Q -q ;;
+    fasta) _raw_pick "$f" "$ids" | "$AS_SEQKIT" fx2tab -i -Q | awk -F'\t' 'BEGIN{OFS="\t"} {print $1,$2,"NA"}' ;;
+  esac
+}
 # per-haplotype list, from the scaffold names in an AGP
 haps_of() { awk -F'\t' '$1!~/^#/{n=split($1,a,"_"); if(a[n]~/^h[0-9]+$/)print a[n]}' "$1" | sort -uV; }

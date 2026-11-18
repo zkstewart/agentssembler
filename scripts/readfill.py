@@ -162,7 +162,7 @@ def main():
     p.add_argument("--agp", required=True, help="AGP over the unitigs")
     p.add_argument("--fasta", required=True, help="the AGP's scaffold FASTA (with .fai)")
     p.add_argument("--paf", required=True, help="reads mapped to the whole assembly + unplaced (minimap2, --secondary=no)")
-    p.add_argument("--reads", required=True, help="the reads (FASTA/FASTQ)")
+    p.add_argument("--reads", required=True, help="the reads: FASTA or FASTQ, gzipped or not")
     p.add_argument("--out", required=True)
     p.add_argument("--gapfillReport", help="optional TSV annotating each gap with a graph outcome: id, left unitig with strand, right unitig with strand, outcome")
     p.add_argument("--minimap2", default="minimap2")
@@ -333,7 +333,7 @@ def main():
     names = os.path.join(tmp, "names.txt"); rf = os.path.join(tmp, "reads.fasta")
     open(names, "w").write("".join(q + "\n" for q in sorted(need)))
     if need:
-        subprocess.run(f"{a.seqkit} grep -j {a.threads} -f {names} {a.reads} | {a.seqkit} seq -w 0 > {rf} && {a.seqkit} faidx {rf}",
+        subprocess.run(f"{a.seqkit} grep -j {a.threads} -f {names} {a.reads} | {a.seqkit} fq2fa | {a.seqkit} seq -w 0 > {rf} && {a.seqkit} faidx {rf}",
                        shell=True, check=True)
     else:
         open(rf, "w").close(); open(rf + ".fai", "w").close()

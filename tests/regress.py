@@ -29,9 +29,10 @@ if not a.compareOnly:
         if not os.path.exists(cfg["inputs"]["corrected_reads"]):
             print("NOTE corrected reads are missing; using an empty stand-in:", cfg["inputs"]["corrected_reads"], flush=True)
             cfg["inputs"]["corrected_reads"] = os.path.join(w, "missing_reads.fasta"); open(cfg["inputs"]["corrected_reads"], "w").close()
-        kept = [b for b in cfg["inputs"].get("raw_bams") or [] if os.path.exists(b)]
-        if len(kept) != len(cfg["inputs"].get("raw_bams") or []): print("NOTE raw BAMs are missing and were dropped", flush=True)
-        cfg["inputs"]["raw_bams"] = kept
+        for k in ("raw_reads", "raw_bams"):
+            kept = [b for b in cfg["inputs"].get(k) or [] if os.path.exists(b)]
+            if len(kept) != len(cfg["inputs"].get(k) or []): print(f"NOTE {k} are missing and were dropped", flush=True)
+            if k in cfg["inputs"]: cfg["inputs"][k] = kept
     c = os.path.join(w, "regress.config.yaml"); yaml.safe_dump(cfg, open(c, "w"))
     if not os.path.exists(f"{w}/config.yaml"): run("init", c, w)
     if a.missingReadsOk: sp.setdefault("seed", {})["13_scaffold/bridges/choices.tsv"] = "13_scaffold/bridges/choices.tsv"

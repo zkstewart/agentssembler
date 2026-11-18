@@ -3,7 +3,7 @@
 # If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 # Apply D18: the raw candidate, less every join in edits/join_decisions.tsv. Without raw reads, the 15_final files stand.
 source "$AS_REPO/stages/lib.sh"
-has_raw || { log "no raw BAMs: final files stand"; exit 0; }
+has_raw || { log "no raw reads: final files stand"; exit 0; }
 A=17_raw_reads; F=15_final; O=15_final_raw; mkdir -p $O
 if has_rows edits/join_decisions.tsv; then
   # a join may be reversed against the pre-fill AGP when closed in an earlier step, or the current final AGP

@@ -1,6 +1,6 @@
 # D18. Which read-derived joins survive raw reads?
 
-**Only with raw BAMs.** Corrected reads remain first choice for fills, because single raw reads are too noisy to compare. Raw reads recover overlap closures that correction lost, and they audit joins.
+**Only with raw reads.** Corrected reads remain first choice for fills, because single raw reads are too noisy to compare. Raw reads recover overlap closures that correction lost, and they audit joins.
 
 **Read:** `17_raw_reads/audit.tsv` (one row per join with a suggestion), `cmp.by_length.tsv`, `cmp.by_q.tsv`, `cmp.sites.tsv`, and `reports/13_rawreads.md`.
 

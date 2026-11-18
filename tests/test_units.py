@@ -136,6 +136,20 @@ class T(unittest.TestCase):
             self.assertEqual(gzip.open(f"{d}/out/pairs.tsv.gz", "rt").read(), "s.g01\t5\ta1\t9\ns.g01\t5\ts.g01\t90\ns.g02\t5\ts.g02\t90\nu.g04\t5\ta4\t9\ns.g02\t7\tt.g02\t8\n")
             self.assertEqual(sorted(l.split("\t")[0] for l in open(f"{d}/out/chains.agp")).count("s.g03"), 0)
             self.assertIn("t.g02+\ta2-", open(f"{d}/out/end_links.tsv").read())
+    def test_read_formats(self):
+        """init accepts FASTA or FASTQ reads, gzipped or not, and raw BAM/CRAM/SAM; raw_bams is read as well as raw_reads."""
+        sys.path.insert(0, R); from agentssembler import cli
+        d = tempfile.mkdtemp()
+        try:
+            fa, fq = ">r1\nACGT\n", "@r1\nACGT\n+\nIIII\n"
+            for n, t in (("a.fa", fa), ("a.fq", fq), ("a.txt", "not reads\n")): open(f"{d}/{n}", "w").write(t)
+            for n, t in (("a.fa.gz", fa), ("a.fq.gz", fq)):
+                with gzip.open(f"{d}/{n}", "wt") as o: o.write(t)
+            want = {"a.fa": "fasta", "a.fa.gz": "fasta", "a.fq": "fastq", "a.fq.gz": "fastq", "a.txt": None, "x.bam": "bam", "x.cram": "bam"}
+            for n, k in want.items(): self.assertEqual(cli.read_format(f"{d}/{n}"), k, n)
+            self.assertEqual(cli.raw_reads({"inputs": {"raw_reads": ["a"], "raw_bams": ["b"]}}), ["a", "b"])
+            self.assertEqual(cli.raw_reads({"inputs": {}}), [])
+        finally: shutil.rmtree(d)
     def test_length_scale(self):
         # Chromosome-scale windows follow mean chromosome length (chain bp over chromosomes x ploidy), anchored at 36 Mb = 1.
         sys.path.insert(0, R); from agentssembler import cli
@@ -214,12 +228,20 @@ class T(unittest.TestCase):
         L, Rt, U = seq(20000), seq(20000), seq(20000); read = U[5000:12000] + Rt[:6000]
         with tempfile.TemporaryDirectory() as d:
             open(f"{d}/a.agp", "w").write("s\t1\t20000\t1\tW\tu1\t1\t20000\t+\ns\t20001\t20100\t2\tN\t100\tscaffold\tyes\tna\ns\t20101\t40100\t3\tW\tu2\t1\t20000\t+\n")
-            open(f"{d}/all.fa", "w").write(f">s\n{L}{'N' * 100}{Rt}\n>un\n{U}\n"); open(f"{d}/r.fa", "w").write(f">r1\n{read}\n")
+            open(f"{d}/all.fa", "w").write(f">s\n{L}{'N' * 100}{Rt}\n>un\n{U}\n")
+            # the reads as FASTA and FASTQ, gzipped or not; a quality line starting with '>' once passed for a FASTA header
+            reads = {"r.fa": f">r1\n{read}\n", "r.fq": f"@r1\n{read}\n+\n{'>' * len(read)}\n"}
+            for n, t in reads.items():
+                open(f"{d}/{n}", "w").write(t)
+                with gzip.open(f"{d}/{n}.gz", "wt") as o: o.write(t)
             with gzip.open(f"{d}/m.paf.gz", "wt") as o: o.write("r1\t13000\t7000\t13000\t+\ts\t40100\t20100\t26100\t6000\t6000\t60\n")
-            x = run("review/gap_tails.py", f"{d}/a.agp", f"{d}/r.fa", f"{d}/all.fa", f"{d}/o.tsv", "--paf", f"{d}/m.paf.gz", "--minimap2", os.environ.get("MINIMAP2") or shutil.which("minimap2"), "--threads", "2")
-            self.assertEqual(x.returncode, 0, x.stderr)
-            F = [l.split("\t") for l in open(f"{d}/o.tsv") if l[0] != "#"]
-            self.assertEqual(len(F), 1); self.assertEqual(F[0][:6], ["s", "20000", "right", "1", "un", "1"])
+            mm, sk = os.environ.get("MINIMAP2") or shutil.which("minimap2"), os.environ.get("SEQKIT") or shutil.which("seqkit")
+            if not (mm and sk): self.skipTest("needs minimap2 and seqkit: on PATH, or MINIMAP2= and SEQKIT=")
+            for n in ("r.fa", "r.fa.gz", "r.fq", "r.fq.gz"):
+                x = run("review/gap_tails.py", f"{d}/a.agp", f"{d}/{n}", f"{d}/all.fa", f"{d}/o.tsv", "--paf", f"{d}/m.paf.gz", "--minimap2", mm, "--seqkit", sk, "--threads", "2")
+                self.assertEqual(x.returncode, 0, x.stderr)
+                F = [l.split("\t") for l in open(f"{d}/o.tsv") if l[0] != "#"]
+                self.assertEqual(len(F), 1, n); self.assertEqual(F[0][:6], ["s", "20000", "right", "1", "un", "1"], n)
     def test_complement_genes(self):
         # c1_h1 lacks gene b, carried by c2_h2: numbering decides whether a set is complete. Genes a and d have all copies; gene e has one copy short.
         rows = {"h1": [("a", "c1_h1"), ("d", "c2_h1"), ("e", "c1_h1")], "h2": [("a", "c1_h2"), ("b", "c1_h2"), ("b", "c2_h2"), ("d", "c2_h2")]}

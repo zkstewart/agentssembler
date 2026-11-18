@@ -73,7 +73,7 @@ Everything else is written by a stage, and **must not be edited by hand**.
 ## Marks used below
 
 - **[C]** only when `collapsed: true`. **[N]** only when `collapsed: false`.
-- **[ref]** only with `inputs.reference`. **[raw]** only with `inputs.raw_bams`.
+- **[ref]** only with `inputs.reference`. **[raw]** only with `inputs.raw_reads` (or `raw_bams`, its earlier name).
 - **[opt]** only when the optional tool is set: `plot_python`, `juicer_tools` or `compleasm`.
 - **[edit]** only when the named edit file has rows.
 
@@ -81,7 +81,7 @@ Every mapping `X.paf.gz` made by the driver has a `X.paf.gz.log` beside it, and 
 
 ## `00_inputs/` (stage 01)
 
-Symlinks to the inputs under fixed names, and two indexes. Raw BAMs are not linked: stage 13 reads them from the config's paths.
+Symlinks to the inputs under fixed names, and two indexes. Raw reads are not linked: stage 13 reads them from the config's paths. `ont_corrected_reads.fasta` keeps that name whatever the reads are: FASTA or FASTQ, gzipped or not, and nanopore or HiFi.
 
 `unitigs.fasta`, `unitigs.gfa`, `ont_corrected_reads.fasta`, `hic_R1.fq.gz`, `hic_R2.fq.gz`, `unitigs.fasta.fai`, `reference.fasta` and `reference.fasta.fai` **[ref]**.
 
