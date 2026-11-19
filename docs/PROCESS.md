@@ -43,6 +43,8 @@ Links inputs, indexes them, checks tools, and checks `unitigs.gfa` against `unit
 
 Corrected reads to all unitigs, with base-level alignment and near-equal secondaries. Unitigs against themselves, to find alleles and near-identical twins. Unitigs to the reference, as an alarm.
 
+**Memory:** these mappings have taken up to 50 GB. minimap2's memory grows with `-t`, and the unitig self-alignment (`-N 20`) is the largest. If the stage is killed by the OOM killer (`dmesg`, or exit 137), delete the `.part` file and run the stage again with fewer threads: `AS_THREADS=6` held 292's self-alignment to 21.7 GB on a 30 GB machine. Use the driver's environment (`agentssembler env`, as in [HPC](HPC.md)), and record the thread count in the work directory's `README.md`.
+
 ## 03_depth, then D01
 
 Primary depth per unitig, and sequence-class depth adding near-identical copies. Class depth over haplotype depth is the number of haplotypes carrying a sequence.
