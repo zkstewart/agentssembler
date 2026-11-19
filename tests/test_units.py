@@ -56,6 +56,34 @@ class T(unittest.TestCase):
             # keeping h1: h2's shared u1 and h3's shared u2 are masked; h1 whole
             self.assertEqual(open(f"{d}/m.h1.fasta").read(), ">c_h1\nAAAACCCC\n>c_h2\nNNNNGGGG\n>c_h3\nTTTTNNNN\n>unplaced_x\nACGT\n")
             self.assertEqual(open(f"{d}/m.h3.fasta").read(), ">c_h1\nAAAANNNN\n>c_h2\nAAAAGGGG\n>c_h3\nTTTTCCCC\n>unplaced_x\nACGT\n")
+    def test_break_chain_multiple(self):
+        # chain c = u1 (1-10) + u2 (11-20, 4 bp overlap trimmed) + u3 reversed (21-30, 4 bp trimmed); two breaks give c, cb, cc, each later part regaining its overlap.
+        import random; random.seed(2); U = {u: "".join(random.choice("ACGT") for _ in range(14)) for u in ("u1", "u2", "u3")}
+        with tempfile.TemporaryDirectory() as d:
+            open(f"{d}/u.fa", "w").write("".join(f">{u}\n{s}\n" for u, s in U.items()))
+            open(f"{d}/in.agp", "w").write("c\t1\t10\t1\tW\tu1\t1\t10\t+\nc\t11\t20\t2\tW\tu2\t5\t14\t+\nc\t21\t30\t3\tW\tu3\t1\t10\t-\nd\t1\t14\t1\tW\tu1\t1\t14\t+\n")
+            with gzip.open(f"{d}/p.gz", "wt") as o: o.write("c\t5\tc\t15\nc\t25\td\t3\n")
+            for brk, names in (("c 10\n", ["c", "cb"]), ("c 20\nc 10\n", ["c", "cb", "cc"])):
+                open(f"{d}/b", "w").write(brk)
+                r = run("break_chain.py", f"{d}/b", f"{d}/in.agp", f"{d}/p.gz", f"{d}/o", f"{d}/u.fa"); self.assertEqual(r.returncode, 0, r.stderr)
+                rows = [l.split("\t") for l in open(f"{d}/o/chains.agp") if l[0] != "#"]
+                self.assertEqual(sorted({x[0] for x in rows if x[0] != "d"}), names)
+                pairs = [l.rstrip("\n").split("\t") for l in gzip.open(f"{d}/o/pairs.tsv.gz", "rt")]
+            # two breaks: cb is all of u2, cc is u3 with its trimmed 4 bp back; c:15 lands on cb:9, c:25 on cc:9
+            self.assertEqual([(x[0], x[5], x[6], x[7]) for x in rows if x[0] != "d"], [("c", "u1", "1", "10"), ("cb", "u2", "1", "14"), ("cc", "u3", "1", "14")])
+            self.assertEqual(pairs, [["c", "5", "cb", "9"], ["cc", "9", "d", "3"]])
+            open(f"{d}/b", "w").write("c 15\n")
+            self.assertNotEqual(run("break_chain.py", f"{d}/b", f"{d}/in.agp", f"{d}/p.gz", f"{d}/o2", f"{d}/u.fa").returncode, 0)
+    def test_weak_placed_copy_names(self):
+        # collapsed order names a shared chain's copy x.g1; groups, links and pairs name the chain x. y is linked to x's copy, z is not.
+        with tempfile.TemporaryDirectory() as d:
+            open(f"{d}/o", "w").write("#group\trank\tchain\torientation\ng1\t1\tx.g1\t+\ng1\t2\ty\t+\ng1\t3\tz\t-\n")
+            open(f"{d}/e", "w").write("#end_a\tend_b\treads\nx+\ty-\t3\n"); open(f"{d}/c", "w").write("#end_a\tend_b\tchosen\n")
+            open(f"{d}/g", "w").write("".join(f"{c}\t2000000\tg1\n" for c in "xyz"))
+            with gzip.open(f"{d}/p.gz", "wt") as o: o.write("z\t1\tx\t1\nz\t1\ty\t1\n")
+            r = run("review/weak_placed.py", f"{d}/o", f"{d}/e", f"{d}/c", f"{d}/g", f"{d}/p.gz"); self.assertEqual(r.returncode, 0, r.stderr)
+            rows = [l.split("\t") for l in r.stdout.splitlines() if l[0] != "#"]
+            self.assertEqual([(x[0], x[4]) for x in rows], [("z", "2")])
     def test_agp_to_fasta(self):
         with tempfile.TemporaryDirectory() as d:
             open(f"{d}/u.fa", "w").write(">a\nAACC\n>b\nGGTT\n")
@@ -136,6 +164,19 @@ class T(unittest.TestCase):
             self.assertEqual(gzip.open(f"{d}/out/pairs.tsv.gz", "rt").read(), "s.g01\t5\ta1\t9\ns.g01\t5\ts.g01\t90\ns.g02\t5\ts.g02\t90\nu.g04\t5\ta4\t9\ns.g02\t7\tt.g02\t8\n")
             self.assertEqual(sorted(l.split("\t")[0] for l in open(f"{d}/out/chains.agp")).count("s.g03"), 0)
             self.assertIn("t.g02+\ta2-", open(f"{d}/out/end_links.tsv").read())
+    def test_reset_drops_stale_scaffold_mappings(self):
+        """Read mappings to the scaffolds (stages 12, 13) are kept by a reset of their own stage, and archived by a reset of 11_build or earlier, which rebuilds their target."""
+        sys.path.insert(0, R); from agentssembler import cli
+        import argparse
+        files = ["14_readfill/ont_vs_target.h1.paf.gz", "14_readfill/target.h1.fasta", "14_readfill/target.masked.tsv", "17_raw_reads/raw_vs_target.h1.paf.gz", "17_raw_reads/raw.h1.paf.gz", "06_chains/ont_vs_chains.paf.gz"]
+        for stage, remap, gone in (("12_fill", False, {"14_readfill/target.h1.fasta", "14_readfill/target.masked.tsv"}),
+                                   ("09_order", False, set(files[:5])), ("12_fill", True, set(files[:5]))):
+            with tempfile.TemporaryDirectory() as w:
+                for d in ("state", "decisions", "reports"): os.makedirs(f"{w}/{d}")
+                open(f"{w}/config.yaml", "w").write("sample: s\n")
+                for f in files: os.makedirs(os.path.dirname(f"{w}/{f}"), exist_ok=True); open(f"{w}/{f}", "w").close()
+                cli.cmd_reset(argparse.Namespace(work=w, stage=stage, remap=remap, keepDecision=False))
+                self.assertEqual({f for f in files if not os.path.exists(f"{w}/{f}")}, gone, (stage, remap))
     def test_read_formats(self):
         """init accepts FASTA or FASTQ reads, gzipped or not, and raw BAM/CRAM/SAM; raw_bams is read as well as raw_reads."""
         sys.path.insert(0, R); from agentssembler import cli
