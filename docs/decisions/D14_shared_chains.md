@@ -45,4 +45,6 @@ At ploidy 2 a shared chain is in both haplotypes and there is nothing to choose.
 
 `chain0175  shared_in  with:chain0012,with:chain0040  3.1x outside overlaps is wrong: 2.1x by hub_depth; graph links to both`
 
+**Across a translocation (any ploidy).** After a reciprocal translocation the homolog of a segment lies in a group of another chromosome, so `shared` (every haplotype of one chromosome) is wrong for a collapsed chain there. `shared_in` may name groups of different chromosomes: `chainX  shared_in  with:<chain in chr5_h1>,with:<chain in der(8)>`. Use it only with graph links from the chain to both groups (a hub on both paths, as TTT or `chain_forks.py` shows); Hi-C cannot separate the copies. A wrong row duplicates sequence into a chromosome that lacks it, which validation's dosage table shows as an extra copy.
+
 `shared` still means every haplotype, and replaces a dosage call. `10_groups/final.dosage.tsv` holds the calls after edits, and is what stage 08 reads.
