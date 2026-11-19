@@ -38,7 +38,7 @@ Rows are sorted by the length of that chain. `break_at` is the D04 break that se
 
 **Edits, with each one's reason:**
 
-1. `edits/chain_breaks.txt`: the row's `chain` and `break_at` ([D04](decisions/D04_chimeric_chains.md), the fork case). The part to the right of the break becomes `<chain>b`.
+1. `edits/chain_breaks.txt`: the row's `chain` and `break_at` ([D04](decisions/D04_chimeric_chains.md), the fork case). The part to the right of the break becomes `<chain>b`. Several breaks in one chain are allowed (parts `<chain>b`, `<chain>c`, ...).
 2. Then `agentssembler reset WORK 06_evidence --remap`. The chains changed, so stage 06's read mapping is redone. The Hi-C mapping is kept, because breaks are applied after it.
 3. Stage 06 now finds the dropped route between the new chain ends and restores it as connectors.
 4. Re-decide D05-D10 on the new reports:
