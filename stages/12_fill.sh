@@ -3,7 +3,7 @@
 # If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 # Reads across gaps, then the first final files. Collapsed samples map per haplotype to masked targets and leave --target off, since excision would treat true shared copies as false duplication. Stops for D11.
 source "$AS_REPO/stages/lib.sh"
-T=13_scaffold; R=14_readfill; F=15_final; mkdir -p $R $F; AGP=$T/$AS_SAMPLE.graph.agp; READS=00_inputs/ont_corrected_reads.fasta
+T=13_scaffold; R=14_readfill; F=15_final; mkdir -p $R $F; AGP=$T/$AS_SAMPLE.graph.agp; READS="$AS_READS_LINK"
 RF=(--seqkit "$AS_SEQKIT" --minimap2 "$AS_MINIMAP2" --preset "$AS_READ_PRESET")
 if collapsed; then
   [ -s $R/target.masked.tsv ] || python3 "$S/mask_shared.py" $AGP $T/target.fasta $R/target

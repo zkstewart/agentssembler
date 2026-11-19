@@ -4,7 +4,7 @@
 # Non-redundant unitigs, then chains: first round, redundancy and dovetails, join verification, rule-based breaks. Writes 04_copynumber/copy_number.tsv, 05_nonredundant, 06_chains, 07_chains2, 08_final_chains. Stops for D03.
 source "$AS_REPO/stages/lib.sh"
 mkdir -p 05_nonredundant 06_chains 07_chains2 08_final_chains
-U=00_inputs/unitigs.fasta; F=00_inputs/unitigs.fasta.fai; G=00_inputs/unitigs.gfa; R=00_inputs/ont_corrected_reads.fasta
+U=00_inputs/unitigs.fasta; F=00_inputs/unitigs.fasta.fai; G=00_inputs/unitigs.gfa; R="$AS_READS_LINK"
 step 04_copynumber/copy_number.tsv python3 "$S/copy_number.py" 04_copynumber/class_depth.tsv 03_unitig_align/unitigs_self.paf.gz 04_copynumber/copy_number --fai "$F" --hap "$AS_HAP" --repeat "$AS_REPEAT"
 [ -s 05_nonredundant/kept.txt ] || awk -F'\t' '!/^#/ && $10=="keep"{print $1}' 04_copynumber/copy_number.tsv > 05_nonredundant/kept.txt
 step 06_chains/chains.agp python3 "$S/build_chains.py" --keep 05_nonredundant/kept.txt --gfa "$G" --fai "$F" --out 06_chains/chains

@@ -23,11 +23,11 @@ The stage scripts read everything from `AS_*` variables, so a stage runs anywher
 
    ```text
    WORK/00_inputs/unitigs.fasta
-   WORK/00_inputs/ont_corrected_reads.fasta
+   WORK/00_inputs/ont_corrected_reads.fasta   # the name in AS_READS_LINK from step 2
    WORK/00_inputs/reference.fasta        # only with a reference
    ```
 
-   For stage 05, copy `08_final_chains/` and `07_chains2/repeat_chains.txt` there too, and add `00_inputs/hic_R1.fq.gz` and `hic_R2.fq.gz`.
+   For stage 05, copy `08_final_chains/` and `07_chains2/repeat_chains.txt` there too, and add the Hi-C reads under the names in `AS_HIC_R1_LINK` and `AS_HIC_R2_LINK`.
 
 2. **Get the environment** from the real work directory:
 
@@ -35,7 +35,7 @@ The stage scripts read everything from `AS_*` variables, so a stage runs anywher
    agentssembler env WORK > env.sh
    ```
 
-   Copy `env.sh` across and correct every path in it for that machine: `AS_WORK`, `AS_REPO`, `AS_GUARD_PATH`, the inputs, and the tools. Leave the settings alone.
+   Copy `env.sh` across and correct every path in it for that machine: `AS_WORK`, `AS_REPO`, `AS_GUARD_PATH`, the inputs, and the tools. Leave the settings alone, and the `*_LINK` names, which are relative to `AS_WORK`.
 
 3. **Run the stage script** in a job. For PBS:
 

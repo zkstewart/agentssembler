@@ -5,8 +5,8 @@
 source "$AS_REPO/stages/lib.sh"
 mkdir -p 00_inputs
 ln -sfn "$AS_UNITIGS" 00_inputs/unitigs.fasta; ln -sfn "$AS_GFA" 00_inputs/unitigs.gfa
-ln -sfn "$AS_READS" 00_inputs/ont_corrected_reads.fasta
-ln -sfn "$AS_HIC_R1" 00_inputs/hic_R1.fq.gz; ln -sfn "$AS_HIC_R2" 00_inputs/hic_R2.fq.gz
+ln -sfn "$AS_READS" "$AS_READS_LINK"
+ln -sfn "$AS_HIC_R1" "$AS_HIC_R1_LINK"; ln -sfn "$AS_HIC_R2" "$AS_HIC_R2_LINK"
 has_ref && ln -sfn "$AS_REFERENCE" 00_inputs/reference.fasta
 [ -s 00_inputs/unitigs.fasta.fai ] || "$AS_SAMTOOLS" faidx 00_inputs/unitigs.fasta -o 00_inputs/unitigs.fasta.fai
 if has_ref; then [ -s 00_inputs/reference.fasta.fai ] || "$AS_SAMTOOLS" faidx 00_inputs/reference.fasta -o 00_inputs/reference.fasta.fai; fi
