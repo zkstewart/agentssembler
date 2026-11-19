@@ -256,9 +256,11 @@ def cmd_reset(a):
     if a.stage not in BY_ID: sys.exit(f"unknown stage {a.stage}")
     later = STAGES[ids.index(a.stage):]; arch = f"{w}/archive/{datetime.datetime.now():%Y%m%d_%H%M%S}"
     for st in later:
-        for pat in st.outputs + (st.keep if a.remap else []):
+        # a mapping to a target an earlier stage builds is stale once that stage is reset, --remap or not
+        remap = a.remap or bool(st.target_from and ids.index(a.stage) <= ids.index(st.target_from))
+        for pat in st.outputs + (st.keep if remap else []):
             for p in glob.glob(f"{w}/{pat}"):
-                if st.keep and not a.remap and any(fnmatch.fnmatch(os.path.relpath(p, w), k) for k in st.keep): continue
+                if st.keep and not remap and any(fnmatch.fnmatch(os.path.relpath(p, w), k) for k in st.keep): continue
                 d = f"{arch}/{os.path.relpath(p, w)}"; os.makedirs(os.path.dirname(d), exist_ok=True); shutil.move(p, d)
         for f in (f"{w}/state/{st.id}.done", f"{w}/reports/{st.id}.md") + ((f"{w}/state/length_scale.json",) if st.id == "04_chains" else (f"{w}/state/hic_density.json",) if st.id == "06_evidence" else ()):
             if os.path.exists(f): os.remove(f)
