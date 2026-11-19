@@ -81,9 +81,9 @@ Every mapping `X.paf.gz` made by the driver has a `X.paf.gz.log` beside it, and 
 
 ## `00_inputs/` (stage 01)
 
-Symlinks to the inputs under fixed names, and two indexes. Raw reads are not linked: stage 13 reads them from the config's paths. `ont_corrected_reads.fasta` keeps that name whatever the reads are: FASTA or FASTQ, gzipped or not, and nanopore or HiFi.
+Symlinks to the inputs under fixed names, and two indexes. Raw reads are not linked: stage 13 reads them from the config's paths. The read links take the extension of what they hold: `ont_corrected_reads.fasta`, `.fasta.gz`, `.fastq` or `.fastq.gz`, and `hic_R1.fq.gz` or `.fq`, `.fa`, `.fa.gz` (R2 alike). The stages find them through `AS_READS_LINK`, `AS_HIC_R1_LINK` and `AS_HIC_R2_LINK`. A build linked before 0.3.2 keeps `ont_corrected_reads.fasta` and `hic_R1.fq.gz` whatever they hold. "ont" in a file name means the corrected long reads, nanopore or HiFi.
 
-`unitigs.fasta`, `unitigs.gfa`, `ont_corrected_reads.fasta`, `hic_R1.fq.gz`, `hic_R2.fq.gz`, `unitigs.fasta.fai`, `reference.fasta` and `reference.fasta.fai` **[ref]**.
+`unitigs.fasta`, `unitigs.gfa`, `ont_corrected_reads.*`, `hic_R1.*`, `hic_R2.*`, `unitigs.fasta.fai`, `reference.fasta` and `reference.fasta.fai` **[ref]**.
 
 ## `02_ont_map/`, `03_unitig_align/` (stage 02)
 

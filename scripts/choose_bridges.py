@@ -7,7 +7,8 @@ A_tail + path + B_head (graph overlaps merged) for every candidate, map local re
 candidates, and count reads through each candidate's two joins (>= --minSide bp on both sides of the join).
 The candidate with the most reads through its weaker join wins; a junction with no read through both joins of
 any path is still reported, and the longest path is used only if --tieLongest.
-Usage: choose_bridges.py bridges.tsv end_links.tsv chains.fasta ont_vs_chains.paf.gz reads.fasta outdir [--preset lr:hq] [--minimap2 minimap2] [--seqkit seqkit]
+The reads may be FASTA or FASTQ, gzipped or not; the local reads are written to outdir/reads.fasta.
+Usage: choose_bridges.py bridges.tsv end_links.tsv chains.fasta ont_vs_chains.paf.gz reads outdir [--preset lr:hq] [--minimap2 minimap2] [--seqkit seqkit]
 '''
 import sys, os, gzip, collections, subprocess, argparse, shlex
 p = argparse.ArgumentParser(); p.add_argument("bridges"); p.add_argument("links"); p.add_argument("fasta"); p.add_argument("paf"); p.add_argument("reads"); p.add_argument("out")
@@ -66,7 +67,7 @@ with open(f"{a.out}/targets.fasta", "w") as o:
     for k, v in targets.items(): o.write(f">{k.replace('|','_')}\n{v}\n")
 nm = {k.replace("|", "_"): k for k in targets}
 if not os.path.exists(f"{a.out}/reads.fasta"):
-    subprocess.check_call(f"{shlex.quote(a.seqkit)} grep -f {a.out}/ids.txt {a.reads} -o {a.out}/reads.fasta.part 2> {a.out}/seqkit.log && mv {a.out}/reads.fasta.part {a.out}/reads.fasta", shell=True)
+    subprocess.check_call(f"set -o pipefail; {shlex.quote(a.seqkit)} grep -f {a.out}/ids.txt {a.reads} 2> {a.out}/seqkit.log | {shlex.quote(a.seqkit)} fq2fa -w 0 -o {a.out}/reads.fasta.part 2>> {a.out}/seqkit.log && mv {a.out}/reads.fasta.part {a.out}/reads.fasta", shell=True, executable="/bin/bash")   # FASTA whatever the input
 subprocess.check_call(f"{shlex.quote(a.minimap2)} -x {shlex.quote(a.preset)} -c --secondary=no -t {a.threads} {a.out}/targets.fasta {a.out}/reads.fasta 2> {a.out}/mm2.log | gzip -1 > {a.out}/reads.paf.gz", shell=True)
 C = collections.defaultdict(lambda: [0, 0, 0])
 with gzip.open(f"{a.out}/reads.paf.gz", "rt") as fh:

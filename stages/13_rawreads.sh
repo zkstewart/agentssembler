@@ -18,7 +18,7 @@ map_stream() { # OUT target tab
   while kill -0 $p 2>/dev/null; do f=$(df -B1G "$AS_GUARD_PATH" | awk 'NR==2{print $4}'); if [ "$f" -lt "$AS_MIN_FREE_GB" ]; then kill $p; pkill -P $$ || true; echo "ERROR: disk guard" >&2; exit 3; fi; sleep 30; done
   wait $p; gzip -t "$o.part"; mv "$o.part" "$o"
 }
-[ -s $A/corrected.lens.tsv.gz ] || "$AS_SEQKIT" fx2tab -n -i -l 00_inputs/ont_corrected_reads.fasta | cut -f1,2 | gzip -1 > $A/corrected.lens.tsv.gz
+[ -s $A/corrected.lens.tsv.gz ] || "$AS_SEQKIT" fx2tab -n -i -l "$AS_READS_LINK" | cut -f1,2 | gzip -1 > $A/corrected.lens.tsv.gz
 SETS=(); tab=$A/reads.tsv.gz; [ -s $tab ] && tab=-
 if collapsed; then
   for h in $(haps_of $AGP); do

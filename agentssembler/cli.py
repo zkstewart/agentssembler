@@ -94,6 +94,16 @@ def read_format(p):
     with open(p, "rb") as f: gz = f.read(2) == b"\x1f\x8b"
     with (gzip.open(p, "rb") if gz else open(p, "rb")) as f: c = f.read(1)
     return {b">": "fasta", b"@": "fastq"}.get(c)
+def input_link(w, p, base, ext, old):
+    """Path under WORK of the 00_inputs link to read file p: base plus ext[format], and .gz if gzipped. A missing or unrecognised file gets old,
+    the name every input had before 0.3.2, as does a build already linked under it."""
+    try:
+        fmt = read_format(p)
+        with open(p, "rb") as f: gz = f.read(2) == b"\x1f\x8b"
+    except OSError: fmt, gz = None, False
+    new = base + ext[fmt] + (".gz" if gz else "") if fmt in ext else old
+    if not os.path.lexists(f"{w}/00_inputs/{new}") and os.path.lexists(f"{w}/00_inputs/{old}"): new = old
+    return "00_inputs/" + new
 def active(w, cond):
     if cond is None: return True
     if cond == "raw": return bool(raw_reads(cfg(w)))
@@ -108,6 +118,9 @@ def stage_env(w):
         AS_THREADS=str(comp.get("threads", 16)), AS_MIN_FREE_GB=str(comp.get("min_free_gb", 40)), AS_GUARD_PATH=str(comp.get("guard_path", w)),
         AS_MOTIF=str(s["telomere_motif"]), AS_LINK_BONUS=str(s["link_bonus"]), AS_HOPS=str(s["hops"]), AS_CONNECTORS=str(s["restore_connectors"]).lower(),
         AS_READ_PRESET=str(s["read_preset"]), AS_RAW_PRESET=str(s["raw_preset"]),
+        AS_READS_LINK=input_link(w, i["corrected_reads"], "ont_corrected_reads", dict(fasta=".fasta", fastq=".fastq"), "ont_corrected_reads.fasta"),
+        AS_HIC_R1_LINK=input_link(w, i["hic_r1"], "hic_R1", dict(fasta=".fa", fastq=".fq"), "hic_R1.fq.gz"),
+        AS_HIC_R2_LINK=input_link(w, i["hic_r2"], "hic_R2", dict(fasta=".fa", fastq=".fq"), "hic_R2.fq.gz"),
         AS_COLLAPSED=str(s.get("collapsed", "false")).lower(), AS_HAP_FIRST=str(s.get("hap_first", c["ploidy"] == 2)).lower(),
         AS_LINEAGE=str(bus.get("lineage", "")), AS_BUSCO_LIB=abspath(bus.get("library")))
     for k, v in t.items(): e["AS_" + k.upper()] = str(v)

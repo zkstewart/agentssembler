@@ -149,6 +149,15 @@ class T(unittest.TestCase):
             for n, k in want.items(): self.assertEqual(cli.read_format(f"{d}/{n}"), k, n)
             self.assertEqual(cli.raw_reads({"inputs": {"raw_reads": ["a"], "raw_bams": ["b"]}}), ["a", "b"])
             self.assertEqual(cli.raw_reads({"inputs": {}}), [])
+            # 00_inputs links take the extension of what they hold; unknown or missing files, and builds linked under the old names, keep the old names
+            w = f"{d}/work"; os.makedirs(f"{w}/00_inputs")
+            C = lambda p: cli.input_link(w, p, "ont_corrected_reads", dict(fasta=".fasta", fastq=".fastq"), "ont_corrected_reads.fasta")
+            Hc = lambda p: cli.input_link(w, p, "hic_R1", dict(fasta=".fa", fastq=".fq"), "hic_R1.fq.gz")
+            want = {"a.fa": ".fasta", "a.fa.gz": ".fasta.gz", "a.fq": ".fastq", "a.fq.gz": ".fastq.gz", "a.txt": ".fasta", "gone.fq": ".fasta"}
+            for n, x in want.items(): self.assertEqual(C(f"{d}/{n}"), "00_inputs/ont_corrected_reads" + x, n)
+            for n, x in {"a.fq.gz": ".fq.gz", "a.fq": ".fq", "a.fa": ".fa"}.items(): self.assertEqual(Hc(f"{d}/{n}"), "00_inputs/hic_R1" + x, n)
+            os.symlink(f"{d}/a.fq.gz", f"{w}/00_inputs/ont_corrected_reads.fasta"); self.assertEqual(C(f"{d}/a.fq.gz"), "00_inputs/ont_corrected_reads.fasta")
+            os.symlink(f"{d}/a.fq.gz", f"{w}/00_inputs/ont_corrected_reads.fastq.gz"); self.assertEqual(C(f"{d}/a.fq.gz"), "00_inputs/ont_corrected_reads.fastq.gz")
         finally: shutil.rmtree(d)
     def test_length_scale(self):
         # Chromosome-scale windows follow mean chromosome length (chain bp over chromosomes x ploidy), anchored at 36 Mb = 1.

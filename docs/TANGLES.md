@@ -92,7 +92,7 @@ Work in `WORK/ttt/`, the one place in the work directory for this ([LAYOUT](LAYO
 
    ```bash
    python3 $S/scripts/ttt/tangle_reads.py $W/02_ont_map/ont_vs_unitigs.paf.gz $W/ttt/tangles/chr5 $W/ttt/ids.txt
-   seqkit grep -f $W/ttt/ids.txt $W/00_inputs/ont_corrected_reads.fasta | seqkit fq2fa -o $W/ttt/reads.fasta
+   seqkit grep -f $W/ttt/ids.txt $W/00_inputs/ont_corrected_reads.* | seqkit fq2fa -o $W/ttt/reads.fasta
    GraphAligner -g $W/00_inputs/unitigs.gfa -f $W/ttt/reads.fasta -a $W/ttt/reads.gaf -x vg -t 16
    ```
 

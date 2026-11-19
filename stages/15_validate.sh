@@ -24,12 +24,12 @@ cat $FA $UN > $V/reads/all.fasta; PAFS=()
 if collapsed; then
   python3 "$S/mask_shared.py" $AGP $V/reads/all.fasta $V/reads/target > $V/reads/mask.log 2>&1; HAPS=$(haps_of $AGP)
   for h in $HAPS; do other=$(echo $HAPS | tr ' ' '\n' | grep -vx "$h" | sed 's/^/_/;s/$/$/' | paste -sd'|')
-    map_paf $V/reads/all.$h.paf.gz -x "$AS_READ_PRESET" -t "$AS_THREADS" --secondary=no $V/reads/target.$h.fasta 00_inputs/ont_corrected_reads.fasta
+    map_paf $V/reads/all.$h.paf.gz -x "$AS_READ_PRESET" -t "$AS_THREADS" --secondary=no $V/reads/target.$h.fasta "$AS_READS_LINK"
     [ -s $V/reads/ont.$h.paf.gz ] || zcat $V/reads/all.$h.paf.gz | awk -F'\t' -v o="$other" '$6 !~ o' | gzip -1 > $V/reads/ont.$h.paf.gz; PAFS+=($V/reads/ont.$h.paf.gz); done
   rm -f $V/reads/target.h*.fasta*
   python3 "$S/validate/depth_classes.py" $AGP $V/reads/target.masked.tsv "${PAFS[@]}" $V/depth.windows.tsv > $V/depth_classes.log 2>&1
 else
-  map_paf $V/reads/ont.paf.gz -x "$AS_READ_PRESET" -t "$AS_THREADS" --secondary=no $V/reads/all.fasta 00_inputs/ont_corrected_reads.fasta; PAFS+=($V/reads/ont.paf.gz)
+  map_paf $V/reads/ont.paf.gz -x "$AS_READ_PRESET" -t "$AS_THREADS" --secondary=no $V/reads/all.fasta "$AS_READS_LINK"; PAFS+=($V/reads/ont.paf.gz)
   "$AS_SAMTOOLS" faidx $V/reads/all.fasta
   python3 "$S/depth_flat.py" $V/reads/ont.paf.gz $V/reads/all.fasta.fai > $V/depth_flat.txt 2>&1
 fi

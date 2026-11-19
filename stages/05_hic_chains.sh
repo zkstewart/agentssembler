@@ -19,7 +19,7 @@ if [ ! -s pairs.tsv.gz ]; then
     mv targets.fasta.part targets.fasta; rm -f decoys.all.txt
   }
   "$AS_BWA" index targets.fasta > bwa_index.log 2>&1
-  "$AS_BWA" mem -5SP -t "$AS_THREADS" targets.fasta ../00_inputs/hic_R1.fq.gz ../00_inputs/hic_R2.fq.gz 2> bwa.log | "$AS_SAMBLASTER" 2> samblaster.log | "$AS_SAMTOOLS" view - -@ 4 -S -h -b -F 3340 -o HiC.bam.part
+  "$AS_BWA" mem -5SP -t "$AS_THREADS" targets.fasta "../$AS_HIC_R1_LINK" "../$AS_HIC_R2_LINK" 2> bwa.log | "$AS_SAMBLASTER" 2> samblaster.log | "$AS_SAMTOOLS" view - -@ 4 -S -h -b -F 3340 -o HiC.bam.part
   mv HiC.bam.part HiC.bam
   "$AS_FILTER_BAM" HiC.bam 1 --nm 3 --threads "$AS_THREADS" | "$AS_SAMTOOLS" view - -b -@ 4 -o HiC.filtered.bam.part
   mv HiC.filtered.bam.part HiC.filtered.bam

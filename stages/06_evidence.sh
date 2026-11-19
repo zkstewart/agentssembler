@@ -20,7 +20,7 @@ if [ ! -s 12_broken/chains.agp ]; then
   fi
 fi
 [ -s 12_broken/chains.fasta.fai ] || "$AS_SAMTOOLS" faidx 12_broken/chains.fasta
-map_paf 11_ont_chains/ont_vs_chains.paf.gz -x "$AS_READ_PRESET" -t "$AS_THREADS" --secondary=no 12_broken/chains.fasta 00_inputs/ont_corrected_reads.fasta
+map_paf 11_ont_chains/ont_vs_chains.paf.gz -x "$AS_READ_PRESET" -t "$AS_THREADS" --secondary=no 12_broken/chains.fasta "$AS_READS_LINK"
 step 11_ont_chains/depth.windows.tsv python3 "$S/unitig_depth.py" 11_ont_chains/ont_vs_chains.paf.gz 12_broken/chains.fasta.fai 11_ont_chains/depth
 step 10_groups/alleles.pairs.tsv python3 "$S/allele_table.py" 12_broken/chains.agp 03_unitig_align/unitigs_self.paf.gz 10_groups/alleles
 step 10_groups/chain_stats.tsv python3 "$S/chain_stats.py" 12_broken/pairs.tsv.gz 12_broken/chains.fasta.fai 10_groups/alleles.pairs.tsv - 10_groups/chain_stats.tsv
