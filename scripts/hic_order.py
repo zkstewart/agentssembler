@@ -125,13 +125,22 @@ def main():
         key = (i, oi, j, oj, b, stage2[0])
         if key not in cache: cache[key] = pair_score(i, oi, j, oj, b * 5000.0)
         return cache[key]
+    # partners with pairs, per stage: a chain pair without pairs scores exactly 0.0, so skipping it leaves every total
+    # unchanged (same terms, same order of addition) and the search identical; with many chains most pairs are empty
+    NB = [collections.defaultdict(set), collections.defaultdict(set)]
+    for i, j in A:
+        NB[1][i].add(j); NB[1][j].add(i)
+        if i not in lowinfo and j not in lowinfo: NB[0][i].add(j); NB[0][j].add(i)
     def total(order):
         s = 0.0; pos = 0; st = []
         for c, o in order: st.append(pos); pos += L[c] + a.gap
+        nb_stage = NB[1] if stage2[0] else NB[0]
         for m in range(len(order)):
-            for n in range(m + 1, len(order)):
-                i, oi = order[m]; j, oj = order[n]
-                s += ps(i, oi, j, oj, st[n] - st[m] - L[i])
+            i, oi = order[m]; nb = nb_stage[i]; sm = st[m] + L[i]
+            if nb:
+                for n in range(m + 1, len(order)):
+                    j, oj = order[n]
+                    if j in nb: s += ps(i, oi, j, oj, st[n] - sm)
             if m + 1 < len(order):
                 i, oi = order[m]; j, oj = order[m + 1]
                 e1 = (i, oi); e2 = (j, "-" if oj == "+" else "+")
