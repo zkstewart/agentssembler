@@ -40,6 +40,7 @@ agp2fa() { python3 "$S/agp_to_fasta.py" "$1" "$2" "$3.part"; mv "$3.part" "$3"; 
 has_rows() { [ -s "$1" ] && grep -qv '^#' "$1"; }
 collapsed() { [ "$AS_COLLAPSED" = "true" ]; }
 has_ref() { [ -n "${AS_REFERENCE:-}" ]; }
+hic_rescue() { [ "${AS_HIC_RESCUE:-false}" = "true" ]; }
 has_raw() { [ -n "${AS_RAW_READS:-}" ]; }
 # raw_kind FILE: sam for BAM, CRAM or SAM (by extension); otherwise fastq or fasta, from the first character, gzipped or not
 raw_kind() {

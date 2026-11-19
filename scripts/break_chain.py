@@ -72,9 +72,9 @@ def mv(c, p):
 links = collections.Counter(); dep = collections.Counter()
 with gzip.open(pairs, "rt") as fh, gzip.open(f"{outdir}/pairs.tsv.gz", "wt", compresslevel=1) as o:
     for l in fh:
-        x, u, y, v = l.split("\t"); u = int(u); v = int(v)
+        x, u, y, v, *rest = l.rstrip("\n").split("\t"); u = int(u); v = int(v)
         x, u = mv(x, u); y, v = mv(y, v)
-        o.write(f"{x}\t{u}\t{y}\t{v}\n")
+        o.write("\t".join([x, str(u), y, str(v)] + rest) + "\n")
         dep[x] += 1; dep[y] += 1
         if x != y: links[tuple(sorted((x, y)))] += 1
 with open(f"{outdir}/links.tsv", "w") as o:

@@ -10,6 +10,8 @@ if collapsed; then
   ARGS+=(--shared 10_groups/shared.txt --classDepth 11_ont_chains/chain_class.tsv --hap "$AS_HAP" --endLinks 10_groups/end_links.tsv)
 fi
 if [ ! -s 10_groups/groups.tsv ]; then python3 "$S/hic_group.py" 12_broken/links.tsv 10_groups/alleles.pairs.tsv 12_broken/chains.fasta.fai 10_groups/groups "${ARGS[@]}" | tee 10_groups/hic_group.log; fi
+# Trial (settings.hic_allele_rescue): chains left unassigned, placed by allele-rescued Hi-C; calls in 10_groups/groups.rescued.tsv (D05)
+if hic_rescue && [ ! -s 10_groups/groups.rescued.tsv ]; then python3 "$S/rescue/rescue_groups.py" 10_groups/groups 12_broken/pairs.rescued.tsv.gz 12_broken/pairs.tsv.gz 10_groups/alleles.pairs.tsv 10_groups/chain_repeat.tsv | tee -a 10_groups/hic_group.log; fi
 if has_ref; then
   B="${AS_BASELINE_AGP:-/dev/null}"
   python3 "$S/eval_groups.py" 10_groups/groups.tsv 12_broken/chains.agp 03_unitig_align/unitigs_vs_ref.paf.gz "$B" > 10_groups/eval_groups.txt || true

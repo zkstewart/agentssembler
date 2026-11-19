@@ -26,5 +26,11 @@ if [ ! -s pairs.tsv.gz ]; then
   "$AS_SAMTOOLS" view -@ 4 -f 64 HiC.filtered.bam | awk -F'\t' -v OFS='\t' '$3 !~ /^decoy_/ && $7 !~ /^decoy_/ {print $3, $4, ($7 == "=" ? $3 : $7), $8}' | gzip -1 > pairs.tsv.gz.part
   mv pairs.tsv.gz.part pairs.tsv.gz
 fi
+# Trial (settings.hic_allele_rescue): pairs with an allele-ambiguous end, for chains Hi-C cannot otherwise place. Alleles of these chains first.
+if hic_rescue && [ ! -s pairs.rescued.tsv.gz ]; then
+  [ -s alleles08.pairs.tsv ] || python3 "$S/allele_table.py" ../08_final_chains/chains.agp ../03_unitig_align/unitigs_self.paf.gz alleles08
+  "$AS_SAMTOOLS" view -@ 2 HiC.bam | python3 "$S/rescue/hic_rescue_pairs.py" alleles08.pairs.tsv pairs.rescued.tsv.gz.part 2> rescue.log
+  mv pairs.rescued.tsv.gz.part pairs.rescued.tsv.gz
+fi
 cd ..
 step 10_groups/chain_breaks.tsv python3 "$S/chain_breaks.py" 09_hic_map/pairs.tsv.gz 08_final_chains/chains.agp 10_groups/chain_breaks.tsv --dist "$AS_BREAK_DIST" --flank "$AS_BREAK_FLANK" --minSide "$AS_BREAK_MIN_SIDE"
