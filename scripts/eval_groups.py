@@ -35,4 +35,4 @@ for x in sorted(sz):
     rt=sum(ref[x].values()) or 1; bt=sum(bs[x].values()) or 1
     print(x,f'{sz[x]/1e6:.1f}',n,r[0][0] if r else '.',f'{r[0][1]/rt:.2f}' if r else 0,b[0][0] if b else '.',f'{b[0][1]/bt:.2f}' if b else 0,sep='\t')
     if x!='unassigned' and b: agree+=b[0][1]; tot+=bt
-print(f'bp in the dominant baseline haplotype of each group: {agree/tot:.3f}')
+print(f'bp in the dominant baseline haplotype of each group: {agree/tot:.3f}' if tot else 'bp in the dominant baseline haplotype of each group: . (no baseline sequence in any group)')

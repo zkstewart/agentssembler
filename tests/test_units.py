@@ -111,6 +111,23 @@ class T(unittest.TestCase):
             self.assertIn("x\t5\tg02", open(f"{d}/o.tsv").read()); self.assertIn("y\t5\tc1", open(f"{d}/o.shared.tsv").read())
             open(f"{d}/e", "w").write("x\tgroup\twith:y\tr\n")
             self.assertNotEqual(run("apply_group_edits.py", f"{d}/g", f"{d}/e", f"{d}/o").returncode, 0)
+    def test_shared_in_across_translocation(self):
+        # g01/g02 are chromosome c0, g03/g04 c1. Hub s is shared by g01 (c0) and g03 (c1), as across a reciprocal translocation.
+        with tempfile.TemporaryDirectory() as d:
+            open(f"{d}/g.tsv", "w").write("#chain\tlength\tgroup\na\t9\tg01\nb\t9\tg02\nc\t9\tg03\ns\t9\tunassigned\n")
+            open(f"{d}/g.chroms.tsv", "w").write("g01\tc0\ng02\tc0\ng03\tc1\ng04\tc1\n")
+            open(f"{d}/e", "w").write("s\tshared_in\twith:a,with:c\thub on both partners\n")
+            r = run("apply_group_edits.py", f"{d}/g", f"{d}/e", f"{d}/f"); self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertIn("s\t9\tc0+c1", open(f"{d}/f.shared.tsv").read()); self.assertIn("g01,g03", open(f"{d}/f.dosage.tsv").read())
+            open(f"{d}/agp", "w").write("".join(f"{x}\t1\t9\t1\tW\tu{x}\t1\t9\t+\n" for x in "abcs"))
+            open(f"{d}/fai", "w").write("".join(f"{x}\t9\n" for x in "abcs"))
+            with gzip.open(f"{d}/p.gz", "wt") as o: o.write("s\t1\ta\t1\ns\t2\tc\t2\ns\t3\tb\t3\n")
+            open(f"{d}/l", "w").write("#h\ns+\ta-\t3\tNA\t9000\ns-\tc+\t3\tNA\t9000\n")
+            for x in ("st", "te"): open(f"{d}/{x}", "w").write("")
+            r = run("make_shared_copies.py", f"{d}/f", f"{d}/agp", f"{d}/fai", f"{d}/p.gz", f"{d}/l", f"{d}/st", f"{d}/te", f"{d}/o"); self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertIn("s.g01\t9\tg01\ns.g03\t9\tg03", open(f"{d}/o/groups.tsv").read())
+            self.assertEqual(sorted(gzip.open(f"{d}/o/pairs.tsv.gz", "rt").read().splitlines()), ["s.g01\t1\ta\t1", "s.g03\t2\tc\t2"])   # b's group g02 has no copy
+            self.assertEqual(open(f"{d}/o/end_links.tsv").read().splitlines()[1:], ["s.g01+\ta-\t3\tNA\t9000", "s.g03-\tc+\t3\tNA\t9000"])
     def test_hap_first_any_ploidy(self):
         # Two chromosomes of three haplotypes. a1 and b1 align over more bp than any true allele pair, but at 9% divergence:
         # identity weighting keeps them apart, and plain bp (--deWeight 0) does not.
@@ -151,7 +168,8 @@ class T(unittest.TestCase):
             r = run("apply_group_edits.py", f"{d}/g", f"{d}/e", f"{d}/f"); self.assertEqual(r.returncode, 0, r.stderr)
             F = {l.split("\t")[0]: l.rstrip().split("\t") for l in open(f"{d}/f.dosage.tsv") if l[0] != "#"}
             self.assertEqual((F["s"][5], F["s"][8], F["t"][5]), ("g01,g02", "edit", "g02,g04"))
-            open(f"{d}/e2", "w").write("s\tshared_in\tg01,g05\ttwo chromosomes\n"); self.assertNotEqual(run("apply_group_edits.py", f"{d}/g", f"{d}/e2", f"{d}/x").returncode, 0)
+            open(f"{d}/e2", "w").write("s\tshared_in\tg01,g01\trepeated group\n"); self.assertNotEqual(run("apply_group_edits.py", f"{d}/g", f"{d}/e2", f"{d}/x").returncode, 0)
+            open(f"{d}/e2", "w").write("s\tshared_in\tg01,g99\tunknown group\n"); self.assertNotEqual(run("apply_group_edits.py", f"{d}/g", f"{d}/e2", f"{d}/x").returncode, 0)
             open(f"{d}/e3", "w").write("t\tshared\twith:a1\tall four\n"); r = run("apply_group_edits.py", f"{d}/g", f"{d}/e3", f"{d}/y"); self.assertEqual(r.returncode, 0, r.stderr)
             self.assertNotIn("\nt\t", open(f"{d}/y.dosage.tsv").read())
             # copies: only in the named haplotypes; a pair to a haplotype without a copy is dropped

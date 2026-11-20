@@ -1,2 +1,2 @@
 #chain	action	value	reason
-# D05, D06, D14. chain<TAB>action<TAB>value<TAB>reason. Actions: group gNN|with:chain, unassigned ., shared cN|with:chain (every haplotype), shared_in with:chain,with:chain (only the haplotypes holding those chains; above ploidy 2), pair cN|with:chain (sets the chromosome of the chain's group after the edits)
+# D05, D06, D14. chain<TAB>action<TAB>value<TAB>reason. Actions: group gNN|with:chain, unassigned ., shared cN|with:chain (every haplotype), shared_in with:chain,with:chain (only the haplotypes holding those chains: above ploidy 2, or across a translocation), pair cN|with:chain (sets the chromosome of the chain's group after the edits)
