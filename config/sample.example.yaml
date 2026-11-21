@@ -43,6 +43,7 @@ tools:
 compleasm:
   library: /path/to/mb_downloads
   lineage: eudicotyledons_odb12
+  # min_complete: 95     # validation alarm when a haplotype is less complete than this (%)
 
 compute:
   threads: 16
