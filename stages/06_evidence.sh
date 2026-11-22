@@ -19,8 +19,8 @@ if [ ! -s 12_broken/chains.agp ]; then
     agp2fa 12_broken/chains.agp "$U" 12_broken/chains.fasta
   fi
 fi
-# Trial: lift the rescued Hi-C pairs through the same breaks
-if hic_rescue && [ ! -s 12_broken/pairs.rescued.tsv.gz ]; then
+# The allele-ambiguous Hi-C pairs through the same breaks, whatever settings.hic_allele_rescue: stage 07 previews the rescue when it is off
+if [ -s 09_hic_map/pairs.rescued.tsv.gz ] && [ ! -s 12_broken/pairs.rescued.tsv.gz ]; then
   python3 "$S/break_chain.py" 12_broken/breaks.txt 08_final_chains/chains.agp 09_hic_map/pairs.rescued.tsv.gz 12_broken/rescue_lift "$U" > /dev/null
   mv 12_broken/rescue_lift/pairs.tsv.gz 12_broken/pairs.rescued.tsv.gz; rm -rf 12_broken/rescue_lift
 fi

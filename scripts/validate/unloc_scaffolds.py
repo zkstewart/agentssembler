@@ -2,7 +2,7 @@
 # This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
 # If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''Unlocalized scaffolds: unplaced chains whose chromosome is known but whose position is not, written per haplotype as <scaffold>_unloc_NN
-(the AGP/INSDC "unlocalized" class). Nothing in the scaffolds changes; the files sit beside the final ones, for the user to adopt or not (D13).
+(the AGP/INSDC "unlocalized" class). Nothing in the scaffolds changes. Part of the assembly handed over, with unplaced_rest.fasta in place of the unplaced file (D13).
 Ploidy 2 only.
 Chromosome: every graph contact of the chain's unplaced component (--components) is to one chromosome's scaffolds.
 Haplotype, within a chromosome: allele pairs (--alleles; >= --minAllele bp aligned and >= --minFrac of the shorter) must split.

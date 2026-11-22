@@ -90,6 +90,7 @@ Symlinks to the inputs under fixed names, and two indexes. Raw reads are not lin
 - `02_ont_map/ont_vs_unitigs.paf.gz`: corrected reads to all unitigs.
 - `03_unitig_align/unitigs_self.paf.gz`: unitigs against themselves.
 - `03_unitig_align/unitigs_vs_ref.paf.gz` **[ref]**.
+- `03_unitig_align/genes/` (compleasm's own output on the unitigs, with `summary.txt` and `LINEAGE/full_table_busco_format.tsv`) and `genes.log` **[opt: compleasm]**: every gene copy on the unitigs, lifted onto chains by stages 05, 07 and 10.
 
 These are the mappings most often made elsewhere and put in place. See [HPC.md](HPC.md).
 
@@ -108,9 +109,9 @@ Three rounds of chains. Each round has `chains.agp`, `chains.fasta`, `chains.fas
 
 ## `09_hic_map/` (stage 05)
 
-`chains.fasta` and `chains.fasta.fai` (symlinks to `08_final_chains/`), `decoys.txt`, `targets.fasta` (chains plus `decoy_*` unitigs) with its bwa index (`.amb`, `.ann`, `.bwt`, `.pac`, `.sa`), `bwa_index.log`, `bwa.log`, `samblaster.log`, `HiC.bam`, `HiC.filtered.bam`, `pairs.tsv.gz`.
+`chains.fasta` and `chains.fasta.fai` (symlinks to `08_final_chains/`), `decoys.txt`, `targets.fasta` (chains plus `decoy_*` unitigs) with its bwa index (`.amb`, `.ann`, `.bwt`, `.pac`, `.sa`), `bwa_index.log`, `bwa.log`, `samblaster.log`, `HiC.bam`, `HiC.filtered.bam`, `pairs.tsv.gz`; `alleles08.pairs.tsv`, `alleles08.blocks.tsv` (alleles of these chains), `pairs.rescued.tsv.gz` (pairs with an allele-ambiguous end), `rescue.log`; `rescue_signal.txt` and `rescue_signal.tsv` (Hi-C-blind chains, read at D04).
 
-Only `pairs.tsv.gz` is read later, by any stage or review script. When it was linked in from another build, nothing else is here. The two BAMs are large (about 20 GB together on the genomes tried). `HiC.bam` only saves the remap if stage 05 is ever re-run with other filters, and `HiC.filtered.bam` can be remade from it. Deleting either is the user's call; say what was deleted in `README.md`.
+Only `pairs.tsv.gz` and `pairs.rescued.tsv.gz` are read later, by any stage or review script. When it was linked in from another build, nothing else is here. The two BAMs are large (about 20 GB together on the genomes tried). `HiC.bam` only saves the remap if stage 05 is ever re-run with other filters, and `HiC.filtered.bam` can be remade from it. Deleting either is the user's call; say what was deleted in `README.md`.
 
 ## `10_groups/` (stages 05 to 08)
 
@@ -118,14 +119,14 @@ Only `pairs.tsv.gz` is read later, by any stage or review script. When it was li
 |---|---|
 | `chain_breaks.tsv` | 05, read at D04 |
 | `alleles.pairs.tsv`, `alleles.blocks.tsv`, `chain_stats.tsv`, `chain_repeat.tsv`, `end_links.tsv`, `shared.candidates.txt` | 06 |
-| `groups.tsv`, `groups.chroms.tsv`, `groups.shared.tsv` **[C]**, `groups.dosage.tsv` **[C]** (above ploidy 2, and only if a shared chain is in fewer haplotypes than its chromosome has), `hic_group.log`, `shared.txt` **[C]**, `eval_groups.txt` **[ref]**, `chain_forks.txt` **[C]** | 07 |
+| `groups.tsv`, `groups.chroms.tsv`, `groups.shared.tsv` **[C]**, `groups.dosage.tsv` **[C]** (above ploidy 2, and only if a shared chain is in fewer haplotypes than its chromosome has), `hic_group.log`, `shared.txt` **[C]**, `eval_groups.txt` **[ref]**, `chain_forks.txt` **[C]**; `groups.rescued.tsv` and `groups.hic.tsv` (grouping before the rescue) **[set: hic_allele_rescue]**, or `rescue_preview/` and `rescue_preview.txt` (what it would place) when off; `genes_placed.txt`, `genes_placed.tsv` **[opt: compleasm]** | 07, read at D05 |
 | `final.tsv`, `final.chroms.tsv`, `final.shared.tsv` **[C]**, `final.dosage.tsv` **[C]** | 08, the groups after `edits/group_edits.tsv` |
 
 Groups are `g01`, `g02`, ... and chromosomes `c1`, `c2`, ..., both numbered by size (T19).
 
 ## `11_ont_chains/`, `12_broken/` (stage 06)
 
-- `12_broken/`: chains after D04 breaks, with restored arms and connectors. `breaks.txt`, `chains.agp`, `chains.fasta`, `chains.fasta.fai`, `pairs.tsv.gz` and `links.tsv` (Hi-C lifted to these chains, no remapping), `connectors.tsv` and `connector_chains.tsv` (unless `restore_connectors: false`), `restored_chains.tsv` **[C]**.
+- `12_broken/`: chains after D04 breaks, with restored arms and connectors. `breaks.txt`, `chains.agp`, `chains.fasta`, `chains.fasta.fai`, `pairs.tsv.gz` and `links.tsv` (Hi-C lifted to these chains, no remapping), `pairs.rescued.tsv.gz` (the same for allele-ambiguous pairs), `connectors.tsv` and `connector_chains.tsv` (unless `restore_connectors: false`), `restored_chains.tsv` **[C]**.
 - `11_ont_chains/`: `ont_vs_chains.paf.gz` (reads to `12_broken/chains.fasta`), `depth.windows.tsv`, `depth.unitigs.tsv`, `chain_class.tsv`.
 
 **From here on, "chains" means `12_broken/chains.*`.**
@@ -141,7 +142,7 @@ The working set for ordering. When **[C]**, shared chains appear here as one cop
 | `order_links.base.tsv`, `order_links.tsv`, `by_chrom/cN.groups.tsv`, `by_chrom/cN.order.tsv`, `by_chrom/cN.log`, `order.raw.tsv`, `order.tsv`, `groups.edited.tsv` **[edit: order_edits]**, `eval_order.txt` **[ref]**, `unhonoured.txt` | 09 |
 | `choices.tsv`, `arm_report.tsv` `arm_depth.tsv` `arm_usage.tsv` **[C]**, `build_args.txt` | 10 |
 | `pre/S.agp`, `pre/S.fasta`, `pre/S.junctions.tsv`, `pre/S.placement.tsv`, `pre/S.unplaced.fasta`, `pre/target.fasta` | 10, a trial build to find tails |
-| `tails.tsv`, `tail_report.tsv`, `tail_checks.tsv` (when there are candidates) | 10, read at D16 |
+| `tails.tsv`, `tail_report.tsv`, `tail_checks.tsv` (when there are candidates), `tail_genes.tsv` and `tail_genes.txt` **[opt: compleasm]** | 10, read at D16 |
 | `chain_forks.tsv` **[C]**: forks with `LOST` rows first, for D16's tangle check | 10 |
 
 ## `13_scaffold/` (stages 08, 10, 11)
@@ -197,7 +198,7 @@ A fill writes six files from one prefix: `.agp`, `.fills.fasta`, `.report.tsv`, 
 - `sv/sv_calls.tsv`, `curation_targets.tsv`: **yours to fill.**
 - `juicebox/`: `out_JBAT.hic`, `out_JBAT.assembly`, `out_JBAT.sizes`, `out_JBAT.components.tsv`, `juicer_tools.log`, `done.ok` **[opt: juicer_tools]**.
 - `compleasm/`: `hK/` and `unplaced/` (compleasm's own output, with `summary.txt`), `hK.log`, `unplaced.log`, `complement.txt` **[opt: compleasm]**; `hK_unloc/` and `hK_unloc.log`: haplotype K's scaffolds plus its unlocalized sequences **[opt: compleasm, ploidy 2]**.
-- `unloc/` **[ploidy 2]**: `SAMPLE.unloc.fasta` (`<scaffold>_unloc_NN`: unplaced chains with a known chromosome and no position), `SAMPLE.unloc.tsv` (chain, haplotype, phase evidence, depth), `SAMPLE.unplaced_rest.fasta`, `SAMPLE.unloc.skipped.tsv`, `unloc.txt`. A suggestion beside the final files: adopting it is the user's call ([D13](decisions/D13_user_decisions.md)).
+- `unloc/` **[ploidy 2]**: `SAMPLE.unloc.fasta` (`<scaffold>_unloc_NN`: unplaced chains with a known chromosome and no position), `SAMPLE.unloc.tsv` (chain, haplotype, phase evidence, depth), `SAMPLE.unplaced_rest.fasta`, `SAMPLE.unloc.skipped.tsv`, `unloc.txt`. Part of the assembly handed over, with the scaffolds; leaving it out is the user's call ([D13](decisions/D13_user_decisions.md)).
 
 ## Re-running
 

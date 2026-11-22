@@ -68,7 +68,7 @@ if [ -n "${AS_COMPLEASM:-}" ]; then
    for h in $(haps_of "$AS_WORK/$AGP"); do [ -e $h/summary.txt ] && continue; "$AS_SEQKIT" grep -r -p "_$h\$" "$AS_WORK/$FA" > $h.fasta 2>/dev/null; "$AS_COMPLEASM" run -a $h.fasta -o $h -l "$AS_LINEAGE" -L "$AS_BUSCO_LIB" -t "$AS_THREADS" > $h.log 2>&1 || { echo "ERROR: compleasm failed for $h: see $V/compleasm/$h.log" >&2; exit 1; }; rm -f $h.fasta; done
    [ -e unplaced/summary.txt ] || "$AS_COMPLEASM" run -a "$AS_WORK/$UN" -o unplaced -l "$AS_LINEAGE" -L "$AS_BUSCO_LIB" -t "$AS_THREADS" > unplaced.log 2>&1 || { echo "ERROR: compleasm failed for unplaced: see $V/compleasm/unplaced.log" >&2; exit 1; } ) || exit 1
 fi
-# Unlocalized scaffolds (beside the final files; adopting them is the user's call, D13): chains with a known chromosome and no position
+# Unlocalized scaffolds, part of the assembly handed over (leaving them out is the user's call, D13): chains with a known chromosome and no position
 if [ "$AS_PLOIDY" = 2 ] && [ -n "${AS_HAP:-}" ]; then
   mkdir -p $V/unloc
   python3 "$S/validate/unloc_scaffolds.py" $AGP $UN $V/unloc --hap "$AS_HAP" --purge "$AS_UNLOC_PURGE" --components $V/unplaced_components.txt \

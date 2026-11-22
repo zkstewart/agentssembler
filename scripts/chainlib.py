@@ -25,3 +25,15 @@ def stable_key(parts, c):
     return (tuple(sorted(u for u, _ in parts.get(b, ()))) or (b,), suf)
 def stable_end(parts, e): return (stable_key(parts, e[:-1]), e[-1])
 def stable_path(parts, p): return tuple(stable_end(parts, z) for z in p)
+def gene_hits(table, P):
+    '''compleasm full_table_busco_format.tsv on the unitigs -> [(gene, status, chain or None, chain position)], one row per copy
+    (Single, Duplicated, Fragmented), each copy placed by its midpoint. P from read_agp. A copy on a unitig no chain kept
+    (redundant or repeat) gets chain None.'''
+    out = []
+    for l in open(table):
+        if l[0] == "#": continue
+        s = l.rstrip("\n").split("\t")
+        if len(s) < 5 or s[1] not in ("Single", "Complete", "Duplicated", "Fragmented"): continue
+        c, x = lift(P, s[2], (int(s[3]) + int(s[4])) // 2)
+        out.append((s[0], s[1], c, x))
+    return out

@@ -21,3 +21,11 @@
 **Edit:** `edits/chain_breaks.txt`, one per line: `chain position`. The position is the 1-based last base of the left part. The left part keeps its name; the right becomes `<chain>b`. A chain can take several rows, each position on the unbroken chain: the parts are `<chain>`, `<chain>b`, `<chain>c`, ... from left to right, so a hub can be cut out from both sides. An empty file is a valid outcome, and it was the outcome on WatsonsChoice.
 
 **After:** `run` applies the breaks without remapping Hi-C.
+
+## Also at D04: the Hi-C allele rescue
+
+Read `09_hic_map/rescue_signal.txt`. Its Hi-C-blind chains have an allele partner, almost no unique Hi-C, and many pairs with an allele-ambiguous end: grouping will leave them unassigned however good the rest is. When they are a large share (the report's alarm: 1% of chain sequence or more), or carry many genes, record D04 with `--set hic_allele_rescue=true` and say why. This is the cheapest point: the setting acts in stages 06-08.
+
+- Repeat chains are Hi-C-blind too (chain0091 on 292: 74% repeat). The rescue leaves chains over half repeat alone, so they do not count for it.
+- The rescue knows which chromosome, rarely which haplotype: most of its haplotype calls are `arbitrary` or `allele_of_arbitrary`. It also brings orientation risk in the rescued region: on 292 inverted homolog blocks rose from 9 to 14, mostly in rescued chr2 sequence. Say so at D13 and hand those regions over for Juicebox.
+- Turned on later, it costs `reset 07_group` (from D05) or more.

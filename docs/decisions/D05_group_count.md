@@ -25,3 +25,7 @@
 **The expected number itself may be wrong.** Chromosome number from a reference is an assumption. If the data keep disagreeing, tell the user.
 
 **Changing settings:** edit `settings` in `WORK/config.yaml`, then `reset 07_group`.
+
+## Genes in the groups, and the rescue preview
+
+`10_groups/genes_placed.txt` (with genes on the unitigs) counts genes short of a full set of copies in the groups, and those an unassigned chain carries. With `hic_allele_rescue` off, `10_groups/rescue_preview.txt` and the same file say what the rescue would place and how many short genes it would make whole. If that is many and D04 did not consider it, turn it on now: record D05 with `--set hic_allele_rescue=true` and `agentssembler reset WORK 07_group --keepDecision`. Stages 05-06 have already made its pairs.

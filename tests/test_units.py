@@ -343,6 +343,36 @@ class T(unittest.TestCase):
             p("tails.tsv", "#end\tgroup\tpath\tlabel\tpairs\tbp\nZ+\tg01\tY-\tonly\t1\t100000\n")
             r = run("review/chain_forks.py", *base, "--placement", f"{d}/pl.tsv", "--chainClass", f"{d}/cls.tsv", "--oneLo", "19", "--oneHi", "46", "--tails", f"{d}/tails.tsv")
             self.assertEqual(r.stdout.splitlines()[1].split("\t")[0], ".", "a chain on a tail is in use, not lost")
+    def test_gene_evidence(self):
+        # genes lifted from unitigs to chains: a short gene with a copy on an unassigned chain, made whole by a rescued chain; tail genes
+        with tempfile.TemporaryDirectory() as d:
+            p = lambda n, x: open(f"{d}/{n}", "w").write(x)
+            p("agp", "cA\t1\t1000\t1\tW\tu1\t1\t1000\t+\ncB\t1\t1000\t1\tW\tu2\t1\t1000\t-\ncC\t1\t500\t1\tW\tu3\t1\t500\t+\n")
+            p("genes", "# Busco id\tStatus\tSequence\tGene Start\tGene End\n"
+                       "G1\tDuplicated\tu1\t100\t200\nG1\tDuplicated\tu3\t100\t200\nG2\tDuplicated\tu1\t300\t400\nG2\tDuplicated\tu2\t300\t400\n"
+                       "G3\tFragmented\tu3\t1\t50\nG4\tMissing\t\t\t\n")
+            p("groups", "#chain\tlength\tgroup\ncA\t1000\tg01\ncB\t1000\tg02\ncC\t500\tunassigned\n")
+            p("resc", "#chain\tlength\tchrom\tgroup\tcall\trescued_links\tratio_to_next\tround\ncC\t500\tc1\tg02\tallele\t12\t3.00\t1\n")
+            r = run("review/genes_placed.py", "--genes", f"{d}/genes", "--agp", f"{d}/agp", "--groups", f"{d}/groups", "--ploidy", "2", "--out", f"{d}/out", "--rescued", f"{d}/resc")
+            self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertIn("short of 2 copies in the groups: 1; of these, with a copy on an unassigned chain: 1", r.stdout)
+            self.assertIn("short genes made whole: 1 of 1", r.stdout)
+            p("pl", "#chain\tlength\tgroup\tname\tstatus\ncA\t1000\tg01\tchr1_h1\tplaced\ncB\t1000\tg02\tchr1_h2\tplaced\ncC\t500\t.\t.\tunplaced:no_group\n")
+            p("tails", "#end\tgroup\tpath\tlabel\tpairs\tbp\ncA+\tg01\tcC+\tonly\t3\t500\n")
+            r = run("review/tail_genes.py", "--genes", f"{d}/genes", "--agp", f"{d}/agp", "--placement", f"{d}/pl", "--tails", f"{d}/tails", "--ploidy", "2", "--out", f"{d}/tg")
+            self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertEqual(open(f"{d}/tg").read().splitlines()[1].split("\t")[4:], ["1", "1"], "tail cC carries G1, short of a placed copy")
+    def test_rescue_signal(self):
+        # chain X: allele of Y, no unique pairs, many ambiguous ends: Hi-C-blind; Y has unique pairs
+        with tempfile.TemporaryDirectory() as d:
+            p = lambda n, x: open(f"{d}/{n}", "w").write(x)
+            p("fai", "X\t100000\nY\t300000\nZ\t2000000\n"); p("al", "#a\tb\nX\tY\t50000\t50000\n")
+            with gzip.open(f"{d}/u.gz", "wt") as o: o.write("".join(f"Y\t{i}\tZ\t{i}\n" for i in range(50)))
+            with gzip.open(f"{d}/r.gz", "wt") as o: o.write("".join(f"X\t{i}\tZ\t{i}\tau\n" for i in range(30)))
+            r = run("rescue/rescue_signal.py", f"{d}/u.gz", f"{d}/r.gz", f"{d}/fai", f"{d}/al", f"{d}/out")
+            self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertIn("Hi-C-blind", r.stdout); self.assertIn("ALARM", r.stdout)
+            self.assertEqual([l.split("\t")[0] for l in open(f"{d}/out") if l.endswith("yes\n")], ["X"])
     def test_stable_key(self):
         # a renumbered chain keeps its key; copies keep their suffix; a chain missing from the AGP falls back to its name
         sys.path.insert(0, f"{R}/scripts"); import chainlib

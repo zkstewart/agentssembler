@@ -27,6 +27,8 @@ settings:
   # min_within: 700     # measured as 0.13 x the library's Hi-C density when left out; 700 fixes the citrus value
   # read_preset: lr:hq  # minimap2 preset for corrected_reads; map-hifi for HiFi reads in FASTA
   # raw_preset: lr:hq   # minimap2 preset for raw_reads
+  # hic_allele_rescue: false  # decide at D04 from 09_hic_map/rescue_signal.txt: place chains Hi-C cannot (near-identical haplotypes)
+  # unloc_purge: 0.2    # unlocalized scaffolds (stage 15): drop the shorter of two same-haplotype chains overlapping by this fraction
 
 # Full paths, or names on PATH. juicer_tools, compleasm and plot_python are optional; steps using them are skipped when unset.
 tools:
@@ -40,6 +42,7 @@ tools:
   compleasm: /path/to/envs/compleasm/bin/compleasm
   plot_python: python3    # a Python with matplotlib
 
+# compleasm is optional, but with it stage 02 maps genes on the unitigs and D04, D05, D16 can count genes each choice gains.
 compleasm:
   library: /path/to/mb_downloads
   lineage: eudicotyledons_odb12

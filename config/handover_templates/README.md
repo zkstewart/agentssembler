@@ -5,9 +5,9 @@
 
 **Status:** in progress. <!-- At D13: "Adopted by the user on DATE (D13)", with their words. -->
 
-**Current files:** <!-- 15_final_raw/SAMPLE.final.{fasta,agp} and SAMPLE.final.unplaced.fasta; 15_final/ when there are no raw reads. -->
+**Current files:** <!-- 15_final_raw/SAMPLE.final.{fasta,agp} (15_final/ when there are no raw reads); at ploidy 2, 16_validate/unloc/SAMPLE.unloc.fasta (unlocalized scaffolds) and SAMPLE.unplaced_rest.fasta in place of SAMPLE.final.unplaced.fasta, unless the user left them out at D13. -->
 
-**Numbers:** <!-- placed and unplaced Mb, gaps, contig N50, telomeric ends, compleasm per haplotype, from reports/15_validate.md. -->
+**Numbers:** <!-- placed, unlocalized and unplaced Mb, gaps, contig N50, telomeric ends, compleasm per haplotype with and without its unlocalized scaffolds, from reports/15_validate.md. -->
 
 **Hand edits:** <!-- one line per row in edits/, with what it did. Reasons live in edits/ and decisions/. -->
 
