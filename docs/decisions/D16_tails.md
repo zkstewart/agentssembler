@@ -37,3 +37,7 @@ Record the check in the reason even when nothing is done, for example: `Tangle c
 **A tail through a tangle the check resolved is superseded.** On GammaCitrus chr5, tails reached into the tangle, and TTT later carried both haplotypes through it to their telomeres. Accept the TTT rows, not those tails.
 
 **Beyond tails:** placing them changes every coordinate downstream, so decide before mapping in `12_fill`.
+
+## Genes on tails
+
+`12_shared/tail_genes.tsv` (with genes on the unitigs) gives each tail's genes, and how many have no full set of placed copies elsewhere (`short`). A tail with short genes is worth testing; the genes do not pass it. On 292 the user adopted the five gene-carrying tails at D13 for completeness; two had strong raw-read support (134 and 104 reads at q20) and three little or none. A tail left unplaced keeps its genes in the assembly as unlocalized sequence when its chromosome is known (stage 15), so the gain from placing it is position, not genes.

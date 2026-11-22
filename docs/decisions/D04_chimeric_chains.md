@@ -18,6 +18,14 @@
 
 **A chain can be right and still need breaking.** The two-signal test is for chimeras. A different fault is a chain running through a fork, because a dropped unitig left the link looking one-to-one. It cannot be seen until groups exist, so `07_group` runs `scripts/review/chain_forks.py` for D06. Busk chain0061 had 705 kb at 1x then 787 kb at 2x, with Hi-C tied between homologs and the other exit leading to a chain on the homolog. Its reads are fine, since one haplotype does run that way. Break between arm and hub, then make the hub shared under D14. Do not act on a fork that rejoins its own group: that is an ordinary bubble. The scan's `break_at` column gives the position. The same fault with chains in no group shows only after placement: stage 10 repeats the scan as `12_shared/chain_forks.tsv` for D16's tangle check. There, GammaCitrus's chain0073 ran through hub utg000537l, and the other exit was the route to its unplaced 779 kb allele ([TANGLES](../TANGLES.md)).
 
-**Edit:** `edits/chain_breaks.txt`, one per line: `chain position`. The position is the 1-based last base of the left part. The left part keeps its name; the right becomes `<chain>b`. An empty file is a valid outcome, and it was the outcome on WatsonsChoice.
+**Edit:** `edits/chain_breaks.txt`, one per line: `chain position`. The position is the 1-based last base of the left part. The left part keeps its name; the right becomes `<chain>b`. A chain can take several rows, each position on the unbroken chain: the parts are `<chain>`, `<chain>b`, `<chain>c`, ... from left to right, so a hub can be cut out from both sides. An empty file is a valid outcome, and it was the outcome on WatsonsChoice.
 
 **After:** `run` applies the breaks without remapping Hi-C.
+
+## Also at D04: the Hi-C allele rescue
+
+Read `09_hic_map/rescue_signal.txt`. Its Hi-C-blind chains have an allele partner, almost no unique Hi-C, and many pairs with an allele-ambiguous end: grouping will leave them unassigned however good the rest is. When they are a large share (the report's alarm: 1% of chain sequence or more), or carry many genes, record D04 with `--set hic_allele_rescue=true` and say why. This is the cheapest point: the setting acts in stages 06-08.
+
+- Repeat chains are Hi-C-blind too (chain0091 on 292: 74% repeat). The rescue leaves chains over half repeat alone, so they do not count for it.
+- The rescue knows which chromosome, rarely which haplotype: most of its haplotype calls are `arbitrary` or `allele_of_arbitrary`. It also brings orientation risk in the rescued region: on 292 inverted homolog blocks rose from 9 to 14, mostly in rescued chr2 sequence. Say so at D13 and hand those regions over for Juicebox.
+- Turned on later, it costs `reset 07_group` (from D05) or more.

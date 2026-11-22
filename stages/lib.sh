@@ -40,6 +40,10 @@ agp2fa() { python3 "$S/agp_to_fasta.py" "$1" "$2" "$3.part"; mv "$3.part" "$3"; 
 has_rows() { [ -s "$1" ] && grep -qv '^#' "$1"; }
 collapsed() { [ "$AS_COLLAPSED" = "true" ]; }
 has_ref() { [ -n "${AS_REFERENCE:-}" ]; }
+hic_rescue() { [ "${AS_HIC_RESCUE:-false}" = "true" ]; }
+# compleasm gene copies on the unitigs (stage 02), when compleasm is set: evidence for how many genes a decision gains or loses
+GENES="03_unitig_align/genes/${AS_LINEAGE:-none}/full_table_busco_format.tsv"
+has_genes() { [ -s "$AS_WORK/$GENES" ]; }
 has_raw() { [ -n "${AS_RAW_READS:-}" ]; }
 # raw_kind FILE: sam for BAM, CRAM or SAM (by extension); otherwise fastq or fasta, from the first character, gzipped or not
 raw_kind() {

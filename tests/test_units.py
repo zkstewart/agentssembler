@@ -56,6 +56,34 @@ class T(unittest.TestCase):
             # keeping h1: h2's shared u1 and h3's shared u2 are masked; h1 whole
             self.assertEqual(open(f"{d}/m.h1.fasta").read(), ">c_h1\nAAAACCCC\n>c_h2\nNNNNGGGG\n>c_h3\nTTTTNNNN\n>unplaced_x\nACGT\n")
             self.assertEqual(open(f"{d}/m.h3.fasta").read(), ">c_h1\nAAAANNNN\n>c_h2\nAAAAGGGG\n>c_h3\nTTTTCCCC\n>unplaced_x\nACGT\n")
+    def test_break_chain_multiple(self):
+        # chain c = u1 (1-10) + u2 (11-20, 4 bp overlap trimmed) + u3 reversed (21-30, 4 bp trimmed); two breaks give c, cb, cc, each later part regaining its overlap.
+        import random; random.seed(2); U = {u: "".join(random.choice("ACGT") for _ in range(14)) for u in ("u1", "u2", "u3")}
+        with tempfile.TemporaryDirectory() as d:
+            open(f"{d}/u.fa", "w").write("".join(f">{u}\n{s}\n" for u, s in U.items()))
+            open(f"{d}/in.agp", "w").write("c\t1\t10\t1\tW\tu1\t1\t10\t+\nc\t11\t20\t2\tW\tu2\t5\t14\t+\nc\t21\t30\t3\tW\tu3\t1\t10\t-\nd\t1\t14\t1\tW\tu1\t1\t14\t+\n")
+            with gzip.open(f"{d}/p.gz", "wt") as o: o.write("c\t5\tc\t15\nc\t25\td\t3\n")
+            for brk, names in (("c 10\n", ["c", "cb"]), ("c 20\nc 10\n", ["c", "cb", "cc"])):
+                open(f"{d}/b", "w").write(brk)
+                r = run("break_chain.py", f"{d}/b", f"{d}/in.agp", f"{d}/p.gz", f"{d}/o", f"{d}/u.fa"); self.assertEqual(r.returncode, 0, r.stderr)
+                rows = [l.split("\t") for l in open(f"{d}/o/chains.agp") if l[0] != "#"]
+                self.assertEqual(sorted({x[0] for x in rows if x[0] != "d"}), names)
+                pairs = [l.rstrip("\n").split("\t") for l in gzip.open(f"{d}/o/pairs.tsv.gz", "rt")]
+            # two breaks: cb is all of u2, cc is u3 with its trimmed 4 bp back; c:15 lands on cb:9, c:25 on cc:9
+            self.assertEqual([(x[0], x[5], x[6], x[7]) for x in rows if x[0] != "d"], [("c", "u1", "1", "10"), ("cb", "u2", "1", "14"), ("cc", "u3", "1", "14")])
+            self.assertEqual(pairs, [["c", "5", "cb", "9"], ["cc", "9", "d", "3"]])
+            open(f"{d}/b", "w").write("c 15\n")
+            self.assertNotEqual(run("break_chain.py", f"{d}/b", f"{d}/in.agp", f"{d}/p.gz", f"{d}/o2", f"{d}/u.fa").returncode, 0)
+    def test_weak_placed_copy_names(self):
+        # collapsed order names a shared chain's copy x.g1; groups, links and pairs name the chain x. y is linked to x's copy, z is not.
+        with tempfile.TemporaryDirectory() as d:
+            open(f"{d}/o", "w").write("#group\trank\tchain\torientation\ng1\t1\tx.g1\t+\ng1\t2\ty\t+\ng1\t3\tz\t-\n")
+            open(f"{d}/e", "w").write("#end_a\tend_b\treads\nx+\ty-\t3\n"); open(f"{d}/c", "w").write("#end_a\tend_b\tchosen\n")
+            open(f"{d}/g", "w").write("".join(f"{c}\t2000000\tg1\n" for c in "xyz"))
+            with gzip.open(f"{d}/p.gz", "wt") as o: o.write("z\t1\tx\t1\nz\t1\ty\t1\n")
+            r = run("review/weak_placed.py", f"{d}/o", f"{d}/e", f"{d}/c", f"{d}/g", f"{d}/p.gz"); self.assertEqual(r.returncode, 0, r.stderr)
+            rows = [l.split("\t") for l in r.stdout.splitlines() if l[0] != "#"]
+            self.assertEqual([(x[0], x[4]) for x in rows], [("z", "2")])
     def test_agp_to_fasta(self):
         with tempfile.TemporaryDirectory() as d:
             open(f"{d}/u.fa", "w").write(">a\nAACC\n>b\nGGTT\n")
@@ -83,6 +111,23 @@ class T(unittest.TestCase):
             self.assertIn("x\t5\tg02", open(f"{d}/o.tsv").read()); self.assertIn("y\t5\tc1", open(f"{d}/o.shared.tsv").read())
             open(f"{d}/e", "w").write("x\tgroup\twith:y\tr\n")
             self.assertNotEqual(run("apply_group_edits.py", f"{d}/g", f"{d}/e", f"{d}/o").returncode, 0)
+    def test_shared_in_across_translocation(self):
+        # g01/g02 are chromosome c0, g03/g04 c1. Hub s is shared by g01 (c0) and g03 (c1), as across a reciprocal translocation.
+        with tempfile.TemporaryDirectory() as d:
+            open(f"{d}/g.tsv", "w").write("#chain\tlength\tgroup\na\t9\tg01\nb\t9\tg02\nc\t9\tg03\ns\t9\tunassigned\n")
+            open(f"{d}/g.chroms.tsv", "w").write("g01\tc0\ng02\tc0\ng03\tc1\ng04\tc1\n")
+            open(f"{d}/e", "w").write("s\tshared_in\twith:a,with:c\thub on both partners\n")
+            r = run("apply_group_edits.py", f"{d}/g", f"{d}/e", f"{d}/f"); self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertIn("s\t9\tc0+c1", open(f"{d}/f.shared.tsv").read()); self.assertIn("g01,g03", open(f"{d}/f.dosage.tsv").read())
+            open(f"{d}/agp", "w").write("".join(f"{x}\t1\t9\t1\tW\tu{x}\t1\t9\t+\n" for x in "abcs"))
+            open(f"{d}/fai", "w").write("".join(f"{x}\t9\n" for x in "abcs"))
+            with gzip.open(f"{d}/p.gz", "wt") as o: o.write("s\t1\ta\t1\ns\t2\tc\t2\ns\t3\tb\t3\n")
+            open(f"{d}/l", "w").write("#h\ns+\ta-\t3\tNA\t9000\ns-\tc+\t3\tNA\t9000\n")
+            for x in ("st", "te"): open(f"{d}/{x}", "w").write("")
+            r = run("make_shared_copies.py", f"{d}/f", f"{d}/agp", f"{d}/fai", f"{d}/p.gz", f"{d}/l", f"{d}/st", f"{d}/te", f"{d}/o"); self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertIn("s.g01\t9\tg01\ns.g03\t9\tg03", open(f"{d}/o/groups.tsv").read())
+            self.assertEqual(sorted(gzip.open(f"{d}/o/pairs.tsv.gz", "rt").read().splitlines()), ["s.g01\t1\ta\t1", "s.g03\t2\tc\t2"])   # b's group g02 has no copy
+            self.assertEqual(open(f"{d}/o/end_links.tsv").read().splitlines()[1:], ["s.g01+\ta-\t3\tNA\t9000", "s.g03-\tc+\t3\tNA\t9000"])
     def test_hap_first_any_ploidy(self):
         # Two chromosomes of three haplotypes. a1 and b1 align over more bp than any true allele pair, but at 9% divergence:
         # identity weighting keeps them apart, and plain bp (--deWeight 0) does not.
@@ -123,7 +168,8 @@ class T(unittest.TestCase):
             r = run("apply_group_edits.py", f"{d}/g", f"{d}/e", f"{d}/f"); self.assertEqual(r.returncode, 0, r.stderr)
             F = {l.split("\t")[0]: l.rstrip().split("\t") for l in open(f"{d}/f.dosage.tsv") if l[0] != "#"}
             self.assertEqual((F["s"][5], F["s"][8], F["t"][5]), ("g01,g02", "edit", "g02,g04"))
-            open(f"{d}/e2", "w").write("s\tshared_in\tg01,g05\ttwo chromosomes\n"); self.assertNotEqual(run("apply_group_edits.py", f"{d}/g", f"{d}/e2", f"{d}/x").returncode, 0)
+            open(f"{d}/e2", "w").write("s\tshared_in\tg01,g01\trepeated group\n"); self.assertNotEqual(run("apply_group_edits.py", f"{d}/g", f"{d}/e2", f"{d}/x").returncode, 0)
+            open(f"{d}/e2", "w").write("s\tshared_in\tg01,g99\tunknown group\n"); self.assertNotEqual(run("apply_group_edits.py", f"{d}/g", f"{d}/e2", f"{d}/x").returncode, 0)
             open(f"{d}/e3", "w").write("t\tshared\twith:a1\tall four\n"); r = run("apply_group_edits.py", f"{d}/g", f"{d}/e3", f"{d}/y"); self.assertEqual(r.returncode, 0, r.stderr)
             self.assertNotIn("\nt\t", open(f"{d}/y.dosage.tsv").read())
             # copies: only in the named haplotypes; a pair to a haplotype without a copy is dropped
@@ -136,6 +182,19 @@ class T(unittest.TestCase):
             self.assertEqual(gzip.open(f"{d}/out/pairs.tsv.gz", "rt").read(), "s.g01\t5\ta1\t9\ns.g01\t5\ts.g01\t90\ns.g02\t5\ts.g02\t90\nu.g04\t5\ta4\t9\ns.g02\t7\tt.g02\t8\n")
             self.assertEqual(sorted(l.split("\t")[0] for l in open(f"{d}/out/chains.agp")).count("s.g03"), 0)
             self.assertIn("t.g02+\ta2-", open(f"{d}/out/end_links.tsv").read())
+    def test_reset_drops_stale_scaffold_mappings(self):
+        """Read mappings to the scaffolds (stages 12, 13) are kept by a reset of their own stage, and archived by a reset of 11_build or earlier, which rebuilds their target."""
+        sys.path.insert(0, R); from agentssembler import cli
+        import argparse
+        files = ["14_readfill/ont_vs_target.h1.paf.gz", "14_readfill/target.h1.fasta", "14_readfill/target.masked.tsv", "17_raw_reads/raw_vs_target.h1.paf.gz", "17_raw_reads/raw.h1.paf.gz", "06_chains/ont_vs_chains.paf.gz"]
+        for stage, remap, gone in (("12_fill", False, {"14_readfill/target.h1.fasta", "14_readfill/target.masked.tsv"}),
+                                   ("09_order", False, set(files[:5])), ("12_fill", True, set(files[:5]))):
+            with tempfile.TemporaryDirectory() as w:
+                for d in ("state", "decisions", "reports"): os.makedirs(f"{w}/{d}")
+                open(f"{w}/config.yaml", "w").write("sample: s\n")
+                for f in files: os.makedirs(os.path.dirname(f"{w}/{f}"), exist_ok=True); open(f"{w}/{f}", "w").close()
+                cli.cmd_reset(argparse.Namespace(work=w, stage=stage, remap=remap, keepDecision=False))
+                self.assertEqual({f for f in files if not os.path.exists(f"{w}/{f}")}, gone, (stage, remap))
     def test_read_formats(self):
         """init accepts FASTA or FASTQ reads, gzipped or not, and raw BAM/CRAM/SAM; raw_bams is read as well as raw_reads."""
         sys.path.insert(0, R); from agentssembler import cli
@@ -284,4 +343,42 @@ class T(unittest.TestCase):
             p("tails.tsv", "#end\tgroup\tpath\tlabel\tpairs\tbp\nZ+\tg01\tY-\tonly\t1\t100000\n")
             r = run("review/chain_forks.py", *base, "--placement", f"{d}/pl.tsv", "--chainClass", f"{d}/cls.tsv", "--oneLo", "19", "--oneHi", "46", "--tails", f"{d}/tails.tsv")
             self.assertEqual(r.stdout.splitlines()[1].split("\t")[0], ".", "a chain on a tail is in use, not lost")
+    def test_gene_evidence(self):
+        # genes lifted from unitigs to chains: a short gene with a copy on an unassigned chain, made whole by a rescued chain; tail genes
+        with tempfile.TemporaryDirectory() as d:
+            p = lambda n, x: open(f"{d}/{n}", "w").write(x)
+            p("agp", "cA\t1\t1000\t1\tW\tu1\t1\t1000\t+\ncB\t1\t1000\t1\tW\tu2\t1\t1000\t-\ncC\t1\t500\t1\tW\tu3\t1\t500\t+\n")
+            p("genes", "# Busco id\tStatus\tSequence\tGene Start\tGene End\n"
+                       "G1\tDuplicated\tu1\t100\t200\nG1\tDuplicated\tu3\t100\t200\nG2\tDuplicated\tu1\t300\t400\nG2\tDuplicated\tu2\t300\t400\n"
+                       "G3\tFragmented\tu3\t1\t50\nG4\tMissing\t\t\t\n")
+            p("groups", "#chain\tlength\tgroup\ncA\t1000\tg01\ncB\t1000\tg02\ncC\t500\tunassigned\n")
+            p("resc", "#chain\tlength\tchrom\tgroup\tcall\trescued_links\tratio_to_next\tround\ncC\t500\tc1\tg02\tallele\t12\t3.00\t1\n")
+            r = run("review/genes_placed.py", "--genes", f"{d}/genes", "--agp", f"{d}/agp", "--groups", f"{d}/groups", "--ploidy", "2", "--out", f"{d}/out", "--rescued", f"{d}/resc")
+            self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertIn("short of 2 copies in the groups: 1; of these, with a copy on an unassigned chain: 1", r.stdout)
+            self.assertIn("short genes made whole: 1 of 1", r.stdout)
+            p("pl", "#chain\tlength\tgroup\tname\tstatus\ncA\t1000\tg01\tchr1_h1\tplaced\ncB\t1000\tg02\tchr1_h2\tplaced\ncC\t500\t.\t.\tunplaced:no_group\n")
+            p("tails", "#end\tgroup\tpath\tlabel\tpairs\tbp\ncA+\tg01\tcC+\tonly\t3\t500\n")
+            r = run("review/tail_genes.py", "--genes", f"{d}/genes", "--agp", f"{d}/agp", "--placement", f"{d}/pl", "--tails", f"{d}/tails", "--ploidy", "2", "--out", f"{d}/tg")
+            self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertEqual(open(f"{d}/tg").read().splitlines()[1].split("\t")[4:], ["1", "1"], "tail cC carries G1, short of a placed copy")
+    def test_rescue_signal(self):
+        # chain X: allele of Y, no unique pairs, many ambiguous ends: Hi-C-blind; Y has unique pairs
+        with tempfile.TemporaryDirectory() as d:
+            p = lambda n, x: open(f"{d}/{n}", "w").write(x)
+            p("fai", "X\t100000\nY\t300000\nZ\t2000000\n"); p("al", "#a\tb\nX\tY\t50000\t50000\n")
+            with gzip.open(f"{d}/u.gz", "wt") as o: o.write("".join(f"Y\t{i}\tZ\t{i}\n" for i in range(50)))
+            with gzip.open(f"{d}/r.gz", "wt") as o: o.write("".join(f"X\t{i}\tZ\t{i}\tau\n" for i in range(30)))
+            r = run("rescue/rescue_signal.py", f"{d}/u.gz", f"{d}/r.gz", f"{d}/fai", f"{d}/al", f"{d}/out")
+            self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertIn("Hi-C-blind", r.stdout); self.assertIn("ALARM", r.stdout)
+            self.assertEqual([l.split("\t")[0] for l in open(f"{d}/out") if l.endswith("yes\n")], ["X"])
+    def test_stable_key(self):
+        # a renumbered chain keeps its key; copies keep their suffix; a chain missing from the AGP falls back to its name
+        sys.path.insert(0, f"{R}/scripts"); import chainlib
+        P = {"chain0007": [("utg9", "+"), ("utg2", "-")], "chain8001": [("utg5", "+")]}
+        Q = {"chain0012": [("utg9", "+"), ("utg2", "-")], "chain8003": [("utg5", "+")]}
+        self.assertEqual(chainlib.stable_key(P, "chain0007.g05"), chainlib.stable_key(Q, "chain0012.g05"))
+        self.assertEqual(chainlib.stable_path(P, ["chain8001+", "chain0007-"]), chainlib.stable_path(Q, ["chain8003+", "chain0012-"]))
+        self.assertEqual(chainlib.stable_key(P, "chainX"), (("chainX",), ""))
 if __name__ == "__main__": unittest.main(verbosity=1)

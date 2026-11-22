@@ -142,7 +142,7 @@ Thus, `agentssembler` is *not* meant to be a tool that is used for decades to co
 | `status WORK` | Stages done, decisions open |
 | `decide WORK Dnn --by NAME --reason TEXT [--set k=v]` | Record a decision |
 | `report WORK [STAGE]` | Print reports |
-| `reset WORK STAGE [--remap] [--keepDecision]` | Undo a stage and everything after it, moving outputs to `WORK/archive/<timestamp>/` and setting aside the decisions they informed. Mappings stay unless `--remap` |
+| `reset WORK STAGE [--remap] [--keepDecision]` | Undo a stage and everything after it, moving outputs to `WORK/archive/<timestamp>/` and setting aside the decisions they informed. Mappings stay unless `--remap`, or unless their target is rebuilt: a reset of `11_build` or earlier also drops stages 12-13's mappings to the scaffolds |
 | `env WORK` | Print a stage's environment, to run it elsewhere |
 | `compare WORK OTHER` | Side-by-side metrics of two finished builds, for choosing one at D13 |
 

@@ -13,7 +13,8 @@ over graph links with overlap >= --minOverlap. A path ends before any chain that
   chromosome   Hi-C to another chromosome at >= --minPairs and >= --ratio times this chromosome's
 
 Ends sharing candidate chains are solved together for the most interior bp, within the copy limits. Ties go to the most Hi-C pairs
-between the path's chains and the group's own chains. Labels record what settled each tail:
+between the path's chains and the group's own chains when they decide (>= --ratio times and >= --minObs more); among solutions the
+best does not beat by that much, the first by unitig names wins (chainlib.stable_key), so a re-run makes the same arbitrary choice. Labels record what settled each tail:
   only        one non-empty candidate at this end, and no other end could take it
   supported   alternatives score the same, including an exchange with another end, and pairs exceed each by >= --ratio and >= --minObs
   arbitrary   alternatives score the same and pairs do not separate them; the haplotype is not known
@@ -23,6 +24,7 @@ Usage: make_tails.py --order order.tsv --junctions pre.junctions.tsv --placement
          --class chain_class.tsv --agp chains.agp --gfa unitigs.gfa --paf ont_vs_chains.paf.gz --out tails.tsv --report report.tsv
 '''
 import os, argparse, collections, gzip, itertools
+from chainlib import stable_end, stable_path
 ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
 for x in ("order", "junctions", "placement", "links", "groups", "chroms", "choices", "telomeres", "hic", "class", "agp", "gfa", "paf", "out", "report"):
     ap.add_argument("--" + x, required=True)
@@ -187,17 +189,18 @@ def obs(e, p):
     g = ends[e]
     return sum(hic[z[:-1]].get(m, 0) for z in p for m in members[g])
 def key(sol): return (score(sol), sum(obs(e, p) for e, p in sol.items()))
+def decided(x, y): return x >= a.minObs + y and x >= a.ratio * max(y, 1)
 
 chosen = {}; search = collections.Counter()
 for root, es in comps.items():
-    es = sorted(es); opts = [[()] + C[e] for e in es]; n = 1
+    es = sorted(es, key=lambda e: stable_end(parts, e)); opts = [[()] + sorted(C[e], key=lambda p: stable_path(parts, p)) for e in es]; n = 1
     for o in opts: n *= len(o)
     best = None
     if n <= a.maxCombos:
         search["exhaustive"] += 1
-        for combo in itertools.product(*opts):
-            sol = dict(zip(es, combo))
-            if feasible(sol) and (best is None or key(sol) > key(best)): best = sol
+        ks = [(key(t), t) for t in (dict(zip(es, c)) for c in itertools.product(*opts)) if feasible(t)]
+        top = max(k[0] for k, t in ks); bo = max(k[1] for k, t in ks if k[0] == top)
+        best = next(t for k, t in ks if k[0] == top and not decided(bo, k[1]))   # first in unitig-name order: opts are sorted
     else:
         search["local"] += 1
         best = {e: () for e in es}; moved = True
@@ -211,7 +214,6 @@ for root, es in comps.items():
 print("components", dict(search))
 
 compof = {e: find(e) for e in C}
-def decided(x, y): return x >= a.minObs + y and x >= a.ratio * max(y, 1)
 labels = {}
 for e, p in chosen.items():
     if not p: labels[e] = "none"; continue

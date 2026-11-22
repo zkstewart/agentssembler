@@ -68,6 +68,18 @@ if [ -n "${AS_COMPLEASM:-}" ]; then
    for h in $(haps_of "$AS_WORK/$AGP"); do [ -e $h/summary.txt ] && continue; "$AS_SEQKIT" grep -r -p "_$h\$" "$AS_WORK/$FA" > $h.fasta 2>/dev/null; "$AS_COMPLEASM" run -a $h.fasta -o $h -l "$AS_LINEAGE" -L "$AS_BUSCO_LIB" -t "$AS_THREADS" > $h.log 2>&1 || { echo "ERROR: compleasm failed for $h: see $V/compleasm/$h.log" >&2; exit 1; }; rm -f $h.fasta; done
    [ -e unplaced/summary.txt ] || "$AS_COMPLEASM" run -a "$AS_WORK/$UN" -o unplaced -l "$AS_LINEAGE" -L "$AS_BUSCO_LIB" -t "$AS_THREADS" > unplaced.log 2>&1 || { echo "ERROR: compleasm failed for unplaced: see $V/compleasm/unplaced.log" >&2; exit 1; } ) || exit 1
 fi
+# Unlocalized scaffolds, part of the assembly handed over (leaving them out is the user's call, D13): chains with a known chromosome and no position
+if [ "$AS_PLOIDY" = 2 ] && [ -n "${AS_HAP:-}" ]; then
+  mkdir -p $V/unloc
+  python3 "$S/validate/unloc_scaffolds.py" $AGP $UN $V/unloc --hap "$AS_HAP" --purge "$AS_UNLOC_PURGE" --components $V/unplaced_components.txt \
+    --placement $D/pre/$AS_SAMPLE.placement.tsv --repeat 10_groups/chain_repeat.tsv --depth 04_copynumber/depth.unitigs.tsv --chainsAgp 12_broken/chains.agp --alleles 10_groups/alleles.pairs.tsv > $V/unloc/unloc.txt 2>&1 || echo "unloc_scaffolds failed: see $V/unloc/unloc.txt; only a suggestion, so continuing"
+  if [ -n "${AS_COMPLEASM:-}" ] && [ -s $V/unloc/$AS_SAMPLE.unloc.fasta ]; then
+   ( cd $V/compleasm
+     for h in $(haps_of "$AS_WORK/$AGP"); do [ -e ${h}_unloc/summary.txt ] && continue
+       { "$AS_SEQKIT" grep -r -p "_$h\$" "$AS_WORK/$FA"; "$AS_SEQKIT" grep -r -p "_${h}_unloc_[0-9]+\$" "$AS_WORK/$V/unloc/$AS_SAMPLE.unloc.fasta"; } > ${h}_unloc.fasta 2>/dev/null
+       "$AS_COMPLEASM" run -a ${h}_unloc.fasta -o ${h}_unloc -l "$AS_LINEAGE" -L "$AS_BUSCO_LIB" -t "$AS_THREADS" > ${h}_unloc.log 2>&1 || { echo "ERROR: compleasm failed for ${h}_unloc: see $V/compleasm/${h}_unloc.log" >&2; exit 1; }; rm -f ${h}_unloc.fasta; done ) || exit 1
+  fi
+fi
 if [ -n "${AS_COMPLEASM:-}" ]; then
   python3 "$S/validate/complement_genes.py" "$AS_PLOIDY" $(for h in $(haps_of $AGP); do echo $V/compleasm/$h/"$AS_LINEAGE"/full_table_busco_format.tsv; done) --unplaced $V/compleasm/unplaced/"$AS_LINEAGE"/full_table_busco_format.tsv > $V/compleasm/complement.txt
 fi

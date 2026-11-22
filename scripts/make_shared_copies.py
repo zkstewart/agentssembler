@@ -21,6 +21,8 @@ group members, if they agree. Otherwise it stays as a single unassigned chain.
 Dosage: a chain listed in groups_prefix.dosage.tsv (hic_group.py, or a shared_in edit) is copied only into the groups named there,
 and every rule above then applies to those copies alone. A pair or link to a haplotype without a copy is dropped, and such a graph
 link is printed, since it argues against the dosage call. Without that file every shared chain goes to every haplotype of its chromosome.
+A shared_in edit across a translocation gives a chromosome such as c0+c8: the copies go to the groups it names, and a pair or link
+reaches a copy from a chain of any of those chromosomes in the copy's group.
 Usage: make_shared_copies.py groups_prefix chains.agp chains.fai pairs.tsv.gz end_links.tsv chain_stats.tsv telomeres.tsv out_dir
 '''
 import argparse, collections, gzip, os
@@ -36,6 +38,8 @@ for l in open(a.prefix + ".tsv"):
 chrom_of_group = dict(l.split() for l in open(a.prefix + ".chroms.tsv"))
 groups_of_chrom = collections.defaultdict(list)
 for g, c in chrom_of_group.items(): groups_of_chrom[c].append(g)
+def parts(k): return k.split("+")                 # c0+c8: shared across a translocation (shared_in edit)
+def groups_of(k): return [g for p in parts(k) for g in groups_of_chrom[p]]
 shared = {}                                     # chain -> chromosome
 sh_all = set()
 for l in open(a.prefix + ".shared.tsv"):
@@ -69,13 +73,13 @@ if os.path.exists(a.prefix + ".dosage.tsv"):
     for l in open(a.prefix + ".dosage.tsv"):
         if l[0] != "#" and l.strip(): r = l.rstrip("\n").split("\t"); dos[r[0]] = (r[2], r[5].split(","))
 for c, k in shared.items():
-    gof[c] = groups_of_chrom[k]
+    gof[c] = groups_of(k)
     if c in dos and dos[c][0] == k:
-        pick = [g for g in groups_of_chrom[k] if g in dos[c][1]]
+        pick = [g for g in groups_of(k) if g in dos[c][1]]
         if len(pick) != len(dos[c][1]): print(f"# WARNING: {c}: dosage groups {','.join(dos[c][1])} are not all haplotypes of {k}; using {','.join(pick) or 'every haplotype'}")
         if pick: gof[c] = pick
     elif c in dos: print(f"# WARNING: {c}: dosage row is for {dos[c][0]} but the chain is on {k}; copied into every haplotype")
-part = [c for c in shared if len(gof[c]) < len(groups_of_chrom[shared[c]])]
+part = [c for c in shared if len(gof[c]) < len(groups_of(shared[c]))]
 if part: print(f"# dosage: {len(part)} shared chains copied into fewer haplotypes than their chromosome has, {sum(L[c] for c in part)/1e6:.1f} Mb")
 copies = {c: [f"{c}.{g}" for g in gof[c]] for c in shared}
 def copy_in(c, g): return f"{c}.{g}"
@@ -104,14 +108,14 @@ with gzip.open(a.pairs, "rt") as fh, gzip.open(f"{a.out}/pairs.tsv.gz", "wt", co
         x, u, y, v = l.rstrip("\n").split("\t"); sx, sy = x in shared, y in shared
         if not sx and not sy: o.write(l); n_out["plain"] += 1; continue
         if sx and sy:
-            if x == y or shared[x] == shared[y]:
+            if x == y or set(gof[x]) & set(gof[y]):
                 for g in gof[x]:
                     if g in gof[y]: o.write(f"{copy_in(x, g)}\t{u}\t{copy_in(y, g)}\t{v}\n")
                 n_out["shared_both"] += 1
             else: n_out["shared_other_chrom"] += 1
             continue
         s, t = (x, y) if sx else (y, x); g = group_of(t)
-        if g is None or chrom_of_group[g] != shared[s]: n_out["dropped"] += 1; continue
+        if g is None or chrom_of_group[g] not in parts(shared[s]): n_out["dropped"] += 1; continue
         if g not in gof[s]: n_out["no_copy_in_group"] += 1; continue
         if sx: o.write(f"{copy_in(x, g)}\t{u}\t{y}\t{v}\n")
         else: o.write(f"{x}\t{u}\t{copy_in(y, g)}\t{v}\n")
@@ -123,14 +127,14 @@ with open(f"{a.out}/end_links.tsv", "w") as o:
         u, eu, v, ev = x[:-1], x[-1], y[:-1], y[-1]; su, sv = u in shared, v in shared
         if not su and not sv: o.write(f"{x}\t{y}\t{rd}\t{q}\t{ov}\n"); continue
         if su and sv:
-            if shared[u] != shared[v]: continue
+            if not set(gof[u]) & set(gof[v]): continue
             for g in gof[u]:
                 if g in gof[v]: o.write(f"{copy_in(u, g)}{eu}\t{copy_in(v, g)}{ev}\t{rd}\t{q}\t{ov}\n")
             continue
         s, es, t, et = (u, eu, v, ev) if su else (v, ev, u, eu); g = group_of(t)
         if g is None:
             for g2 in gof[s]: o.write(f"{copy_in(s, g2)}{es}\t{t}{et}\t{rd}\t{q}\t{ov}\n")
-        elif chrom_of_group[g] == shared[s]:
+        elif chrom_of_group[g] in parts(shared[s]):
             if g in gof[s]: o.write(f"{copy_in(s, g)}{es}\t{t}{et}\t{rd}\t{q}\t{ov}\n")
             elif int(ov) >= a.minOverlap: print(f"# WARNING: graph link {x} {y}: {t} is in {g}, where {s} has no copy. The link outranks Hi-C: check the dosage of {s} (D14)")
 for src, dst in ((a.stats, "chain_stats.tsv"), (a.telomeres, "telomeres.tsv")):

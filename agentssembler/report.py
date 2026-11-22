@@ -19,6 +19,12 @@ def n50(v):
 
 def r_inputs(w, c, s):
     L = fai(f"{w}/00_inputs/unitigs.fasta.fai"); return [f"Unitigs: {len(L)}, {Mb(sum(L.values()))}, N50 {Mb(n50(L.values()))}", f"Chromosomes {c['chromosomes']}, ploidy {c['ploidy']}."], []
+def r_map(w, c, s):
+    g = f"{w}/03_unitig_align/genes/summary.txt"
+    if not os.path.exists(g): return ["No compleasm on the unitigs (compleasm not set): later stages cannot count the genes each decision gains or loses."], []
+    z = [l.strip() for l in open(g) if re.match(r"^[SDFM]:", l)]
+    return [f"compleasm on the unitigs (03_unitig_align/genes): {' '.join(z)}. This is what the assembly could hold: at ploidy 2 with distinct haplotypes, most genes are D here. "
+            "Stages 05, 07 and 10 lift these hits onto chains."], []
 def r_depth(w, c, s):
     L = fai(f"{w}/00_inputs/unitigs.fasta.fai")
     def hist(title, pairs):
@@ -87,7 +93,12 @@ def r_hic(w, c, s):
     out += [f"Both signals (trans >= 200 on both sides, partner_cos < 0.8, under 10 reads at MAPQ>=20): {len(both)}."] + both
     out += [f"Different partners alone (partner_cos < 0.6, enough trans), usually overruled by reads: {len(hic)}."] + hic
     out.append("This table only lists. Weak reads with little Hi-C on one side are mostly near-identical sequence, not chimeras.")
-    return out, []
+    al = []; rs = f"{w}/09_hic_map/rescue_signal.txt"
+    if os.path.exists(rs):
+        L_ = open(rs).read().splitlines(); out += ["Hi-C allele rescue signal (09_hic_map/rescue_signal.txt, D04):"] + [x for x in L_ if not x.startswith("ALARM")]
+        on = isinstance(s, dict) and s.get("hic_allele_rescue")
+        al += [x[len("ALARM: "):] + f" The setting is now {'on' if on else 'off'}." for x in L_ if x.startswith("ALARM")]
+    return out, al
 def r_evidence(w, c, s):
     L = fai(f"{w}/12_broken/chains.fasta.fai"); K = collections.Counter(r[6] for r in rows(f"{w}/11_ont_chains/chain_class.tsv")); B = collections.Counter()
     for r in rows(f"{w}/11_ont_chains/chain_class.tsv"): B[r[6]] += int(r[1])
@@ -139,6 +150,14 @@ def r_group(w, c, s):
     if os.path.exists(forks):
         n = sum(1 for l in open(forks) if l.startswith("HUB"))
         if n: al.append(f"{n} HUB rows in 10_groups/chain_forks.txt: 2x unitigs in a chain whose other exit reaches a homolog's chain. Read them before going on: a break costs a read mapping (D04, D06).")
+    for f, lab in ((f"{w}/10_groups/rescue_preview.txt", "Rescue preview (hic_allele_rescue off; what it would place, in 10_groups/rescue_preview/)"), (f"{w}/10_groups/genes_placed.txt", "Genes in the groups")):
+        if os.path.exists(f): out.append(f"{lab}: " + " ".join(open(f).read().split()))
+    gp = f"{w}/10_groups/genes_placed.txt"
+    if os.path.exists(gp) and not (s.get("hic_allele_rescue") if isinstance(s, dict) else False):
+        m = re.search(r"short genes made whole: (\d+) of (\d+)", open(gp).read())
+        if m and int(m.group(1)) >= max(10, 0.1 * int(m.group(2))):
+            al.append(f"The Hi-C allele rescue would make {m.group(1)} of {m.group(2)} short genes whole (10_groups/genes_placed.txt). If D04 did not settle it, decide now: "
+                      "set hic_allele_rescue and `reset 07_group` (stages 05-06 already made its pairs). Later, it costs everything from here.")
     if os.path.exists(f"{w}/10_groups/eval_groups.txt"): out.append("Reference alarm table: 10_groups/eval_groups.txt. It says where to look, never what to change.")
     return out, al
 def r_bridges(w, c, s):
@@ -157,6 +176,9 @@ def r_arms(w, c, s):
     T = list(rows(f"{w}/12_shared/tails.tsv")); C = list(rows(f"{w}/12_shared/tail_checks.tsv")); L = collections.Counter(r[3] for r in T); placed = sum(int(r[2]) - int(r[1]) + 1 for r in rows(f"{w}/12_shared/pre/{c['sample']}.agp") if r[4] == "W"); out = [f"Pre-build placed {Mb(placed)}."]
     out.append(f"Tail candidates: {len(T)}, {Mb(sum(int(r[5]) for r in T))}; labels {dict(L)}. Tests: 12_shared/tail_checks.tsv; passing {sum(r[-1] == 'pass' for r in C)}.")
     out.append("Nothing is placed without edits/accepted_tails.tsv. Keep the tails.tsv columns; the reason goes in the decision.")
+    tg = list(rows(f"{w}/12_shared/tail_genes.tsv"))
+    if tg: out.append("Genes on tails (12_shared/tail_genes.tsv; short = no full set of copies placed elsewhere): " + ", ".join(f"{r[0]} {r[4]} ({r[5]} short)" for r in tg if int(r[4])) + ". "
+                      "A tail that fails the tests keeps its genes as unlocalized sequence (stage 15).")
     A = list(rows(f"{w}/12_shared/arm_report.tsv"))
     if A: out.append("Arm labels: " + str(dict(collections.Counter(r[3] for r in A if len(r) > 3))))
     al = []
@@ -238,6 +260,26 @@ def r_raw(w, c, s):
     return out, al
 def r_apply(w, c, s):
     f = f"{w}/15_final_raw/stats.txt"; return [open(f).read().strip()] if os.path.exists(f) else ["Final files unchanged."], []
+def completeness_alarms(V, c, minComplete=95.0, maxRecoverable=1.0):
+    """Low gene completeness on the placed scaffolds, and gene copies that unplaced sequence could add: a placement problem, not a sequence one."""
+    al = []; bus = c.get("compleasm") or {}; lo = float(bus.get("min_complete", minComplete))
+    for x in sorted(glob.glob(f"{V}/compleasm/h*/summary.txt")):
+        name = x.split("/")[-2]
+        if "_" in name: continue
+        z = {m.group(1): float(m.group(2)) for m in (re.match(r"^([SD]):([\d.]+)%", l) for l in open(x)) if m}
+        u = f"{V}/compleasm/{name}_unloc/summary.txt"; zu = {}
+        if os.path.exists(u): zu = {m.group(1): float(m.group(2)) for m in (re.match(r"^([SD]):([\d.]+)%", l) for l in open(u)) if m}
+        cu = zu.get("S", 0) + zu.get("D", 0) if zu else None
+        if z and (cu if cu is not None else z.get("S", 0) + z.get("D", 0)) < lo:
+            al.append(f"compleasm {name}: complete {z.get('S', 0) + z.get('D', 0):.2f}%" + (f", {cu:.2f}% with its unlocalized scaffolds" if cu is not None else "") + f", under {lo:g}% (compleasm.min_complete). Read complement.txt: genes complete in unplaced "
+                      "sequence point to placement, not to missing sequence (D09, D16; unloc/ for chains with a known chromosome).")
+    cg = f"{V}/compleasm/complement.txt"
+    if os.path.exists(cg):
+        m = re.search(r"short of \d+ per gene, on any scaffold: (\d+) of (\d+) \(([\d.]+)%\), in (\d+) genes; (\d+) of them complete in unplaced", open(cg).read())
+        if m and float(m.group(3)) > maxRecoverable and int(m.group(5)) > 0:
+            al.append(f"{m.group(1)} gene copies ({m.group(3)}%) short on the scaffolds, in {m.group(4)} genes; {m.group(5)} of those genes are complete in unplaced sequence. "
+                      "Find which unplaced chains carry them (compleasm/unplaced) and why they were not placed: Hi-C rescue, tails (D16), tangles, or unloc/.")
+    return al
 def r_validate(w, c, s):
     V = f"{w}/16_validate"; out = []; al = []
     if os.path.exists(f"{V}/stats.txt"): out.append(open(f"{V}/stats.txt").read().strip())
@@ -247,6 +289,9 @@ def r_validate(w, c, s):
         name = x.split("/")[-2]; z = [l.strip() for l in open(x) if re.match(r"^[SDFIMN]:", l)]; out.append(f"compleasm {name}: {' '.join(z)}")
     cg = f"{V}/compleasm/complement.txt"
     if os.path.exists(cg): out.append(open(cg).read().strip().replace("\n", "\n\n"))
+    al += completeness_alarms(V, c)
+    ut = f"{V}/unloc/unloc.txt"
+    if os.path.exists(ut): out.append("Unlocalized scaffolds, part of the assembly handed over (leaving them out is the user's call, D13): " + open(ut).read().strip().replace("\n", "\n\n"))
     ct = f"{V}/maps/specific/crosstalk.tsv"
     if os.path.exists(ct):
         i = o = 0
@@ -272,7 +317,7 @@ def r_validate(w, c, s):
     if old: al.append("Hand tables from before a reset: " + ", ".join(old) + ". Re-test each row against this build and write the result in the new tables. Do not copy rows across: scaffold names and coordinates may have changed (D12, D13).")
     out.append("Hand the user the Juicebox files and the SV table (D13).")
     return out, al
-FN = {"01_inputs": r_inputs, "03_depth": r_depth, "04_chains": r_chains, "05_hic_chains": r_hic, "06_evidence": r_evidence, "07_group": r_group, "08_bridges": r_bridges, "09_order": r_order, "10_arms_tails": r_arms, "11_build": r_build, "12_fill": r_fill, "13_rawreads": r_raw, "14_apply_joins": r_apply, "15_validate": r_validate}
+FN = {"01_inputs": r_inputs, "02_map_unitigs": r_map, "03_depth": r_depth, "04_chains": r_chains, "05_hic_chains": r_hic, "06_evidence": r_evidence, "07_group": r_group, "08_bridges": r_bridges, "09_order": r_order, "10_arms_tails": r_arms, "11_build": r_build, "12_fill": r_fill, "13_rawreads": r_raw, "14_apply_joins": r_apply, "15_validate": r_validate}
 
 def write(w, sid, c, s, active=lambda cond: True):
     st_ = BY_ID[sid]; out, al = FN[sid](w, c, s) if sid in FN else ([], [])

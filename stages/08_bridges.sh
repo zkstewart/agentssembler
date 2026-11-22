@@ -7,6 +7,11 @@ D=12_shared; mkdir -p "$D" 13_scaffold/bridges
 if has_rows edits/group_edits.tsv; then python3 "$S/apply_group_edits.py" 10_groups/groups edits/group_edits.tsv 10_groups/final; else for x in tsv chroms.tsv; do cp 10_groups/groups.$x 10_groups/final.$x; done; for x in shared dosage; do [ -s 10_groups/groups.$x.tsv ] && cp 10_groups/groups.$x.tsv 10_groups/final.$x.tsv || true; done; fi
 if collapsed; then
   [ -s $D/groups.tsv ] || python3 "$S/make_shared_copies.py" 10_groups/final 12_broken/chains.agp 12_broken/chains.fasta.fai 12_broken/pairs.tsv.gz 10_groups/end_links.tsv 10_groups/chain_stats.tsv 16_validate/telomeres.chains.tsv $D > $D/copies.log 2>&1
+  # settings.hic_allele_rescue: rescued pairs for ordering the chains rescue_groups.py placed, added to the pairs ordering reads
+  if hic_rescue && [ -s 10_groups/groups.rescued.tsv ] && [ ! -s $D/pairs.projected.tsv.gz ]; then
+    python3 "$S/rescue/project_rescued.py" $D/groups.tsv 12_broken/pairs.rescued.tsv.gz 10_groups/alleles.blocks.tsv 10_groups/groups.rescued.tsv $D/pairs.projected.tsv.gz 2> $D/projected.log
+    cat $D/pairs.projected.tsv.gz >> $D/pairs.tsv.gz
+  fi
 else
   cp 10_groups/final.tsv $D/groups.tsv
   ln -sfn ../12_broken/chains.agp $D/chains.agp; ln -sfn ../12_broken/chains.fasta.fai $D/chains.fasta.fai; ln -sfn ../12_broken/pairs.tsv.gz $D/pairs.tsv.gz

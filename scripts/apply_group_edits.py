@@ -7,8 +7,9 @@ edits.tsv columns: chain, action, value, reason. Actions:
   group <gNN>       the chain joins that group
   unassigned .      the chain leaves any group, or stops being shared
   shared <cN>       the chain is collapsed sequence of chromosome cN, copied into all its haplotypes
-  shared_in <gNN,gNN>  the chain is collapsed sequence carried by these haplotype groups only, all of one chromosome. For a
-                    polyploid, where a chain at 2x of 4 belongs to two haplotypes. Each entry is gNN or with:<chain>. Written to
+  shared_in <gNN,gNN>  the chain is collapsed sequence carried by these haplotype groups only. For a polyploid, where a chain at
+                    2x of 4 belongs to two haplotypes; or across a translocation, where the homolog of a segment lies in a group
+                    of another chromosome (its chromosome is then written c0+c8). Each entry is gNN or with:<chain>. Written to
                     out_prefix.dosage.tsv, which also carries over the dosage calls of hic_group.py for chains with no edit
   pair <cN>         the group holding this chain, after all group edits, becomes a haplotype of chromosome cN. Use it when
                     edits move a haplotype between groups, since group-to-chromosome pairing is otherwise copied unchanged.
@@ -46,9 +47,9 @@ for l in open(ed):
     D.pop(c, None)
     if act == "shared_in":
         gs = [resolve(v, "group", c) for v in val.split(",") if v]
-        if not gs or any(g not in chrom for g in gs) or len({chrom[g] for g in gs}) != 1 or len(set(gs)) != len(gs): sys.exit(f"shared_in for {c}: {val} must name distinct groups of one chromosome")
-        act, val = "shared", chrom[gs[0]]
-        D[c] = [c, L[c], val, ".", str(len(gs)), ",".join(gs), ",".join(g for g in chrom if chrom[g] == val and g not in gs) or ".", ".", "edit"]
+        if not gs or any(g not in chrom for g in gs) or len(set(gs)) != len(gs): sys.exit(f"shared_in for {c}: {val} must name distinct groups")
+        ks = sorted({chrom[g] for g in gs}); act, val = "shared", "+".join(ks)
+        D[c] = [c, L[c], val, ".", str(len(gs)), ",".join(gs), ",".join(g for g in chrom if chrom[g] in ks and g not in gs) or ".", ".", "edit"]
     else: val = resolve(val, act, c)
     if act == "group":
         Srow.pop(c, None); Grow[c] = [c, L[c], val]

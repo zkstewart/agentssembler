@@ -7,7 +7,7 @@ from .stages import STAGES, BY_ID, GUIDES
 from . import report, compare
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DEFAULTS = dict(telomere_motif="CCCTAAA", link_bonus=20000, hops=12, restore_connectors=True, read_preset="lr:hq", raw_preset="lr:hq")
+DEFAULTS = dict(telomere_motif="CCCTAAA", link_bonus=20000, hops=12, restore_connectors=True, read_preset="lr:hq", raw_preset="lr:hq", hic_allele_rescue=False)
 TOOLS = dict(minimap2="minimap2", samtools="samtools", seqkit="seqkit", bwa="bwa", samblaster="samblaster", filter_bam="filter_bam", juicer_tools="", compleasm="", plot_python="")
 
 def now(): return datetime.datetime.now().isoformat(timespec="seconds")
@@ -117,11 +117,11 @@ def stage_env(w):
         AS_REFERENCE=abspath(i.get("reference")), AS_BASELINE_AGP=abspath(i.get("baseline_agp")), AS_RAW_READS=":".join(abspath(b) for b in raw_reads(c)),
         AS_THREADS=str(comp.get("threads", 16)), AS_MIN_FREE_GB=str(comp.get("min_free_gb", 40)), AS_GUARD_PATH=str(comp.get("guard_path", w)),
         AS_MOTIF=str(s["telomere_motif"]), AS_LINK_BONUS=str(s["link_bonus"]), AS_HOPS=str(s["hops"]), AS_CONNECTORS=str(s["restore_connectors"]).lower(),
-        AS_READ_PRESET=str(s["read_preset"]), AS_RAW_PRESET=str(s["raw_preset"]),
+        AS_READ_PRESET=str(s["read_preset"]), AS_RAW_PRESET=str(s["raw_preset"]), AS_HIC_RESCUE=str(s["hic_allele_rescue"]).lower(),
         AS_READS_LINK=input_link(w, i["corrected_reads"], "ont_corrected_reads", dict(fasta=".fasta", fastq=".fastq"), "ont_corrected_reads.fasta"),
         AS_HIC_R1_LINK=input_link(w, i["hic_r1"], "hic_R1", dict(fasta=".fa", fastq=".fq"), "hic_R1.fq.gz"),
         AS_HIC_R2_LINK=input_link(w, i["hic_r2"], "hic_R2", dict(fasta=".fa", fastq=".fq"), "hic_R2.fq.gz"),
-        AS_COLLAPSED=str(s.get("collapsed", "false")).lower(), AS_HAP_FIRST=str(s.get("hap_first", c["ploidy"] == 2)).lower(),
+        AS_COLLAPSED=str(s.get("collapsed", "false")).lower(), AS_UNLOC_PURGE=str(s.get("unloc_purge", 0.2)), AS_HAP_FIRST=str(s.get("hap_first", c["ploidy"] == 2)).lower(),
         AS_LINEAGE=str(bus.get("lineage", "")), AS_BUSCO_LIB=abspath(bus.get("library")))
     for k, v in t.items(): e["AS_" + k.upper()] = str(v)
     if s.get("hap_depth"):
@@ -256,9 +256,11 @@ def cmd_reset(a):
     if a.stage not in BY_ID: sys.exit(f"unknown stage {a.stage}")
     later = STAGES[ids.index(a.stage):]; arch = f"{w}/archive/{datetime.datetime.now():%Y%m%d_%H%M%S}"
     for st in later:
-        for pat in st.outputs + (st.keep if a.remap else []):
+        # a mapping to a target an earlier stage builds is stale once that stage is reset, --remap or not
+        remap = a.remap or bool(st.target_from and ids.index(a.stage) <= ids.index(st.target_from))
+        for pat in st.outputs + (st.keep if remap else []):
             for p in glob.glob(f"{w}/{pat}"):
-                if st.keep and not a.remap and any(fnmatch.fnmatch(os.path.relpath(p, w), k) for k in st.keep): continue
+                if st.keep and not remap and any(fnmatch.fnmatch(os.path.relpath(p, w), k) for k in st.keep): continue
                 d = f"{arch}/{os.path.relpath(p, w)}"; os.makedirs(os.path.dirname(d), exist_ok=True); shutil.move(p, d)
         for f in (f"{w}/state/{st.id}.done", f"{w}/reports/{st.id}.md") + ((f"{w}/state/length_scale.json",) if st.id == "04_chains" else (f"{w}/state/hic_density.json",) if st.id == "06_evidence" else ()):
             if os.path.exists(f): os.remove(f)
