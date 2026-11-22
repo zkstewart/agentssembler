@@ -1,16 +1,10 @@
 #!/bin/bash
 # This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
 # If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
-# Corrected reads to all unitigs, unitig self-alignment, unitigs to the reference (alarm only), and genes on the unitigs (compleasm, when set).
-# Takes hours; can run elsewhere and be put in place.
+# Corrected reads to all unitigs, unitig self-alignment, unitigs to the reference (alarm only). Takes hours; can run elsewhere and be put in place.
 source "$AS_REPO/stages/lib.sh"
 mkdir -p 02_ont_map 03_unitig_align
 U=00_inputs/unitigs.fasta
 map_paf 02_ont_map/ont_vs_unitigs.paf.gz -x "$AS_READ_PRESET" -c -t "$AS_THREADS" --secondary=yes -N 5 -p 0.9 "$U" "$AS_READS_LINK"
 map_paf 03_unitig_align/unitigs_self.paf.gz -x asm20 -c -t "$AS_THREADS" -D --dual=no --secondary=yes -N 20 -p 0.3 "$U" "$U"
 if has_ref; then map_paf 03_unitig_align/unitigs_vs_ref.paf.gz -x asm20 -c -t "$AS_THREADS" --secondary=yes -N 5 00_inputs/reference.fasta "$U"; fi
-# Gene copies on the unitigs: what the assembly could hold. Later stages lift these hits onto chains to say how many genes each
-# decision gains or loses (D04/D05 rescue, D16 tails, D13 unloc) without running compleasm again. About 1 h at 16 threads.
-if [ -n "${AS_COMPLEASM:-}" ] && [ ! -s 03_unitig_align/genes/summary.txt ]; then
-  "$AS_COMPLEASM" run -a "$U" -o 03_unitig_align/genes -l "$AS_LINEAGE" -L "$AS_BUSCO_LIB" -t "$AS_THREADS" > 03_unitig_align/genes.log 2>&1 || { echo "ERROR: compleasm on the unitigs failed: see 03_unitig_align/genes.log" >&2; exit 1; }
-fi

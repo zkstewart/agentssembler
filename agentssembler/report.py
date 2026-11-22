@@ -18,13 +18,14 @@ def n50(v):
     return 0
 
 def r_inputs(w, c, s):
-    L = fai(f"{w}/00_inputs/unitigs.fasta.fai"); return [f"Unitigs: {len(L)}, {Mb(sum(L.values()))}, N50 {Mb(n50(L.values()))}", f"Chromosomes {c['chromosomes']}, ploidy {c['ploidy']}."], []
-def r_map(w, c, s):
-    g = f"{w}/03_unitig_align/genes/summary.txt"
-    if not os.path.exists(g): return ["No compleasm on the unitigs (compleasm not set): later stages cannot count the genes each decision gains or loses."], []
-    z = [l.strip() for l in open(g) if re.match(r"^[SDFM]:", l)]
-    return [f"compleasm on the unitigs (03_unitig_align/genes): {' '.join(z)}. This is what the assembly could hold: at ploidy 2 with distinct haplotypes, most genes are D here. "
-            "Stages 05, 07 and 10 lift these hits onto chains."], []
+    L = fai(f"{w}/00_inputs/unitigs.fasta.fai"); out = [f"Unitigs: {len(L)}, {Mb(sum(L.values()))}, N50 {Mb(n50(L.values()))}", f"Chromosomes {c['chromosomes']}, ploidy {c['ploidy']}."]
+    g = f"{w}/01_genes/summary.txt"
+    if not os.path.exists(g): out.append("No compleasm on the unitigs (compleasm not set): later stages cannot count the genes each decision gains or loses.")
+    else:
+        z = [l.strip() for l in open(g) if re.match(r"^[SDFM]:", l)]
+        out.append(f"compleasm on the unitigs (01_genes): {' '.join(z)}. This is what the assembly could hold: at ploidy 2 with distinct haplotypes, most genes are D here. "
+                   "Stages 05, 07 and 10 lift these hits onto chains.")
+    return out, []
 def r_depth(w, c, s):
     L = fai(f"{w}/00_inputs/unitigs.fasta.fai")
     def hist(title, pairs):
@@ -331,7 +332,7 @@ def r_validate(w, c, s):
     if old: al.append("Hand tables from before a reset: " + ", ".join(old) + ". Re-test each row against this build and write the result in the new tables. Do not copy rows across: scaffold names and coordinates may have changed (D12, D13).")
     out.append("Hand the user the Juicebox files and the SV table (D13).")
     return out, al
-FN = {"01_inputs": r_inputs, "02_map_unitigs": r_map, "03_depth": r_depth, "04_chains": r_chains, "05_hic_chains": r_hic, "06_evidence": r_evidence, "07_group": r_group, "08_bridges": r_bridges, "09_order": r_order, "10_arms_tails": r_arms, "11_build": r_build, "12_fill": r_fill, "13_rawreads": r_raw, "14_apply_joins": r_apply, "15_validate": r_validate}
+FN = {"01_inputs": r_inputs, "03_depth": r_depth, "04_chains": r_chains, "05_hic_chains": r_hic, "06_evidence": r_evidence, "07_group": r_group, "08_bridges": r_bridges, "09_order": r_order, "10_arms_tails": r_arms, "11_build": r_build, "12_fill": r_fill, "13_rawreads": r_raw, "14_apply_joins": r_apply, "15_validate": r_validate}
 
 def write(w, sid, c, s, active=lambda cond: True):
     st_ = BY_ID[sid]; out, al = FN[sid](w, c, s) if sid in FN else ([], [])

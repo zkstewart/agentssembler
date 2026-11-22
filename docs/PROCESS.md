@@ -33,15 +33,15 @@ flowchart TD
   D11 --> N[13 raw reads] --> D18{{D18}} --> O[14 apply joins] --> P[15 validate] --> D12{{D12 D13}}
 ```
 
-## 01_inputs
+## 01_inputs (about 1 h with compleasm, else seconds)
 
-Links inputs, indexes them, checks tools, and checks `unitigs.gfa` against `unitigs.fasta`.
+Links inputs, indexes them, checks tools, and checks `unitigs.gfa` against `unitigs.fasta`. **Genes on the unitigs** (compleasm, when set): what the assembly could hold, in `01_genes/`. Stages 05, 07 and 10 lift these hits onto chains, so D04, D05 and D16 can say how many genes a choice gains or loses without running compleasm again. On 292 the unitigs held 99.7% of genes while the first build placed 92%: the shortfall was placement, and this is the earliest place to see the ceiling. It runs first so that a wrong compleasm path or lineage stops the run before hours of mapping; `reset` keeps it unless `--remap`.
 
 **Check:** every read set is complete. A truncated read file looks like low depth later.
 
 ## 02_map_unitigs (hours)
 
-Corrected reads to all unitigs, with base-level alignment and near-equal secondaries. Unitigs against themselves, to find alleles and near-identical twins. Unitigs to the reference, as an alarm. **Genes on the unitigs** (compleasm, when set; about 1 h): what the assembly could hold. Stages 05, 07 and 10 lift these hits onto chains, so D04, D05 and D16 can say how many genes a choice gains or loses without running compleasm again. On 292 the unitigs held 99.7% of genes while the first build placed 92%: the shortfall was placement, and this is the earliest place to see the ceiling.
+Corrected reads to all unitigs, with base-level alignment and near-equal secondaries. Unitigs against themselves, to find alleles and near-identical twins. Unitigs to the reference, as an alarm.
 
 **Memory:** these mappings have taken up to 50 GB. minimap2's memory grows with `-t`, and the unitig self-alignment (`-N 20`) is the largest. If the stage is killed by the OOM killer (`dmesg`, or exit 137), delete the `.part` file and run the stage again with fewer threads: `AS_THREADS=6` held 292's self-alignment to 21.7 GB on a 30 GB machine. Use the driver's environment (`agentssembler env`, as in [HPC](HPC.md)), and record the thread count in the work directory's `README.md`.
 
@@ -60,7 +60,7 @@ Primary depth per unitig, and sequence-class depth adding near-identical copies.
 
 ## 05_hic_chains, then D04 (about 1.6 h)
 
-Hi-C to the final chains, keeping pairs at MAPQ >= 1 and NM < 3. **This is the only Hi-C mapping, and the driver runs it** (`bwa mem -5SP`, `samblaster`, HapHiC's `filter_bam`): there is no earlier Hi-C step and no `01_` directory. The target also holds every unitig stage 04 set aside as high-copy, named `decoy_*`, so that organelle reads do not land on nuclear insertions as if unique (see [LESSONS](LESSONS.md)); pairs touching a decoy are dropped. `reset 05_hic_chains --remap` is needed to redo the mapping, since `09_hic_map` is kept otherwise.
+Hi-C to the final chains, keeping pairs at MAPQ >= 1 and NM < 3. **This is the only Hi-C mapping, and the driver runs it** (`bwa mem -5SP`, `samblaster`, HapHiC's `filter_bam`): there is no earlier Hi-C step (`01_genes/` is compleasm on the unitigs). The target also holds every unitig stage 04 set aside as high-copy, named `decoy_*`, so that organelle reads do not land on nuclear insertions as if unique (see [LESSONS](LESSONS.md)); pairs touching a decoy are dropped. `reset 05_hic_chains --remap` is needed to redo the mapping, since `09_hic_map` is kept otherwise.
 
 **Hi-C allele rescue, decided at D04.** Where two haplotypes are near-identical, most Hi-C reads on them have MAPQ 0 and none of their pairs are kept, so grouping leaves those chains unassigned. Whatever the setting, this stage also keeps pairs with an allele-ambiguous end (MAPQ 0, every other hit on an allele partner; about 10 min for 50 M pairs) and writes `09_hic_map/rescue_signal.txt`: chains with an allele partner and almost no unique Hi-C (Hi-C-blind), with their gene copies. The report raises an alarm when these hold 1% of the chain sequence or more. Decide `hic_allele_rescue` at D04 (`--set hic_allele_rescue=true`): it acts in stages 06-08, so deciding here costs nothing; from D05 it costs `reset 07_group`, and later everything from 07 on. On 292 the signal flagged 150 chains, 27.1 Mb (391 gene copies), and the rescue placed 112 chains, 26.0 Mb.
 
