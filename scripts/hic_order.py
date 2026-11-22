@@ -23,9 +23,14 @@ Stage 2 counts their pairs but moves only blocks made entirely of low-informatio
 
 Search: greedy insertion of chains longest first (every position and orientation), then local moves
 (move any contiguous block to any position in either orientation, which includes reinserting one chain,
-flipping and reversing a segment) to convergence. This is repeated from --starts random orders, because a
+flipping and reversing a segment) to convergence. This is repeated from random orders, because a
 single block move can be blocked when two blocks must move together (e.g. both carry a telomere bonus);
-the best result over all starts is kept. Chains shorter than --minLen or with
+the best result over all starts is kept. Restarts stop after --patience in a row that do not beat the best (at most
+--starts): the search spends effort where restarts still find better orders, and a group whose restarts keep failing
+stops early (on 292, chr2 with 52 and 53 chains per group: 6 min instead of about 2 h, same order). Each group's restarts draw from a generator seeded by
+the group's name, so a group's result does not depend on the others. The log gives, per group, the restarts run, those
+that improved, and those that reached the best stage-1 order (in either direction): few reaching it means local optima, and an
+order to read with its LLRs. Chains shorter than --minLen or with
 fewer than --minPairs links to the group are appended unordered as 'unplaced_in_group'.
 
 Output columns: group, rank, chain, orientation, length, links to group, orientation_llr, position_llr,
@@ -34,7 +39,7 @@ loss in log-likelihood: small values mean Hi-C does not settle that chain's orie
 
 Usage: hic_order.py groups.tsv pairs.tsv.gz chains.fai out.tsv [--endLinks links.tsv]
 '''
-import gzip, math, argparse, collections, sys
+import gzip, math, argparse, collections, sys, zlib
 import numpy as np
 
 def decay_model(pairs_within, bg=1e-3):
@@ -58,7 +63,8 @@ def main():
     p.add_argument("groups"); p.add_argument("pairs"); p.add_argument("fai"); p.add_argument("out")
     p.add_argument("--endLinks", help="end_a end_b weight, ends as chain+ / chain-")
     p.add_argument("--linkBonus", type=float, default=200.0)
-    p.add_argument("--starts", type=int, default=40)
+    p.add_argument("--starts", type=int, default=40, help="most random restarts per group")
+    p.add_argument("--patience", type=int, default=3, help="stop after this many restarts in a row that do not beat the best")
     p.add_argument("--stats", help="chain_stats.tsv")
     p.add_argument("--minWithin", type=float, default=700)
     p.add_argument("--telomeres", help="telomeres.py output for the chains")
@@ -185,13 +191,18 @@ def main():
                     if best is None or s > best[0]: best = (s, t)
             order = best[1]
         cur, order, it = climb(order)
-        greedy = cur; wins = 0
+        greedy = cur; wins = 0; runs = []; miss = 0
+        canon = lambda o: min(tuple(o), tuple((c, "-" if x == "+" else "+") for c, x in reversed(o)))   # an order and its reverse are one scaffold
         if len(order) > 2:
+            rg = np.random.default_rng(zlib.crc32(g.encode()))
             for st in range(a.starts):
-                t = [ (use[i], "+-"[int(rng.integers(2))]) for i in rng.permutation(len(use)) ]
-                s, t, _ = climb(t)
-                if s > cur + 1e-6: cur, order = s, t; wins += 1
+                t = [ (use[i], "+-"[int(rg.integers(2))]) for i in rg.permutation(len(use)) ]
+                s, t, _ = climb(t); runs.append(canon(t))
+                if s > cur + 1e-6: cur, order = s, t; wins += 1; miss = 0
+                else: miss += 1
+                if miss >= a.patience: break
         if cur > greedy + 1e-6: print(f"# {g}: restarts improved the score by {cur - greedy:.1f}", file=sys.stderr)
+        if runs: print(f"# {g}: restarts {len(runs)} of at most {a.starts} (patience {a.patience}), improved {wins}, reached the best order {sum(r == canon(order) for r in runs)}", file=sys.stderr)
         stage2[0] = True
         cur, order, _ = climb(order, only_low=True)
         n = len(order)
