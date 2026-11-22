@@ -9,7 +9,10 @@ beside that node was given to both haplotypes.
 Each chain has a copy target from its depth outside the graph overlaps at both ends: 1 below --twoX, else depth over --hap
 rounded, from 2 to --ploidy. At ploidy 2 that is 1 or 2. A chain with no sequence outside its overlaps carries no weight. Junctions sharing candidate chains are solved together. A solution
 scores + interior bp for a chain used as often as its target and - interior bp per use above the target. Ties go to the most
-observations, counting reads through the path's joins and Hi-C pairs between its chains and the group's own chains.
+observations, counting reads through the path's joins and Hi-C pairs between its chains and the group's own chains, but only when
+they decide (>= --ratio times and >= --minObs more than the alternative's): among solutions the best does not beat by that much, the
+first by unitig names wins (chainlib.stable_key). Counts below that bar move with each read mapping, and chain names change when
+connectors are renumbered; the choice is arbitrary either way, and this way a re-run makes the same one.
 
 A junction's label records what settled its arm:
   only        one candidate path
@@ -24,6 +27,7 @@ Usage: assign_arms2.py --order order.tsv --bridges graph.bridges.tsv --ranked ch
          --report report.tsv --depth depth.tsv --unused unused.tsv --twoX X --hap H --ploidy N --minAllele A --maxPair M
 '''
 import argparse, collections, gzip, itertools
+from chainlib import stable_end, stable_path
 ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
 for x in ("order", "bridges", "ranked", "groups", "links", "agp", "gfa", "paf", "out", "report", "depth", "unused"):
     ap.add_argument("--" + x, required=True)
@@ -146,14 +150,18 @@ def score(sol):
         s += W[c] if k <= T[c] and k == T[c] else (-W[c] * (k - T[c]) if k > T[c] else 0)
     return s
 def key(sol): return (score(sol), sum(obs(j, p) for j, p in sol.items()))
+def decided(o0, o1): return o0 >= a.minObs + o1 and o0 >= a.ratio * max(o1, 1)
 
 chosen = {}; stats = collections.Counter(); searched = collections.Counter()
 for root, js in comps.items():
-    js = sorted(js); opts = [J[j][1] for j in js]; n = 1
+    js = sorted(js, key=lambda j: sorted((stable_end(parts, j[0]), stable_end(parts, j[1]))))
+    opts = [sorted(J[j][1], key=lambda p: stable_path(parts, p)) for j in js]; n = 1
     for o in opts: n *= len(o)
     if n <= a.maxCombos:
         searched["exhaustive"] += 1
-        best = max((dict(zip(js, c)) for c in itertools.product(*opts)), key=key)
+        ks = [(key(t), t) for t in (dict(zip(js, c)) for c in itertools.product(*opts))]
+        top = max(k[0] for k, t in ks); bo = max(k[1] for k, t in ks if k[0] == top)
+        best = next(t for k, t in ks if k[0] == top and not decided(bo, k[1]))   # first in unitig-name order: opts are sorted
     else:                                        # local search from each junction's first path
         searched["local"] += 1
         best = {j: o[0] for j, o in zip(js, opts)}; moved = True
@@ -169,7 +177,6 @@ print("components:", dict(searched))
 # label each junction: try its other paths alone and together with a change at one other junction, so that an exchange of
 # arms between the haplotypes, which coverage cannot see, counts as a tie
 compof = {j: find(j) for j in J}
-def decided(o0, o1): return o0 >= a.minObs + o1 and o0 >= a.ratio * max(o1, 1)
 labels = {}
 for j, p in chosen.items():
     ps = J[j][1]

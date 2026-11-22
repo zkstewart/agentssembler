@@ -343,4 +343,12 @@ class T(unittest.TestCase):
             p("tails.tsv", "#end\tgroup\tpath\tlabel\tpairs\tbp\nZ+\tg01\tY-\tonly\t1\t100000\n")
             r = run("review/chain_forks.py", *base, "--placement", f"{d}/pl.tsv", "--chainClass", f"{d}/cls.tsv", "--oneLo", "19", "--oneHi", "46", "--tails", f"{d}/tails.tsv")
             self.assertEqual(r.stdout.splitlines()[1].split("\t")[0], ".", "a chain on a tail is in use, not lost")
+    def test_stable_key(self):
+        # a renumbered chain keeps its key; copies keep their suffix; a chain missing from the AGP falls back to its name
+        sys.path.insert(0, f"{R}/scripts"); import chainlib
+        P = {"chain0007": [("utg9", "+"), ("utg2", "-")], "chain8001": [("utg5", "+")]}
+        Q = {"chain0012": [("utg9", "+"), ("utg2", "-")], "chain8003": [("utg5", "+")]}
+        self.assertEqual(chainlib.stable_key(P, "chain0007.g05"), chainlib.stable_key(Q, "chain0012.g05"))
+        self.assertEqual(chainlib.stable_path(P, ["chain8001+", "chain0007-"]), chainlib.stable_path(Q, ["chain8003+", "chain0012-"]))
+        self.assertEqual(chainlib.stable_key(P, "chainX"), (("chainX",), ""))
 if __name__ == "__main__": unittest.main(verbosity=1)
