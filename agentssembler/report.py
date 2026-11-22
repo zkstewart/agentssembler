@@ -171,6 +171,20 @@ def r_order(w, c, s):
         if os.path.exists(f): out.append(f"{lab}: " + open(f).read().splitlines()[-1])
     u = f"{w}/12_shared/unhonoured.txt"
     if os.path.exists(u): out += ["Reference-free order tests (12_shared/unhonoured.txt):", "```"] + open(u).read().splitlines()[:25] + ["```"]
+    # random restarts of the order search, per group (hic_order.py): improved = the first search was a local optimum
+    R = []; N = {}
+    for f in sorted(glob.glob(f"{w}/12_shared/by_chrom/c*.log")):
+        for l in open(f):
+            m = re.match(r"^# (\S+): (\d+) ordered", l)
+            if m: N[m.group(1)] = int(m.group(2))
+            m = re.match(r"^# (\S+): restarts (\d+) of at most \d+ \(patience \d+\), improved (\d+), reached the best order (\d+)", l)
+            if m: R.append((m.group(1), int(m.group(2)), int(m.group(3)), int(m.group(4))))
+    if R:
+        imp = [f"{g} ({i} of {n})" for g, n, i, r in R if i]; none = [f"{g} ({N.get(g, '?')} chains)" for g, n, i, r in R if not r]
+        out.append(f"Order restarts (12_shared/by_chrom/*.log): {len(R)} groups, {sum(n for _, n, _, _ in R)} restarts; improved the first search in {len(imp)}"
+                   + (f": {', '.join(imp)}" if imp else "") + f". Groups no restart reached the best order: {len(none)}" + (f" ({', '.join(none[:12])})" if none else "") + ".")
+        if imp: al.append(f"Random restarts found better orders than the first search in {', '.join(imp)}: the search has local optima there, so the order may still be one. "
+                          "Read those groups' orientation_llr and position_llr (by_chrom/cN.order.tsv) before trusting junctions with small values (D09).")
     return out, al
 def r_arms(w, c, s):
     T = list(rows(f"{w}/12_shared/tails.tsv")); C = list(rows(f"{w}/12_shared/tail_checks.tsv")); L = collections.Counter(r[3] for r in T); placed = sum(int(r[2]) - int(r[1]) + 1 for r in rows(f"{w}/12_shared/pre/{c['sample']}.agp") if r[4] == "W"); out = [f"Pre-build placed {Mb(placed)}."]

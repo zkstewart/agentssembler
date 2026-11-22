@@ -373,6 +373,27 @@ class T(unittest.TestCase):
             self.assertEqual(r.returncode, 0, r.stderr)
             self.assertIn("Hi-C-blind", r.stdout); self.assertIn("ALARM", r.stdout)
             self.assertEqual([l.split("\t")[0] for l in open(f"{d}/out") if l.endswith("yes\n")], ["X"])
+    def test_order_patience(self):
+        # four chains in a line, Hi-C decaying with distance: restarts stop after --patience failures, the order is found,
+        # and a second run gives the same file
+        import random; random.seed(3)
+        with tempfile.TemporaryDirectory() as d:
+            L = 200000; names = ["cA", "cB", "cC", "cD"]
+            open(f"{d}/fai", "w").write("".join(f"{c}\t{L}\n" for c in names))
+            open(f"{d}/groups", "w").write("#chain\tlength\tgroup\n" + "".join(f"{c}\t{L}\tg01\n" for c in names))
+            with gzip.open(f"{d}/pairs.gz", "wt") as o:
+                for _ in range(20000):
+                    x = random.randrange(4 * L); dist = int(random.expovariate(1 / 60000)); y = x + dist
+                    if y >= 4 * L: continue
+                    o.write(f"{names[x // L]}\t{x % L}\t{names[y // L]}\t{y % L}\n")
+            args = [f"{d}/groups", f"{d}/pairs.gz", f"{d}/fai"]
+            r = run("hic_order.py", *args, f"{d}/o1", "--minPairs", "1"); self.assertEqual(r.returncode, 0, r.stderr)
+            m = re.search(r"g01: restarts (\d+) of at most 40 \(patience 3\), improved (\d+)", r.stderr); self.assertTrue(m, r.stderr)
+            if m.group(2) == "0": self.assertEqual(m.group(1), "3", "no restart improved, so three failures stop the search")
+            got = [l.split("\t")[2] for l in open(f"{d}/o1") if l[0] != "#"]
+            self.assertIn(got, (names, names[::-1]))
+            run("hic_order.py", *args, f"{d}/o2", "--minPairs", "1")
+            self.assertEqual(open(f"{d}/o1").read(), open(f"{d}/o2").read())
     def test_stable_key(self):
         # a renumbered chain keeps its key; copies keep their suffix; a chain missing from the AGP falls back to its name
         sys.path.insert(0, f"{R}/scripts"); import chainlib

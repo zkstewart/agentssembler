@@ -6,7 +6,7 @@
 
 **How to decide:**
 
-1. **Is the search stuck?** Multi-start search is the default (40 starts). If it does not improve, the objective itself prefers this order.
+1. **Is the search stuck?** After the first search, random restarts run until 3 in a row fail to beat the best (at most 40). Each group's log line (`12_shared/by_chrom/cN.log`) gives restarts run, those that improved, and those that reached the best order. If none improved, the objective itself prefers this order. If some improved, the report raises an alarm: the search has local optima there, so read that group's LLRs before trusting its junctions. On 292 the patience rule cut chr2's ordering (52 and 53 chains per group) from about 2 h to 6 min, and every order in four builds (36 chromosomes) stayed the same. A group no restart reaches is not wrong for that: on 292 these were chr8_h1 (7 chains, the t(4;8)/t(5;8) derivative) and chr3_h2 (11), where the greedy start is hard to find from a random one.
 2. **Test explicit alternatives** with `scripts/score_orders.py`.
 3. **Are weak chains driving it?** Hundreds of satellite pairs can outweigh megabases of good chains. Two-stage ordering (`--stats`) fixed this once. Check `min_within` (`reports/06_evidence.md`), and pass it as the fifth argument to `score_orders.py`: without it that script uses 700.
 4. **Was a path missed?** `hops: 12` is the default. 3 hops missed a 4 Mb hub path on WatsonsChoice and reversed a block; 8 missed a Busk allele path once connectors were in the graph (see `SETTINGS.md`).

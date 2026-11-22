@@ -80,7 +80,7 @@ Applies group edits. If collapsed, writes one copy of each shared chain per hapl
 
 ## 09_order, then D09, D10 (minutes to 70 min)
 
-Orders each chromosome's groups in parallel. Hi-C sets the base score. Graph and read links, and telomeres, carry a bonus large enough to act as near-hard constraints, which follows from the evidence order. The reference check is an alarm, and `unhonoured.py` tests order without a reference.
+Orders each chromosome's groups in parallel. Hi-C sets the base score. The search climbs from a greedy order, then restarts from random orders until 3 in a row fail to improve (at most 40); time grows steeply with chains per group, so the patience rule keeps a group of 50 chains to minutes. Graph and read links, and telomeres, carry a bonus large enough to act as near-hard constraints, which follows from the evidence order. The reference check is an alarm, and `unhonoured.py` tests order without a reference.
 
 ## 10_arms_tails, then D15, D16, D17
 
