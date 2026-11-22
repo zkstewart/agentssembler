@@ -238,6 +238,23 @@ def r_raw(w, c, s):
     return out, al
 def r_apply(w, c, s):
     f = f"{w}/15_final_raw/stats.txt"; return [open(f).read().strip()] if os.path.exists(f) else ["Final files unchanged."], []
+def completeness_alarms(V, c, minComplete=95.0, maxRecoverable=1.0):
+    """Low gene completeness on the placed scaffolds, and gene copies that unplaced sequence could add: a placement problem, not a sequence one."""
+    al = []; bus = c.get("compleasm") or {}; lo = float(bus.get("min_complete", minComplete))
+    for x in sorted(glob.glob(f"{V}/compleasm/h*/summary.txt")):
+        name = x.split("/")[-2]
+        if "_" in name: continue
+        z = {m.group(1): float(m.group(2)) for m in (re.match(r"^([SD]):([\d.]+)%", l) for l in open(x)) if m}
+        if z and z.get("S", 0) + z.get("D", 0) < lo:
+            al.append(f"compleasm {name}: complete {z.get('S', 0) + z.get('D', 0):.2f}%, under {lo:g}% (compleasm.min_complete). Read complement.txt: genes complete in unplaced "
+                      "sequence point to placement, not to missing sequence (D09, D16; unloc/ for chains with a known chromosome).")
+    cg = f"{V}/compleasm/complement.txt"
+    if os.path.exists(cg):
+        m = re.search(r"short of \d+ per gene, on any scaffold: (\d+) of (\d+) \(([\d.]+)%\), in (\d+) genes; (\d+) of them complete in unplaced", open(cg).read())
+        if m and float(m.group(3)) > maxRecoverable and int(m.group(5)) > 0:
+            al.append(f"{m.group(1)} gene copies ({m.group(3)}%) short on the scaffolds, in {m.group(4)} genes; {m.group(5)} of those genes are complete in unplaced sequence. "
+                      "Find which unplaced chains carry them (compleasm/unplaced) and why they were not placed: Hi-C rescue, tails (D16), tangles, or unloc/.")
+    return al
 def r_validate(w, c, s):
     V = f"{w}/16_validate"; out = []; al = []
     if os.path.exists(f"{V}/stats.txt"): out.append(open(f"{V}/stats.txt").read().strip())
@@ -247,6 +264,9 @@ def r_validate(w, c, s):
         name = x.split("/")[-2]; z = [l.strip() for l in open(x) if re.match(r"^[SDFIMN]:", l)]; out.append(f"compleasm {name}: {' '.join(z)}")
     cg = f"{V}/compleasm/complement.txt"
     if os.path.exists(cg): out.append(open(cg).read().strip().replace("\n", "\n\n"))
+    al += completeness_alarms(V, c)
+    ut = f"{V}/unloc/unloc.txt"
+    if os.path.exists(ut): out.append("Unlocalized scaffolds, a suggestion beside the final files (adopting them is the user's call, D13): " + open(ut).read().strip().replace("\n", "\n\n"))
     ct = f"{V}/maps/specific/crosstalk.tsv"
     if os.path.exists(ct):
         i = o = 0

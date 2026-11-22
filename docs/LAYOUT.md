@@ -196,7 +196,8 @@ A fill writes six files from one prefix: `.agp`, `.fills.fasta`, `.report.tsv`, 
 - `sv/inv/<scaffold>_vs_<scaffold>.paf` (each haplotype against the first), `sv/inv/merged.tsv`, `sv/inversion_test.txt` and `sv/bp_reads.tsv` (when there are inverted blocks), `sv/final_vs_ref.paf` **[ref]**.
 - `sv/sv_calls.tsv`, `curation_targets.tsv`: **yours to fill.**
 - `juicebox/`: `out_JBAT.hic`, `out_JBAT.assembly`, `out_JBAT.sizes`, `out_JBAT.components.tsv`, `juicer_tools.log`, `done.ok` **[opt: juicer_tools]**.
-- `compleasm/`: `hK/` and `unplaced/` (compleasm's own output, with `summary.txt`), `hK.log`, `unplaced.log`, `complement.txt` **[opt: compleasm]**.
+- `compleasm/`: `hK/` and `unplaced/` (compleasm's own output, with `summary.txt`), `hK.log`, `unplaced.log`, `complement.txt` **[opt: compleasm]**; `hK_unloc/` and `hK_unloc.log`: haplotype K's scaffolds plus its unlocalized sequences **[opt: compleasm, ploidy 2]**.
+- `unloc/` **[ploidy 2]**: `SAMPLE.unloc.fasta` (`<scaffold>_unloc_NN`: unplaced chains with a known chromosome and no position), `SAMPLE.unloc.tsv` (chain, haplotype, phase evidence, depth), `SAMPLE.unplaced_rest.fasta`, `SAMPLE.unloc.skipped.tsv`, `unloc.txt`. A suggestion beside the final files: adopting it is the user's call ([D13](decisions/D13_user_decisions.md)).
 
 ## Re-running
 

@@ -121,7 +121,7 @@ def stage_env(w):
         AS_READS_LINK=input_link(w, i["corrected_reads"], "ont_corrected_reads", dict(fasta=".fasta", fastq=".fastq"), "ont_corrected_reads.fasta"),
         AS_HIC_R1_LINK=input_link(w, i["hic_r1"], "hic_R1", dict(fasta=".fa", fastq=".fq"), "hic_R1.fq.gz"),
         AS_HIC_R2_LINK=input_link(w, i["hic_r2"], "hic_R2", dict(fasta=".fa", fastq=".fq"), "hic_R2.fq.gz"),
-        AS_COLLAPSED=str(s.get("collapsed", "false")).lower(), AS_HAP_FIRST=str(s.get("hap_first", c["ploidy"] == 2)).lower(),
+        AS_COLLAPSED=str(s.get("collapsed", "false")).lower(), AS_UNLOC_PURGE=str(s.get("unloc_purge", 0.2)), AS_HAP_FIRST=str(s.get("hap_first", c["ploidy"] == 2)).lower(),
         AS_LINEAGE=str(bus.get("lineage", "")), AS_BUSCO_LIB=abspath(bus.get("library")))
     for k, v in t.items(): e["AS_" + k.upper()] = str(v)
     if s.get("hap_depth"):
