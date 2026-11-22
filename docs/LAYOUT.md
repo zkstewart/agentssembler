@@ -8,7 +8,7 @@ Stages are numbered 01 to 15. Directories are numbered 00 to 17. **The two sets 
 
 | Stage | Writes into | Stops for |
 |---|---|---|
-| `01_inputs` | `00_inputs/` | |
+| `01_inputs` | `00_inputs/`, `01_genes/` | |
 | `02_map_unitigs` | `02_ont_map/`, `03_unitig_align/` | |
 | `03_depth` | `04_copynumber/` | D01 |
 | `04_chains` | `04_copynumber/copy_number.tsv`, `05_nonredundant/`, `06_chains/`, `07_chains2/`, `08_final_chains/` | D03 |
@@ -26,7 +26,7 @@ Stages are numbered 01 to 15. Directories are numbered 00 to 17. **The two sets 
 
 Three things look like mistakes and are not:
 
-- **There is no `01_` directory.** Hi-C is mapped once, to the chains, by stage `05_hic_chains` into `09_hic_map/`.
+- **`01_genes/` is not a Hi-C mapping.** It is compleasm on the unitigs (stage `01_inputs`). Hi-C is mapped once, to the chains, by stage `05_hic_chains` into `09_hic_map/`.
 - **There are two `12_` directories**, `12_broken/` (stage 06) and `12_shared/` (stages 08 to 10).
 - **`16_validate/` is begun at stage 06** (one telomere table) and finished at stage 15, after `17_raw_reads/`.
 
@@ -39,7 +39,7 @@ Three things look like mistakes and are not:
 | `state/` | driver | `STAGE.done` per finished stage, holding the settings it ran with; `base_dir`, the directory `init` was run in, from which relative config paths resolve; `length_scale.json`, measured when stage 04 finishes, and `hic_density.json`, when stage 06 finishes ([SETTINGS](SETTINGS.md)) |
 | `decisions/` | `decide` | `Dnn.yaml` per recorded decision: who, when, reason, settings, and a checksum of every edit file at that moment |
 | `edits/` | `init`, then you | Every hand edit, each row with its reason. See below |
-| `reports/` | driver | `STAGE.md` per finished stage. `02_map_unitigs.md` and `01_inputs.md` are short by design |
+| `reports/` | driver | `STAGE.md` per finished stage. `02_map_unitigs.md` and `01_inputs.md` are short by design (`01_inputs.md` gives compleasm on the unitigs) |
 | `logs/` | driver | `STAGE.log` per stage, appended on each run |
 | `archive/` | `reset` | Only after a `reset`. See [Re-running](#re-running) |
 | `ttt/` | you | Only if TTT was used at D16: tangles, boundary files, coverage, the read GAF and runs ([TANGLES](TANGLES.md)). `reset` leaves it alone |
@@ -85,12 +85,15 @@ Symlinks to the inputs under fixed names, and two indexes. Raw reads are not lin
 
 `unitigs.fasta`, `unitigs.gfa`, `ont_corrected_reads.*`, `hic_R1.*`, `hic_R2.*`, `unitigs.fasta.fai`, `reference.fasta` and `reference.fasta.fai` **[ref]**.
 
+## `01_genes/` (stage 01) **[opt: compleasm]**
+
+compleasm's own output on the unitigs (`summary.txt`, `LINEAGE/full_table_busco_format.tsv`), and `01_genes.log` beside it: every gene copy on the unitigs, lifted onto chains by stages 05, 07 and 10. Kept by `reset` unless `--remap`. A run made elsewhere can be put in place: the step is skipped when `summary.txt` exists.
+
 ## `02_ont_map/`, `03_unitig_align/` (stage 02)
 
 - `02_ont_map/ont_vs_unitigs.paf.gz`: corrected reads to all unitigs.
 - `03_unitig_align/unitigs_self.paf.gz`: unitigs against themselves.
 - `03_unitig_align/unitigs_vs_ref.paf.gz` **[ref]**.
-- `03_unitig_align/genes/` (compleasm's own output on the unitigs, with `summary.txt` and `LINEAGE/full_table_busco_format.tsv`) and `genes.log` **[opt: compleasm]**: every gene copy on the unitigs, lifted onto chains by stages 05, 07 and 10.
 
 These are the mappings most often made elsewhere and put in place. See [HPC.md](HPC.md).
 

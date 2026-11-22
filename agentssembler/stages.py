@@ -15,7 +15,7 @@ class Stage:
     hours: str = ""                                    # rough cost on 16 cores, from the two genomes tried
 
 STAGES = [
-    Stage("01_inputs", "Link and check inputs", outputs=[]),
+    Stage("01_inputs", "Link and check inputs; genes on the unitigs", outputs=[], keep=["01_genes", "01_genes.log"], hours="about 1 h with compleasm, else seconds"),
     Stage("02_map_unitigs", "Reads and unitigs aligned", keep=["02_ont_map", "03_unitig_align"], hours="2-6 h; can run on an HPC"),
     Stage("03_depth", "Depth per unitig", outputs=["04_copynumber"], gates=[("D01", None)]),
     Stage("04_chains", "Non-redundant unitigs and chains", outputs=["05_nonredundant", "06_chains/chains*", "07_chains2/kept2.txt", "08_final_chains"], keep=["06_chains/*.paf.gz", "07_chains2/*.paf.gz"], gates=[("D03", None)], hours="1-3 h"),

@@ -1,7 +1,7 @@
 #!/bin/bash
 # This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
 # If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
-# Link inputs, index them, and check they fit each other.
+# Link inputs, index them, and check they fit each other. With compleasm set, genes on the unitigs (01_genes/, about 1 h).
 source "$AS_REPO/stages/lib.sh"
 mkdir -p 00_inputs
 ln -sfn "$AS_UNITIGS" 00_inputs/unitigs.fasta; ln -sfn "$AS_GFA" 00_inputs/unitigs.gfa
@@ -22,3 +22,9 @@ for l in open("00_inputs/unitigs.gfa"):
 print(f"GFA S lines {n}, FASTA records {len(L)}, GFA records not in FASTA {bad}")
 if bad or n != len(L): raise SystemExit("unitigs.gfa does not match unitigs.fasta")
 PY
+# Gene copies on the unitigs: what the assembly could hold. Later stages lift these hits onto chains to say how many genes each
+# decision gains or loses (D04/D05 rescue, D16 tails, D13 unloc) without running compleasm again. Here, so that a wrong
+# compleasm path or lineage stops the run before hours of mapping. About 1 h at 16 threads.
+if [ -n "${AS_COMPLEASM:-}" ] && [ ! -s 01_genes/summary.txt ]; then
+  "$AS_COMPLEASM" run -a 00_inputs/unitigs.fasta -o 01_genes -l "$AS_LINEAGE" -L "$AS_BUSCO_LIB" -t "$AS_THREADS" > 01_genes.log 2>&1 || { echo "ERROR: compleasm on the unitigs failed: see 01_genes.log" >&2; exit 1; }
+fi

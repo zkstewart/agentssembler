@@ -14,7 +14,7 @@ agentssembler run WORK                 # continue
 
 `agentssembler status WORK` shows where things stand. See [docs/PROCESS.md](docs/PROCESS.md) for each stage, [docs/decisions/](docs/decisions/README.md) for each fork, and [docs/LAYOUT.md](docs/LAYOUT.md) for every file in the work directory.
 
-**Directory numbers are not stage numbers.** Stage `06_evidence` writes `12_broken/` and `11_ont_chains/`; `06_chains/` belongs to stage `04_chains`; there is no `01_` directory. [LAYOUT](docs/LAYOUT.md) has the table.
+**Directory numbers are not stage numbers.** Stage `06_evidence` writes `12_broken/` and `11_ont_chains/`; `06_chains/` belongs to stage `04_chains`; `01_genes/` (compleasm on the unitigs) belongs to `01_inputs`. [LAYOUT](docs/LAYOUT.md) has the table.
 
 ## Rules that decide the forks
 

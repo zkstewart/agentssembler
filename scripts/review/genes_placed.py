@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
 # If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
-'''Gene copies in the groups, from compleasm on the unitigs (stage 02), for D05. A gene is short when its complete copies in grouped
+'''Gene copies in the groups, from compleasm on the unitigs (stage 01), for D05. A gene is short when its complete copies in grouped
 chains number under the ploidy (a shared chain counts once per haplotype, so ploidy times); it is recoverable when an unassigned
 chain carries a copy. With --rescued (rescue_groups.py's table: the rescue's own, or stage 07's preview when hic_allele_rescue is
 off), also counts the short genes the rescued chains would make whole. Counts are of compleasm genes on chains, a proxy:

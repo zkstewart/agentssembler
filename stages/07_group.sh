@@ -24,7 +24,7 @@ elif [ -s 12_broken/pairs.rescued.tsv.gz ]; then
   fi
   RT=10_groups/rescue_preview/groups.rescued.tsv; GB=10_groups/groups.tsv
 fi
-# Genes short of a copy in the groups, and how many the rescue places (D05); needs compleasm on the unitigs (stage 02)
+# Genes short of a copy in the groups, and how many the rescue places (D05); needs compleasm on the unitigs (stage 01)
 if has_genes && [ ! -s 10_groups/genes_placed.txt ]; then
   python3 "$S/review/genes_placed.py" --genes "$GENES" --agp 12_broken/chains.agp --groups "${GB:-10_groups/groups.tsv}" --ploidy "$AS_PLOIDY" --out 10_groups/genes_placed.tsv ${RT:+--rescued "$RT"} > 10_groups/genes_placed.txt
 fi
