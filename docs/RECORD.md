@@ -181,6 +181,49 @@ At 0.03% divergence a 150 bp read carries a difference about once in 20 reads, a
 
 `break_at` for chain0073 is 778960, the break made by hand in the TTT build. Of GammaCitrus's other rows, chain0083 -> chain0193 and chain0089 -> chain0240 are bubble arms at directly joined chain ends. Added as TTT proposed, Hi-C misplaced them, so the guide says to leave such rows. Not yet run through a full build: the rows are a check for D16, and each break is a judgement.
 
+### Hi-C allele rescue and collapsed hubs (292)
+
+292 is a diploid at 84x per haplotype, whose haplotypes are near-identical over much of chr1-chr4. Two builds: the first without the rescue, and a rebuild with it (agentssembler 0.3.4). chr5-chr9 came out byte-identical in both. 292 has not been adopted yet, so nothing below is a final figure.
+
+**The rescue's gain and its cost.** Stage 05's signal flagged 150 Hi-C-blind chains, 27.1 Mb carrying 391 gene copies: chains with an allele partner and almost no unique Hi-C, which grouping leaves unassigned however good the rest is. The rescue placed about 26 Mb of them by allele-ambiguous Hi-C.
+
+| | First build | Rebuild with the rescue |
+|---|---|---|
+| Assembly | 615.5 Mb | 638.2 Mb |
+| Gaps | 24 | 48: the new ones are Hi-C joins between rescued chains |
+| compleasm single-copy, h1 / h2 | 92.16% / 92.16% | 95.54% / 96.43% |
+| Gene copies short of 2 on the scaffolds | 405 | 187 |
+| Inverted homolog blocks | 9 | 13, mostly in rescued chr2 |
+
+Most rescued haplotype calls were `arbitrary` or `allele_of_arbitrary`: Hi-C named the chromosome, rarely the haplotype. The two chr2 homologs ordered their 12 shared rescued chains differently, at Hi-C gaps with no reads.
+
+**Collapsed hubs.** With the rescue on, `chain_forks.txt` had 30 HUB rows, against 2 in the first build. Depth of unique reads on each chain split them:
+
+- three were true collapses (chain0102, chain0119, chain0090): a continuous block at about 2x in which every read is unique, beside 1x arms whose reads are MAPQ 0;
+- the rest read about 1x on the chain itself: allele bubbles, with both alleles present as separate chains.
+
+Breaking the three, then two more that the next round exposed (chain0101, chain0115), cost two `reset 06_evidence --remap` rounds. Run on stage 04's mapping, before D04, `review/hub_cores.py` finds every one of these hubs in one pass. It reproduces the hand-made breaks for chain0101, chain0102, chain0104 (chr5), chain0119 and chain0012 at the same positions.
+
+Breaks must fall at unitig boundaries (`break_chain.py`). A break is useful only if the piece it frees is mostly 2x: without that test, chain0159 and chain0119 would have carried a 1x arm into the shared piece. At stage 06 of the rebuild, seven remaining cores lie inside single unitigs, where hifiasm collapsed both haplotypes. They cannot be broken with the current tools. Each such chain goes on one haplotype or is shared, a D14 choice.
+
+**Rescue swaps.** Of the rebuild's 46 Hi-C gaps, 2 (chr1_h1 17.67 Mb, chr3_h1 10.25 Mb) would close if two chains swapped homologs: the graph linked them the other way from the rescue's Hi-C call. The first build had no gap at either site. At chr1_h1, no q20 read crosses into either allele, so reads cannot settle it. At chr3_h1 the first build's bridges had join reads, but in near-identical haplotypes a read cannot show which homolog it came from. Neither the graph nor Hi-C is proof there, so the choice went to the user.
+
+**Rescue errors caught by hand, then built in:**
+
+- chain0288, a 17x near-copy of the telomeric tip chain0078, was placed between a chain and that tip. The `redundant` call now leaves such chains out.
+- 2x chains with a collapsed core were given one haplotype. The `collapsed` call now leaves breakable ones out.
+
+**Unlocalized scaffolds.** Handing over unplaced chains whose chromosome is known (`unloc/`) raised compleasm from 92% to 97-98% per haplotype on the first build, without changing a scaffold. On the rebuild, 97.18% and 97.50%.
+
+**Direction.** chr2_h1 came out written in reverse against chr2_h2. Found at stage 15, the flip cost `reset 12_fill`. The same check now runs at stage 11 (`review/homolog_direction.py`), from the unitig self-alignments, and flags chr2_h1 in 0.1 s.
+
+**Bugs found afterwards** by an external review, in code these builds used:
+
+- `allele_table.py` wrote the unitig-level strand for 1,051 of 3,396 allele blocks, mirroring projected rescue pairs in those blocks;
+- allele conflicts were judged against the longer chain, missing 104 of them.
+
+Both are fixed. Whether they explain the chr2 order disagreement is not yet tested.
+
 ### Read correction (WatsonsChoice, 13Q010, Busk)
 
 Raw SUP reads against corrected reads, at reads of 5 kb or more:
@@ -230,3 +273,5 @@ Stage 04 sets high-copy chains aside (`07_chains2/repeat_chains.txt`), and the c
 - I accepted a 13Q010 D06 grouping without checking the chr8 satellite stack the guide names.
 - I reported "raw 40, corrected 3" spanners on Busk from a pooled count, when 37 of the 40 were at one array.
 - A report line read `homolog fraction 0.0000` on every genome until Busk, because of a parser bug. A value that exact should have looked wrong sooner.
+- I said `break_chain.py` cuts anywhere, so `hub_cores.py` suggested breaks inside unitigs that the stage would have refused. On 292, 12 of 15 suggested breaks were of that kind.
+- A report alarm I added for those hubs used its list before creating it, and would have stopped the stage 05 report whenever a breakable hub existed.
