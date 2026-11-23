@@ -32,6 +32,21 @@ Everything goes in the config (`config/sample.example.yaml`), except the values 
 
 An allopolyploid's subgenomes are not labelled. Chromosome names come from the reference, if it holds both subgenomes.
 
+## Known limits
+
+Genomes of these kinds break an assumption the process makes. None has been run. **Tell the user before starting** if the sample is one, and say in the hand-over which assumption was at risk.
+
+| Sample | Assumption it breaks | What goes wrong |
+|---|---|---|
+| Heteromorphic sex chromosomes (XY, ZW, X0) | Every chromosome has `ploidy` homologs at the same depth | The hemizygous parts read 1x as on any homolog, but have no allele: grouping looks for a partner that does not exist, and depth classes call the X's unique sequence a lost haplotype |
+| Aneuploidy, B chromosomes | The same | A chromosome at another copy number is called collapsed or missing; a B chromosome has no homolog to group with |
+| More than six haplotypes (octoploid and above) | Haplotypes separate in the unitigs and depth steps are distinguishable | Depth classes are 1/ploidy of the total apart, so at 8 copies the steps between dosages are within noise |
+| Pore-C or other multi-contact libraries | Hi-C reads are pairs | Concatemers would need splitting into pairs first; the pair filters were tuned on Hi-C |
+| Telomeres that are degenerate or retrotransposon-based (some insects) | A short motif repeated at chromosome ends | Telomere calls fail, so ends are never closed and tips go unplaced. `telomere_motif`, `telomere_window` and `telomere_min_copies` change the call, not the kind of telomere |
+| Partly inbred diploids with long runs of homozygosity | Homologs are distinct in the unitigs except at small collapses | Long collapsed runs make many chains shared, and ordering and arm phase lose the haplotype-specific evidence they need (D14, D15) |
+
+The scaling limits found so far are handled: depth per window, not per base (multi-Gb genomes), chain names past 7999 chains, multi-op GFA overlaps, `ploidy: 1`, and Juicebox maps past 2.1 Gb (scaled, untried).
+
 ## Defaults
 
 | Setting | Value | Meaning |
