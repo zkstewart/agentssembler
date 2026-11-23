@@ -8,7 +8,9 @@ A copy is named <chain>.<group>. Every per-chain input for ordering and scaffold
   groups    each copy in its group; other rows unchanged
   agp, fai  copies replace the chain; the same unitig range appears once per haplotype
   pairs     shared-specific pair: goes to the copy in the specific chain's group, so each copy sees its own haplotype
-            shared-shared and within-chain pair: goes to every copy, since nothing says which haplotype it came from
+            shared-shared and within-chain pair: to one of the groups both chains are copied into, by a hash of the pair. It came from
+            one of those haplotypes, and nothing says which; written to every copy, each group would hold d times the pairs it expects
+            beside its unique chains, and ordering scores raw pair counts
             shared-unassigned pair: dropped
   links     shared-specific link: to the copy in the specific chain's group
             shared-shared link, same chromosome: between same-group copies
@@ -25,7 +27,7 @@ A shared_in edit across a translocation gives a chromosome such as c0+c8: the co
 reaches a copy from a chain of any of those chromosomes in the copy's group.
 Usage: make_shared_copies.py groups_prefix chains.agp chains.fai pairs.tsv.gz end_links.tsv chain_stats.tsv telomeres.tsv out_dir
 '''
-import argparse, collections, gzip, os
+import argparse, collections, gzip, os, zlib
 p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
 for x in "prefix agp fai pairs links stats telomeres out".split(): p.add_argument(x)
 p.add_argument("--minOverlap", type=int, default=5000)
@@ -108,9 +110,12 @@ with gzip.open(a.pairs, "rt") as fh, gzip.open(f"{a.out}/pairs.tsv.gz", "wt", co
         x, u, y, v = l.rstrip("\n").split("\t"); sx, sy = x in shared, y in shared
         if not sx and not sy: o.write(l); n_out["plain"] += 1; continue
         if sx and sy:
-            if x == y or set(gof[x]) & set(gof[y]):
-                for g in gof[x]:
-                    if g in gof[y]: o.write(f"{copy_in(x, g)}\t{u}\t{copy_in(y, g)}\t{v}\n")
+            common = [g for g in gof[x] if g in gof[y]]
+            if common:
+                # the pair came from one of the d haplotypes both chains are on: give it to one copy pair, by a hash of the pair, so each
+                # group holds about 1/d of them. Written to every group, each group would carry d times the pairs of its unique chains.
+                g = common[zlib.crc32(l.encode()) % len(common)]
+                o.write(f"{copy_in(x, g)}\t{u}\t{copy_in(y, g)}\t{v}\n")
                 n_out["shared_both"] += 1
             else: n_out["shared_other_chrom"] += 1
             continue

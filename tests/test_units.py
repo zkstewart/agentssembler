@@ -3,7 +3,7 @@
 # If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """Fast checks with no data: every script parses and states its purpose, no hard-coded paths or samples, and the edit-applying scripts behave. Run: python3 tests/test_units.py"""
 import numpy as np
-import ast, glob, gzip, os, re, shutil, subprocess, sys, tempfile, textwrap, unittest
+import ast, collections, glob, gzip, os, re, shutil, subprocess, sys, tempfile, textwrap, unittest
 R = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SCRIPTS = glob.glob(f"{R}/scripts/*.py") + glob.glob(f"{R}/scripts/*/*.py")
 def run(script, *a): return subprocess.run([sys.executable, f"{R}/scripts/{script}", *a], capture_output=True, text=True)
@@ -188,7 +188,12 @@ class T(unittest.TestCase):
             os.mkdir(f"{d}/out"); r = run("make_shared_copies.py", f"{d}/f", f"{d}/agp", f"{d}/fai", f"{d}/pairs.gz", f"{d}/el", f"{d}/st", f"{d}/tel", f"{d}/out"); self.assertEqual(r.returncode, 0, r.stderr)
             cp = sorted(l.split("\t")[0] for l in open(f"{d}/out/groups.tsv") if "." in l.split("\t")[0])
             self.assertEqual(cp, ["s.g01", "s.g02", "t.g02", "t.g04", "u.g01", "u.g02", "u.g03", "u.g04"])
-            self.assertEqual(gzip.open(f"{d}/out/pairs.tsv.gz", "rt").read(), "s.g01\t5\ta1\t9\ns.g01\t5\ts.g01\t90\ns.g02\t5\ts.g02\t90\nu.g04\t5\ta4\t9\ns.g02\t7\tt.g02\t8\n")
+            # a pair between shared chains (or within one) goes to one group both are in, by a hash: it came from one haplotype
+            self.assertEqual(gzip.open(f"{d}/out/pairs.tsv.gz", "rt").read(), "s.g01\t5\ta1\t9\ns.g02\t5\ts.g02\t90\nu.g04\t5\ta4\t9\ns.g02\t7\tt.g02\t8\n")
+            with gzip.open(f"{d}/pairs.gz", "wt") as o: o.write("".join(f"s\t{i}\tu\t{i + 7}\n" for i in range(400)))
+            shutil.rmtree(f"{d}/out"); os.mkdir(f"{d}/out"); r = run("make_shared_copies.py", f"{d}/f", f"{d}/agp", f"{d}/fai", f"{d}/pairs.gz", f"{d}/el", f"{d}/st", f"{d}/tel", f"{d}/out")
+            n = collections.Counter(l.split("\t")[0] for l in gzip.open(f"{d}/out/pairs.tsv.gz", "rt"))
+            self.assertEqual(sum(n.values()), 400); self.assertEqual(sorted(n), ["s.g01", "s.g02"]); self.assertTrue(150 <= n["s.g01"] <= 250, n)
             self.assertEqual(sorted(l.split("\t")[0] for l in open(f"{d}/out/chains.agp")).count("s.g03"), 0)
             self.assertIn("t.g02+\ta2-", open(f"{d}/out/end_links.tsv").read())
     def test_reset_drops_stale_scaffold_mappings(self):
@@ -451,6 +456,17 @@ class T(unittest.TestCase):
                 o = run("rawreads/tail_joins.py", "--tails", f"{d}/t.tsv", "--chainsAgp", f"{d}/c.agp", "--agp", f"{d}/s.agp", "--names", f"{d}/n.tsv", "--paf", f"{d}/r.paf.gz", "--out", f"{d}/o.tsv")
                 self.assertEqual(o.returncode, 0, o.stderr)
                 self.assertEqual([l.rstrip("\n").split("\t")[4:] for l in open(f"{d}/o.tsv") if l[0] != "#"], [[str(j), "1", "1"]])
+    def test_project_rescued_split(self):
+        # x (rescued) and y each have a copy in g1 and g2: a pair fitting both groups goes to one, by a hash, not always to the first
+        with tempfile.TemporaryDirectory() as d:
+            open(f"{d}/g.tsv", "w").write("#chain\tlength\tgroup\nx.g1\t9\tg1\nx.g2\t9\tg2\ny.g1\t9\tg1\ny.g2\t9\tg2\nz\t9\tg2\n")
+            open(f"{d}/r.tsv", "w").write("#chain\tlength\tfrom\tgroup\nx\t9\tunassigned\tg1\n")
+            open(f"{d}/b.tsv", "w").write("#h\n")
+            with gzip.open(f"{d}/p.gz", "wt") as o: o.write("".join(f"x\t{i}\ty\t{i + 5}\tuu\n" for i in range(400)) + "x\t1\tz\t2\tuu\n")
+            r = subprocess.run([sys.executable, f"{R}/scripts/rescue/project_rescued.py", f"{d}/g.tsv", f"{d}/p.gz", f"{d}/b.tsv", f"{d}/r.tsv", f"{d}/o.gz"], capture_output=True, text=True)
+            self.assertEqual(r.returncode, 0, r.stderr)
+            n = collections.Counter(l.split("\t")[0] for l in gzip.open(f"{d}/o.gz", "rt"))
+            self.assertEqual(sum(n.values()), 401); self.assertTrue(150 <= n["x.g1"] <= 250, n)
     def test_decay_norm(self):
         sys.path.insert(0, f"{R}/scripts"); import hic_order as ho
         # one chain ending just inside the lower half of a populated bin (the review's case): the old midpoint opportunity there was 0,

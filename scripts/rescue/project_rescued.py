@@ -4,10 +4,10 @@
 '''Stage 08: rescued Hi-C pairs for ordering (settings.hic_allele_rescue). Only pairs touching a chain placed by rescue_groups.py are used,
 so the rest of the build orders on unique pairs as before. An allele-ambiguous end is moved to the chain or allele (alleles.blocks.tsv,
 position carried through the aligned block) that lies in the group of the pair's other end; a pair whose ends cannot be put in one
-group is dropped. Ordering then reads these pairs with the unique ones. Two homologs are assumed collinear here, which a
+group is dropped; a pair that fits several groups goes to one, by a hash of the pair (it came from one haplotype). Ordering then reads these pairs with the unique ones. Two homologs are assumed collinear here, which a
 haplotype-specific rearrangement breaks: such a region keeps only its unique pairs as evidence.
 Usage: project_rescued.py groups.tsv rescued_pairs.tsv.gz alleles.blocks.tsv groups.rescued.tsv out.tsv.gz'''
-import bisect, collections, gzip, sys
+import bisect, collections, gzip, sys, zlib
 gt, rp, bl, rs, out = sys.argv[1:6]
 grp = {}                                                 # chain or copy -> group
 for l in open(gt):
@@ -44,11 +44,8 @@ with gzip.open(out, "wt", compresslevel=1) as o:
         x, px, y, py, k = l.rstrip("\n").split("\t"); px, py = int(px), int(py)
         if x not in resc and y not in resc: continue
         n["touching"] += 1
-        gs = [g for g in (list(rep[x]) + list(rep[y])) if g]
-        done = False
-        for g in dict.fromkeys(gs):
-            a, b = place(x, px, k[0], g), place(y, py, k[1], g)
-            if a and b:
-                o.write(f"{a[0]}\t{a[1]}\t{b[0]}\t{b[1]}\n"); n["kept"] += 1; done = True; break
-        if not done: n["dropped"] += 1
+        ok = [(a, b) for g in dict.fromkeys(list(rep[x]) + list(rep[y])) for a, b in [(place(x, px, k[0], g), place(y, py, k[1], g))] if a and b]
+        if not ok: n["dropped"] += 1; continue
+        a, b = ok[zlib.crc32(l.encode()) % len(ok)]        # one group, by a hash of the pair: the first group would take every pair it can hold
+        o.write(f"{a[0]}\t{a[1]}\t{b[0]}\t{b[1]}\n"); n["kept"] += 1; n["kept_choice"] += len(ok) > 1
 print(" ".join(f"{k}={v}" for k, v in n.items()), file=sys.stderr)
