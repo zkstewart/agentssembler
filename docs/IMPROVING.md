@@ -26,6 +26,13 @@ Reads under 5 kb are never mapped (WatsonsChoice: 13.3 of 42.7 Gb, and on 13Q010
 
 The process uses the processed `p_utg` graph. hifiasm's `r_utg` graph keeps bubbles that `p_utg` pops, so gap ends may connect there. It costs one minimap2 run of chain ends against `r_utg` and a graph walk. Any path found needs read support like any other.
 
+## Open questions
+
+- **Are a gap locus's own reads rare, or do they go to a cleaner sibling copy?** See "Why reads stop at gaps" in [RECORD](RECORD.md).
+- **Is collapsed handling sound above ploidy 2?** Only ploidy 2 has been run. Above it, a shared chain gets a dosage and goes to that many haplotypes ([D14](decisions/D14_shared_chains.md)), and arm and tail targets rise to the ploidy. Unit tests on made-up data cover this. Whether Hi-C, alleles and graph links choose the right haplotypes on a real autotetraploid, with its short chains, is not known.
+- **Does anything work outside heterozygous citrus?** `ploidy: 1`, allopolyploids and mostly collapsed genomes have config recipes ([SETTINGS](SETTINGS.md)) and no run behind them.
+- **Juicebox edits:** the route back into the AGP has not been exercised.
+
 ## Tested, and what it showed
 
 The numbers behind each entry here and under "Not worth repeating" are in [RECORD](RECORD.md).

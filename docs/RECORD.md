@@ -74,7 +74,7 @@ No Juicebox review had been done on any at the time of writing. The user adopted
 
 ### What rebuilding with connectors changed
 
-Both earlier genomes were rebuilt with connectors and adopted. WatsonsChoice went from 71 to 35 gaps (contig N50 14.60 to 20.43 Mb) and 13Q010 from 63 to 32 (16.80 to 24.68 Mb), with telomeres and gene completeness unchanged or better. Three effects to expect:
+Both earlier genomes were rebuilt with connectors and adopted. WatsonsChoice went from 71 to 35 gaps (contig N50 14.60 to 20.43 Mb) and 13Q010 from 63 to 32 (16.80 to 24.68 Mb), with telomeres and gene completeness unchanged or better. Connector joins hold up about as well as joins inside chains: 88% have q20 reads through them at 10 kb, against 92% within chains. Which allele a connector carries relative to its neighbours is not shown, and most such arms have arbitrary phase. Three effects to expect:
 
 - **Orientation of blocks between Hi-C-only gaps can flip.** A connector sets the orientation by graph where Hi-C did before. On WatsonsChoice this withdrew two SV calls (chr1 19.5-23.3 Mb, chr5 11.1-11.8 Mb); on 13Q010 a 1.9 Mb chr8 block reversed. Re-test SV calls touching any block whose orientation changed.
 - **Satellite stacks get placed.** On 13Q010, about 12.6 Mb of chr8 satellite chains, unplaced before, are now joined by graph bridges, and chr8_h1 grew to 48.2 Mb. A chain in the stack with no graph link (chain0192) was unplaced at D09 instead of being kept on Hi-C. Check the stack in Juicebox.
@@ -180,6 +180,41 @@ At 0.03% divergence a 150 bp read carries a difference about once in 20 reads, a
 | 13Q010 | 1, 1 | 0 |
 
 `break_at` for chain0073 is 778960, the break made by hand in the TTT build. Of GammaCitrus's other rows, chain0083 -> chain0193 and chain0089 -> chain0240 are bubble arms at directly joined chain ends. Added as TTT proposed, Hi-C misplaced them, so the guide says to leave such rows. Not yet run through a full build: the rows are a check for D16, and each break is a judgement.
+
+### Read correction (WatsonsChoice, 13Q010, Busk)
+
+Raw SUP reads against corrected reads, at reads of 5 kb or more:
+
+| | WatsonsChoice | 13Q010 | Busk |
+|---|---|---|---|
+| Reads kept | 60% | 83% | 85% |
+| Bases kept | 65% | 88.5% | 89% |
+| q20 spanning reads kept, at gaps | 38% | 82% | 8%, but 37 of 40 reads at one array |
+| q20 spanning reads kept, control sites | 92% | 96% | 96% |
+| Bases kept, reads of 100 kb or more | 21% | 89% | 81% |
+| q20 in both forms, placed differently | 215 of 1.04 M | 267 of 0.90 M | not measured |
+
+- **Correction loses and shortens reads near gaps.** At the same quality, reads near a WatsonsChoice gap are kept about half as often (34% against 63% at mean Q20-25). Of 151 raw spanning reads at q20, 50 had no corrected version and 45 no longer spanned, 34 of them shortened by more than 10%.
+- **It does not move reads between haplotypes** on any scale measured.
+- **It is not the main cause of gaps.** Raw depth also falls towards a gap edge, and 48 of 83 WatsonsChoice gaps have no spanning raw read. See "Why reads stop at gaps" above.
+- **Neither read set is enough alone.** Raw alone closed 11 WatsonsChoice gaps against 6 corrected, with 3 in common. On 13Q010 raw alone closed 15 against 19, and raw reads were inconsistent at 5 gaps that corrected reads filled.
+
+### Organelle Hi-C on nuclear insertions (13Q010)
+
+Stage 04 sets high-copy chains aside (`07_chains2/repeat_chains.txt`), and the chloroplast is one of them. When it was missing from the Hi-C target on 13Q010, chloroplast Hi-C reads landed on two nuclear plastid insertions as if unique: 21,394 pairs in one 500 kb bin pair. Grouping merged chr1 with chr2 twice and split chr9 to keep the count. `05_hic_chains` now maps Hi-C to the chains plus every set-aside unitig as `decoy_*`, and drops pairs touching a decoy. **Signal to look for:** thousands of pairs between two chains at one point (`awk` over `pairs.tsv.gz` in 500 kb bins).
+
+### Gene sets across translocations (13Q010)
+
+13Q010's h1 and h3 looked far less complete than any diploid, and 917 gene copies appeared lost from their chromosome's homolog set. In 784 of 843 two-copy genes the third copy lay on another chromosome, in blocks matching the translocations already called. Haplotype numbers are arbitrary across chromosomes, so "all h1 scaffolds" need not be one set. Choosing the numbering per chromosome that completes the most genes gave 99.32, 99.50 and 98.82%, from 91.84, 98.18 and 93.73%. This holds only if the translocations are real, and the sets are not shown to be parental genomes. `validate/complement_genes.py` reports it.
+
+## Automated labels that were wrong
+
+| Label | What happened |
+|---|---|
+| `reads_overlap` | Closed two tandem-array gaps on WatsonsChoice, which reads anchored in the array cannot support. Raw-read audit reopened them |
+| `only` tail | chain0256 on 13Q010 was already on all three haplotypes |
+| Read count at joins | The worst join on 13Q010 had 8 reads, all at MAPQ 0 |
+| High group density | A 262x chain passed the group test on density alone |
 
 ## Errors made while building this
 

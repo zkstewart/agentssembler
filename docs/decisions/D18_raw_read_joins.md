@@ -23,6 +23,6 @@
 - Many spanners with disagreeing lengths mean an array, and they still confirm the adjacency. Say that, and leave the gap (Busk chr6_h2, 306 spanners, 8-14 kb of disagreement).
 - `15_validate` writes `join_reads.tsv` for merged joins, which this audit does not cover. `no_q20` with many reads at low MAPQ is usually near-identical alleles: the read shows the join is possible, not which haplotype it belongs to.
 
-**Correction behaviour to expect:** it loses and shortens reads near gaps, and it does not move reads between haplotypes. See [LESSONS](../LESSONS.md).
+**Correction behaviour to expect:** it loses and shortens reads near gaps, and it does not move reads between haplotypes. See "Read correction" in [RECORD](../RECORD.md).
 
 **Edit:** `edits/join_decisions.tsv`: `scaffold, left_unitig, right_unitig, reason`, with unitig names without orientation, for every join to reverse or reject. It works on corrected joins as well as raw ones. Then `run`.
