@@ -93,6 +93,11 @@ def r_hic(w, c, s):
     out = [f"Candidate positions in {p}: {len(V)}. A break needs two signals: different Hi-C partners each side and weak reads across the join."]
     out += [f"Both signals (trans >= 200 on both sides, partner_cos < 0.8, under 10 reads at MAPQ>=20): {len(both)}."] + both
     out += [f"Different partners alone (partner_cos < 0.6, enough trans), usually overruled by reads: {len(hic)}."] + hic
+    H = list(rows(f"{w}/10_groups/hub_cores.d04.tsv")); yes = [r for r in H if r[-1] == "yes"]
+    if yes: al.append(f"{len(yes)} breakable collapsed hubs (10_groups/hub_cores.d04.tsv): " + ", ".join(f"{r[0]} at {r[10]}/{r[11]}" for r in yes[:12]) + (" ..." if len(yes) > 12 else "")
+                      + ". A 2x core of unique reads inside a chain whose arms read 1x. Breaking now, with the chimera breaks, saves a `reset 06_evidence --remap` at D06; "
+                      "check each edge against 07_chains2/depth.windows.tsv, then mark the core shared at D14.")
+    if len(H) > len(yes): out.append(f"Hub cores not breakable here: {len(H) - len(yes)} (inside one unitig, or the freed piece would carry 1x arms); stage 06 lists them again for D06 and D14.")
     out.append("This table only lists. Weak reads with little Hi-C on one side are mostly near-identical sequence, not chimeras.")
     al = []; rs = f"{w}/09_hic_map/rescue_signal.txt"
     if os.path.exists(rs):
@@ -214,6 +219,7 @@ def r_arms(w, c, s):
     A = list(rows(f"{w}/12_shared/arm_report.tsv"))
     if A: out.append("Arm labels: " + str(dict(collections.Counter(r[3] for r in A if len(r) > 3))))
     al = []
+    al += swap_alarms(f"{w}/12_shared/rescue_swaps.tsv")
     F = [r for r in rows(f"{w}/12_shared/chain_forks.tsv") if r[0] == "LOST"]
     if F:
         pairs = sorted({(r[1], r[9], int(r[13])) for r in F}, key=lambda x: -x[2])
@@ -222,12 +228,16 @@ def r_arms(w, c, s):
     return out, al
 def r_build(w, c, s):
     p = f"{w}/13_scaffold/{c['sample']}.graph"; L = fai(p + ".fasta.fai"); J = collections.Counter(r[4] for r in rows(p + ".junctions.tsv") if len(r) > 4)
-    return [f"Scaffolds {len(L)}, {Mb(sum(L.values()))}. Junction types: {dict(J)}.", "Build log: 13_scaffold/build.log."], swap_alarms(f"{w}/13_scaffold/rescue_swaps.tsv")
+    fl = {r[0] for r in rows(f"{w}/edits/flip.txt")}
+    inv = [r for r in rows(f"{w}/13_scaffold/homolog_direction.tsv") if r[4] == "inverted" and not {r[0], r[1]} & fl]
+    al = [f"{r[0]} is written in reverse against {r[1]} ({Mb(int(r[3]))} inverted, {Mb(int(r[2]))} forward; 13_scaffold/homolog_direction.tsv). A direction flag, not biology: "
+          "list one of the two in edits/flip.txt now, before 12_fill, which applies it. Found after stage 12, it costs `reset 12_fill` (D12)." for r in inv]
+    return [f"Scaffolds {len(L)}, {Mb(sum(L.values()))}. Junction types: {dict(J)}.", "Build log: 13_scaffold/build.log."], al + swap_alarms(f"{w}/13_scaffold/rescue_swaps.tsv")
 def swap_alarms(p):
     """Hi-C gaps that swapping two chains between homologs would close (review/rescue_swaps.py)."""
     S = list(rows(p))
     if not S: return []
-    return [f"{len(S)} Hi-C gaps would close if two chains swapped homologs (13_scaffold/rescue_swaps.tsv): " + ", ".join(f"{r[0]}:{r[1]} {r[4]} ({r[5]}) <-> {r[6]} ({r[8]})" for r in S[:10])
+    return [f"{len(S)} Hi-C gaps would close if two chains swapped homologs ({'/'.join(p.split('/')[-2:])}): " + ", ".join(f"{r[0]}:{r[1]} {r[4]} ({r[5]}) <-> {r[6]} ({r[8]})" for r in S[:10])
             + (" ..." if len(S) > 10 else "") + ". The graph links both pairs the other way. Neither the graph link nor a Hi-C allele call is proof where haplotypes are near-identical: "
             "read the junction reads, then hand the choice to D13 (a swap is a group edit and `reset 08_bridges`)."]
 def fill_reports(w, c):

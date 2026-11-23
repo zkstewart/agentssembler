@@ -404,32 +404,39 @@ class T(unittest.TestCase):
             run("hic_order.py", *args, f"{d}/o2", "--minPairs", "1")
             self.assertEqual(open(f"{d}/o1").read(), open(f"{d}/o2").read())
     def test_hub_cores(self):
-        # A: 2x unique core at 100-200 kb inside a 1x chain, no unitig boundary near it (break inside); B: the same with a boundary
-        # 5 kb from the core's start (break snaps to it); C: an allele bubble, 1x with MAPQ 0 reads (no row); D: classed shared (no row)
+        # Each chain: 300 kb, 1x arms (unique 20x) around a 2x core of unique reads at 100-200 kb, except C (an allele bubble: 1x, MAPQ 0)
+        # and D (classed shared). The core's unitigs are those at least half inside the run; breaks go at their outer boundaries.
+        #   A: unitigs 0-150, 150-300 kb: neither is half inside the core, so it lies inside unitigs and is not breakable
+        #   E: unitigs 0-100, 100-200, 200-300 kb: the middle one is the core; breakable at 100000 and 200000
+        #   F: unitigs 0-60, 60-200, 200-300 kb: the core unitig carries 40 kb of 1x arm (core_2x_frac 0.71): not breakable
         with tempfile.TemporaryDirectory() as d:
+            U = {"A": [150, 300], "C": [300], "D": [300], "E": [100, 200, 300], "F": [60, 200, 300]}
             with open(f"{d}/w.tsv", "w") as o:
                 o.write("#unitig\tstart\tend\ttotal\tunique\tsecondary\n")
-                for c in "ABCD":
+                for c in U:
                     for i in range(30):
-                        core = c in "ABD" and 10 <= i < 20
+                        core = c != "C" and 10 <= i < 20
                         o.write(f"{c}\t{i * 10000}\t{(i + 1) * 10000}\t{160 if core or c == 'D' else 80}\t{160 if core else 40 if c == 'C' else 20}\t0\n")
-            open(f"{d}/c.agp", "w").write("A\t1\t150000\t1\tW\tu1\t1\t150000\t+\nA\t150001\t300000\t2\tW\tu2\t1\t150000\t+\n"
-                                       "B\t1\t95000\t1\tW\tu3\t1\t95000\t+\nB\t95001\t300000\t2\tW\tu4\t1\t205000\t+\n")
-            open(f"{d}/k.tsv", "w").write("#h\n" + "".join(f"{c}\t300000\t{m}\t0.3\t0.7\t0.00\t{k}\n" for c, m, k in (("A", 80, "specific"), ("B", 80, "specific"), ("C", 80, "specific"), ("D", 160, "shared"))))
+            with open(f"{d}/c.agp", "w") as o:
+                for c, ends in U.items():
+                    x = 0
+                    for k, e in enumerate(ends):
+                        o.write(f"{c}\t{x + 1}\t{e * 1000}\t{k + 1}\tW\t{c}u{k}\t1\t{e * 1000 - x}\t+\n"); x = e * 1000
+            open(f"{d}/k.tsv", "w").write("#h\n" + "".join(f"{c}\t300000\t{160 if c == 'D' else 80}\t0.3\t0.7\t0.00\t{'shared' if c == 'D' else 'specific'}\n" for c in U))
             o = run("review/hub_cores.py", f"{d}/w.tsv", f"{d}/c.agp", f"{d}/k.tsv", f"{d}/o.tsv", "--sharedLo", "129")
             self.assertEqual(o.returncode, 0, o.stderr)
             F = {l.split("\t")[0]: l.rstrip("\n").split("\t") for l in open(f"{d}/o.tsv") if l[0] != "#"}
-            self.assertEqual(sorted(F), ["A", "B"])
-            self.assertEqual(F["A"][4:7] + F["A"][10:], ["100000", "200000", "100", ".", ".", "inside/inside", "no"])   # break_chain.py splits only between unitigs
-            self.assertEqual(F["B"][10:], ["95000", ".", "unitig/inside", "no"])
-            # E: the core's edges sit on unitig boundaries, so it is breakable
-            open(f"{d}/c.agp", "a").write("E\t1\t100000\t1\tW\tu5\t1\t100000\t+\nE\t100001\t200000\t2\tW\tu6\t1\t100000\t+\nE\t200001\t300000\t3\tW\tu7\t1\t100000\t+\n")
-            with open(f"{d}/w.tsv", "a") as o:
-                for i in range(30): o.write(f"E\t{i * 10000}\t{(i + 1) * 10000}\t{160 if 10 <= i < 20 else 80}\t{160 if 10 <= i < 20 else 20}\t0\n")
-            open(f"{d}/k.tsv", "a").write("E\t300000\t80\t0.3\t0.7\t0.00\tspecific\n")
-            run("review/hub_cores.py", f"{d}/w.tsv", f"{d}/c.agp", f"{d}/k.tsv", f"{d}/o.tsv", "--sharedLo", "129")
+            self.assertEqual(sorted(F), ["A", "E", "F"])
+            self.assertEqual(F["A"][4:7] + F["A"][10:], ["100000", "200000", "100", ".", ".", "inside/inside", "1.00", "no"])
+            self.assertEqual(F["E"][10:], ["100000", "200000", "unitig/unitig", "1.00", "yes"])
+            self.assertEqual(F["F"][10:], ["60000", "200000", "unitig/unitig", "0.71", "no"])
+            # before D04: class from the windows ("-"), positions lifted onto chains that D03 split (E broken at 50 kb into E and Eb)
+            open(f"{d}/l.agp", "w").write("E\t1\t50000\t1\tW\tEu0\t1\t50000\t+\nEb\t1\t50000\t1\tW\tEu0\t50001\t100000\t+\n"
+                                       "Eb\t50001\t150000\t2\tW\tEu1\t1\t100000\t+\nEb\t150001\t250000\t3\tW\tEu2\t1\t100000\t+\n")
+            o = run("review/hub_cores.py", f"{d}/w.tsv", f"{d}/c.agp", "-", f"{d}/o.tsv", "--sharedLo", "129", "--liftAgp", f"{d}/l.agp")
+            self.assertEqual(o.returncode, 0, o.stderr)
             F = {l.split("\t")[0]: l.rstrip("\n").split("\t") for l in open(f"{d}/o.tsv") if l[0] != "#"}
-            self.assertEqual(F["E"][10:], ["100000", "200000", "unitig/unitig", "yes"])
+            self.assertEqual(F["Eb"][4:6] + F["Eb"][10:], ["50000", "150000", "50000", "150000", "unitig/unitig", "1.00", "yes"])
     def test_rescue_collapsed_redundant(self):
         # a1 (g1) and a2 (g2) anchor chromosome c1. x has a breakable 2x unique-read core: collapsed. y is covered in both groups by short
         # allele blocks (each under --minConflict): redundant. z is placed. w links only to x: it still finds c1 through x.
@@ -469,6 +476,18 @@ class T(unittest.TestCase):
             open(f"{d}/l.tsv", "w").write(links.replace("P+\tY-\t0\tNA\t50000\n", ""))   # Y cannot take X's place: no swap
             run("review/rescue_swaps.py", f"{d}/j.tsv", f"{d}/l.tsv", f"{d}/b.tsv", f"{d}/o.tsv")
             self.assertEqual([l for l in open(f"{d}/o.tsv") if l[0] != "#"], [])
+    def test_homolog_direction(self):
+        # u1 and u2 align forward (unitig strand +), but u2 lies reversed in s_h2: s_h2 is written in reverse against s_h1
+        with tempfile.TemporaryDirectory() as d:
+            open(f"{d}/a.agp", "w").write("s_h1\t1\t50000\t1\tW\tu1\t1\t50000\t+\ns_h2\t1\t50000\t1\tW\tu2\t1\t50000\t-\n"
+                                       "t_h1\t1\t50000\t1\tW\tu3\t1\t50000\t+\nt_h2\t1\t50000\t1\tW\tu4\t1\t50000\t+\n")
+            with gzip.open(f"{d}/p.paf.gz", "wt") as o:
+                o.write("u1\t50000\t0\t40000\t+\tu2\t50000\t0\t40000\t39000\t40000\t60\n")
+                o.write("u3\t50000\t0\t40000\t+\tu4\t50000\t0\t40000\t39000\t40000\t60\n")
+            o = run("review/homolog_direction.py", f"{d}/a.agp", f"{d}/p.paf.gz", f"{d}/o.tsv")
+            self.assertEqual(o.returncode, 0, o.stderr)
+            R = {l.split("\t")[0]: l.rstrip("\n").split("\t")[4] for l in open(f"{d}/o.tsv") if l[0] != "#"}
+            self.assertEqual(R, {"s_h2": "inverted", "t_h2": "forward"})
     def test_stable_key(self):
         # a renumbered chain keeps its key; copies keep their suffix; a chain missing from the AGP falls back to its name
         sys.path.insert(0, f"{R}/scripts"); import chainlib

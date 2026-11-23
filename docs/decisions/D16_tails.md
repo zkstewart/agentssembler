@@ -38,6 +38,8 @@ Record the check in the reason even when nothing is done, for example: `Tangle c
 
 **Beyond tails:** placing them changes every coordinate downstream, so decide before mapping in `12_fill`.
 
+**Rescue swaps** (`12_shared/rescue_swaps.tsv`, with `hic_allele_rescue`): Hi-C gaps in the pre-build that would close if two chains swapped homologs, because the graph links the pair the other way from the rescue's Hi-C call. Neither side is proof in near-identical haplotypes, so the choice goes to the user at D13. If the user has already decided on a swap, make it now, with a group edit and `reset 08_bridges`. After `12_fill` it costs the read mappings as well.
+
 ## Genes on tails
 
 `12_shared/tail_genes.tsv` (with genes on the unitigs) gives each tail's genes, and how many have no full set of placed copies elsewhere (`short`). A tail with short genes is worth testing; the genes do not pass it. On 292 the user adopted the five gene-carrying tails at D13 for completeness; two had strong raw-read support (134 and 104 reads at q20) and three little or none. A tail left unplaced keeps its genes in the assembly as unlocalized sequence when its chromosome is known (stage 15), so the gain from placing it is position, not genes.

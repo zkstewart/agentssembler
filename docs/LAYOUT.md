@@ -120,7 +120,7 @@ Only `pairs.tsv.gz` and `pairs.rescued.tsv.gz` are read later, by any stage or r
 
 | File | Stage |
 |---|---|
-| `chain_breaks.tsv` | 05, read at D04 |
+| `chain_breaks.tsv`; `hub_cores.d04.tsv` **[C]** (collapsed hubs on the chains D04 breaks, from stage 04's mapping, which also gets `07_chains2/depth.*`) | 05, read at D04 |
 | `alleles.pairs.tsv`, `alleles.blocks.tsv`, `chain_stats.tsv`, `chain_repeat.tsv`, `end_links.tsv`, `shared.candidates.txt` | 06 |
 | `hub_cores.tsv` **[C]**: chains classed single-copy with a 2x core of unique reads, the unitig-boundary breaks that free it, and whether it is breakable | 06, read at D06 |
 | `groups.tsv`, `groups.chroms.tsv`, `groups.shared.tsv` **[C]**, `groups.dosage.tsv` **[C]** (above ploidy 2, and only if a shared chain is in fewer haplotypes than its chromosome has), `hic_group.log`, `shared.txt` **[C]**, `eval_groups.txt` **[ref]**, `chain_forks.txt` **[C]**; `groups.rescued.tsv` and `groups.hic.tsv` (grouping before the rescue) **[set: hic_allele_rescue]**, or `rescue_preview/` and `rescue_preview.txt` (what it would place) when off; `genes_placed.txt`, `genes_placed.tsv` **[opt: compleasm]** | 07, read at D05 |
@@ -149,13 +149,15 @@ The working set for ordering. When **[C]**, shared chains appear here as one cop
 | `pre/S.agp`, `pre/S.fasta`, `pre/S.junctions.tsv`, `pre/S.placement.tsv`, `pre/S.unplaced.fasta`, `pre/target.fasta` | 10, a trial build to find tails |
 | `tails.tsv`, `tail_report.tsv`, `tail_checks.tsv` (when there are candidates), `tail_genes.tsv` and `tail_genes.txt` **[opt: compleasm]** | 10, read at D16 |
 | `chain_forks.tsv` **[C]**: forks with `LOST` rows first, for D16's tangle check | 10 |
+| `rescue_swaps.tsv`: Hi-C gaps of the pre-build that swapping two chains between homologs would close; a swap is a group edit and `reset 08_bridges` | 10, read at D16 |
 
 ## `13_scaffold/` (stages 08, 10, 11)
 
 - `bridges/`: `choices.tsv`, `ids.txt`, `targets.fasta`, `reads.paf.gz`, `mm2.log`, `seqkit.log` (stage 08).
 - `names.tsv`, `repeat_chains.fasta` (stage 10).
 - `S.graph.agp`, `S.graph.fasta`, `S.graph.fasta.fai`, `S.graph.junctions.tsv`, `S.graph.placement.tsv`, `S.graph.unplaced.fasta`, `target.fasta` (scaffolds plus unplaced), `target.fasta.fai`, `build.log` (stage 11).
-- `rescue_swaps.tsv` (stage 11): Hi-C gaps that swapping two chains between homologs would close, read at D13.
+- `rescue_swaps.tsv` (stage 11): the same test as stage 10's on the final scaffolds, read at D13.
+- `homolog_direction.tsv` (stage 11): bp aligned forward and reversed between each scaffold and its first homolog, from the unitig self-alignments. An `inverted` scaffold goes in `edits/flip.txt` before stage 12.
 
 Scaffolds are named `chrN_hK`. Unplaced sequence is named `unplaced_<chain>` or `repeat_*`.
 

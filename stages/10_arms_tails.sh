@@ -20,6 +20,9 @@ BA=(--order "$O" --agp $D/chains.agp --links $D/end_links.tsv --choices $D/choic
 [ -s 12_broken/connector_chains.tsv ] && BA+=(--connectors 12_broken/connector_chains.tsv)
 printf '%s\n' "${BA[@]}" > $D/build_args.txt
 step $D/pre/$AS_SAMPLE.junctions.tsv python3 "$S/build_scaffolds.py" "${BA[@]}" --out $D/pre/$AS_SAMPLE
+# Hi-C gaps a swap of two chains between homologs would close, on the pre-build: a swap is a group edit and `reset 08_bridges`, cheapest now (D16, D13)
+RS=(); [ -s 10_groups/groups.rescued.tsv ] && RS=(--rescued 10_groups/groups.rescued.tsv)
+step $D/rescue_swaps.tsv python3 "$S/review/rescue_swaps.py" $D/pre/$AS_SAMPLE.junctions.tsv $D/end_links.tsv $D/graph.bridges.tsv $D/rescue_swaps.tsv "${RS[@]}"
 step $D/tails.tsv python3 "$S/make_tails.py" --order "$O" --junctions $D/pre/$AS_SAMPLE.junctions.tsv --placement $D/pre/$AS_SAMPLE.placement.tsv --links $D/end_links.tsv --groups "$GRP" --chroms 10_groups/final.chroms.tsv --choices $D/choices.tsv --telomeres $D/telomeres.tsv --hic 12_broken/links.tsv --class 11_ont_chains/chain_class.tsv --agp 12_broken/chains.agp --gfa 00_inputs/unitigs.gfa --paf 11_ont_chains/ont_vs_chains.paf.gz --exclude 12_broken/connector_chains.tsv --out $D/tails.tsv --report $D/tail_report.tsv --twoX "$AS_TWO_X" --hap "$AS_HAP" --ploidy "$AS_PLOIDY" --maxDepth "$AS_MAX_DEPTH"
 # Genes on each tail (D16): what a tail would add, from compleasm on the unitigs (stage 01)
 if has_genes && [ -s $D/tails.tsv ] && [ ! -s $D/tail_genes.tsv ]; then python3 "$S/review/tail_genes.py" --genes "$GENES" --agp 12_broken/chains.agp --placement $D/pre/$AS_SAMPLE.placement.tsv --tails $D/tails.tsv --ploidy "$AS_PLOIDY" --out $D/tail_genes.tsv > $D/tail_genes.txt; fi

@@ -22,6 +22,10 @@
 
 **After:** `run` applies the breaks without remapping Hi-C.
 
+## Also at D04: collapsed hubs
+
+`10_groups/hub_cores.d04.tsv` (collapsed samples) lists chains with a run of 2x unique-read depth inside 1x arms: hifiasm collapsed both haplotypes there. Break the `breakable` ones now, at `break_left` and `break_right`, together with any chimera breaks, after checking each edge against `07_chains2/depth.windows.tsv`. Give "D04 hub" as the reason. At D06 the same breaks cost a `reset 06_evidence --remap`. On the 292 rebuild, the hubs surfaced over two such rounds, while this table found them all before D04. Mark each freed core shared at D14. A core is not breakable when it lies inside one unitig, or when the piece the breaks would free carries long 1x arms (`core_2x_frac` under 0.75); stage 06 lists those again for D06 and D14.
+
 ## Also at D04: the Hi-C allele rescue
 
 Read `09_hic_map/rescue_signal.txt`. Its Hi-C-blind chains have an allele partner, almost no unique Hi-C, and many pairs with an allele-ambiguous end: grouping will leave them unassigned however good the rest is. When they are a large share (the report's alarm: 1% of chain sequence or more), or carry many genes, record D04 with `--set hic_allele_rescue=true` and say why. This is the cheapest point: the setting acts in stages 06-08.

@@ -38,4 +38,9 @@ fi
 cd ..
 G=(); has_genes && G=(--genes "$GENES" --agp 08_final_chains/chains.agp)
 python3 "$S/rescue/rescue_signal.py" 09_hic_map/pairs.tsv.gz 09_hic_map/pairs.rescued.tsv.gz 08_final_chains/chains.fasta.fai 09_hic_map/alleles08.pairs.tsv 09_hic_map/rescue_signal.tsv "${G[@]}" > 09_hic_map/rescue_signal.txt
+# Collapsed hubs before D04, from stage 04's read mapping, so that their breaks go in with the chimera breaks and cost no remap at D06
+if collapsed; then
+  step 07_chains2/depth.windows.tsv python3 "$S/unitig_depth.py" 07_chains2/ont_vs_chains.paf.gz 07_chains2/chains.fasta.fai 07_chains2/depth
+  step 10_groups/hub_cores.d04.tsv python3 "$S/review/hub_cores.py" 07_chains2/depth.windows.tsv 07_chains2/chains.agp - 10_groups/hub_cores.d04.tsv --sharedLo "$AS_SHARED_LO" --liftAgp 08_final_chains/chains.agp
+fi
 step 10_groups/chain_breaks.tsv python3 "$S/chain_breaks.py" 09_hic_map/pairs.tsv.gz 08_final_chains/chains.agp 10_groups/chain_breaks.tsv --dist "$AS_BREAK_DIST" --flank "$AS_BREAK_FLANK" --minSide "$AS_BREAK_MIN_SIDE"
