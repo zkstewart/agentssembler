@@ -1,5 +1,7 @@
 # Ideas
 
+**Not needed to run the pipeline.** What comes next and what is ruled out: ideas not yet tested, open questions, and one line for each idea already tested. Evidence goes to [RECORD](RECORD.md) once a test is run.
+
 ## Out of scope
 
 The user's decisions, so that nobody re-proposes them as next steps:
@@ -35,20 +37,21 @@ The process uses the processed `p_utg` graph. hifiasm's `r_utg` graph keeps bubb
 
 ## Tested, and what it showed
 
-The numbers behind each entry here and under "Not worth repeating" are in [RECORD](RECORD.md).
+One line each: what was decided. The numbers are in [RECORD](RECORD.md), under the section named.
 
-**Why reads stop at gaps: nothing physically stops them.** On three genomes, read ends show no excess at gap edges, and reads carrying the flank's sequence exist at a normal rate. Depth fades over about 100 kb, q20 depth first, because the flank has copies at 97% identity or more on the homolog, nearby on the scaffold and in unplaced sequence, and reads are placed there. So the sequence is readable, and read length is the likely limit; no longer library has been tried. Not settled: whether reads from the gap locus itself are rare, or exist and go to a cleaner sibling copy. `review/edge_reads.py` and `review/edge_seq_depth.py` repeat the test on a new genome.
-
-**Phasing arms with reads: at a minority of junctions.** Built as a report, `review/phase_reads.py`, in stage 13. The numbers and limits are in [D15](decisions/D15_arm_phase.md).
-
-**Solving tangles with TTT: worth it for small tangles with boundaries, so it is now part of D16's tangle check.** On GammaCitrus it carried both chr5 haplotypes through a 17-unitig 2-2 tangle to telomeric arms the pipeline left unplaced, making 46 more genes complete per haplotype. Elsewhere it confirmed the pipeline, could not decide phase, or found no path. When and how: [TANGLES](TANGLES.md).
+- **Why reads stop at gaps:** nothing physically stops them. Flanks have near-identical copies elsewhere, so read length is the likely limit; no longer library has been tried. RECORD: "Why reads stop at gaps".
+- **Phasing arms with reads:** possible at a minority of junctions. Built as a report, `review/phase_reads.py`, in stage 13 ([D15](decisions/D15_arm_phase.md)). RECORD: "Phasing arms".
+- **TTT on small tangles with boundaries:** a gain on GammaCitrus, so it is part of D16's tangle check ([TANGLES](TANGLES.md)). RECORD: "TTT on graph tangles".
+- **Hi-C allele rescue for Hi-C-blind chains:** a gain in genes placed on 292, at the cost of Hi-C gaps and arbitrary haplotype calls. Built as the `hic_allele_rescue` setting, decided at [D04](decisions/D04_chimeric_chains.md). RECORD: "Hi-C allele rescue and collapsed hubs (292)".
 
 ## Not worth repeating
+
+The numbers are in [RECORD](RECORD.md) where a section is named; the others are small enough to stand here.
 
 - **Loosening `readfill.py`:** `--minIdentity 0.95 --maxTrim 15000` gained 1 gap and lost 2.
 - **Fewer or more hops than 12:** 3 missed a real path on one genome, and 8 missed one on another once connectors were in the graph. 16 found the same as 12.
 - **Raw reads to place unplaced sequence:** one q20 link in total on 13Q010. The evidence there is Hi-C or nothing.
-- **Allele-aware Hi-C for unplaced chains and arms:** near-identical copies are near-identical in Hi-C reads too. For a 958 kb chain 99.97% identical to a placed copy, 98.8% of its pairs were MAPQ 0, and the 185 with any alignment score margin spread over all chromosomes. On arms, 99.6% of records tie exactly.
+- **Allele-aware Hi-C for unplaced chains and arms:** near-identical copies are near-identical in Hi-C reads too; the few reads with a margin spread over all chromosomes. RECORD: "Allele-aware Hi-C for hard unplaced chains", "Phasing arms".
 - **TTT as an early stage, before chains:** planned for after D01 on GammaCitrus, and not built. Its one gain came from one small tangle. The largest tangle (254 unitigs) was beyond it, and most other output confirmed the baseline or was bubble alleles that chains cannot express.
 - **TTT on a large tangle or one with dead ends:** no valid path, as every route needs banned connections, and the MILP grew by about 340 MB a minute.
 - **hifiasm's `rd:i` as TTT coverage:** it dropped real alleles to multiplicity 0. Use stage 03's corrected-read depth.
