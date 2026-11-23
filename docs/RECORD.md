@@ -128,16 +128,16 @@ At 0.03% divergence a 150 bp read carries a difference about once in 20 reads, a
 
 ### TTT on graph tangles (GammaCitrus)
 
-**Result: one clear gain, from the smallest tangle.** Six tangles were found with `ttt/tangle_explore.py` (anchors: unitigs of 300 kb or more at 0.6-1.4x haplotype depth). Reads were 186,250 corrected reads touching them, aligned with GraphAligner to the whole graph. Coverage was stage 03's depth, with `--median-unique` from D01. The method is in [TANGLES](TANGLES.md).
+**Result: one clear gain, from the smallest tangle.** TTT ran after the pipeline had finished, on the finished build. Six tangles were found with `ttt/tangle_explore.py` (anchors: unitigs of 300 kb or more at 0.6-1.4x haplotype depth). Reads were 186,250 corrected reads touching them, aligned with GraphAligner to the whole graph. Coverage was stage 03's depth, with `--median-unique` from D01. The method is in [TANGLES](TANGLES.md).
 
-| Tangle | Unitigs | Mb | What TTT did |
-|---|---|---|---|
-| chr5 telomeric | 17 | 2.77 | Clean 2-2. Both pairings scored the same. Both haplotypes reached unplaced 1x chains leading uniquely to telomeric chains. Paths identical with 30 seeds |
-| chr4 hub block | 31 | 4.69 | Same topology as the baseline. chain0177 reuse forced. 2 extra chains entered from inside hub chains |
-| chr2c distal | 49 | 7.27 | Same tip assignment as D07, swap tied. 4 bubble alleles at directly joined chain ends |
-| chr2a | 56 | 6.89 | Not separable from chr2b by its boundaries. Alone, on a graph with chr2b's links cut, it preferred the unplaced allele chain0081 over the reused arm, 114 to 24 |
-| chr2a+chr2b | 254 | about 31.5 | No valid path. About 10 banned Z connections needed. MILP stalled at a 49% gap |
-| chr3 telomeric | 30 | 4.16 | One-sided. Not run |
+| Tangle | Unitigs | Mb | What TTT did | Carried |
+|---|---|---|---|---|
+| chr5 telomeric | 17 | 2.77 | Clean 2-2. Both pairings scored the same. Both haplotypes reached unplaced 1x chains leading uniquely to telomeric chains. Paths identical with 30 seeds | Yes: both haplotypes telomere to telomere |
+| chr4 hub block | 31 | 4.69 | Same topology as the baseline. chain0177 reuse forced. 2 extra chains entered from inside hub chains | No |
+| chr2c distal | 49 | 7.27 | Same tip assignment as D07, swap tied. 4 bubble alleles at directly joined chain ends | No: Hi-C misplaced them, and they would have replaced joins with gaps |
+| chr2a | 56 | 6.89 | Not separable from chr2b by its boundaries. Alone, on a graph with chr2b's links cut, it preferred the unplaced allele chain0081 over the reused arm, 114 to 24 | Yes, as the weakest change: 2 chain breaks and an order link the bridges could not see |
+| chr2a+chr2b | 254 | about 31.5 | No valid path. About 10 banned Z connections needed. MILP stalled at a 49% gap | No |
+| chr3 telomeric | 30 | 4.16 | One-sided. Not run | – |
 
 **Acceptance:**
 

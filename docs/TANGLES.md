@@ -146,24 +146,6 @@ Work in `WORK/ttt/`, the one place in the work directory for this ([LAYOUT](LAYO
    - At D16 again, choose tails on the new pre-build. Record what TTT changed, and its weakest change, in D16.
    - List any weak result as a curation target at D13, as for any other judgement.
 
-## GammaCitrus: what each tangle gave
+## GammaCitrus: what TTT gave
 
-TTT ran after the pipeline had finished, on the finished build:
-
-| Tangle | Unitigs | Result | Carried |
-|---|---|---|---|
-| chr5 telomeric | 17 | 2-2. Both haplotypes reached 1x chains the pipeline left unplaced, then telomeric chains. Pairing tied, broken by Hi-C | Yes: both haplotypes telomere to telomere |
-| chr2a reused arm | 56 | From the hub, TTT preferred the unplaced allele chain0081 over chain0073's arm, 114 to 24. That rested on an exact copy of the arm's first 130 kb | Yes, as the weakest change: 2 chain breaks and an order link the bridges could not see |
-| chr2a+chr2b proximal | 254 | No path: dead ends, banned connections, the MILP stalled | No |
-| chr2c distal and tips | 49 | Same as D07, swap tied. 4 extra bubble alleles at directly joined chain ends | No: Hi-C misplaced them, and they would have replaced joins with gaps |
-| chr4 hub block | 31 | Same as the pipeline. Reuse forced by the graph | No |
-
-**Net change:**
-
-- Telomere to telomere: 6 of 18 scaffolds, up from 4.
-- Complete genes per haplotype: 97.18% and 96.83%, up from 95.76% and 95.26%.
-- Unplaced sequence: down 4.5 Mb.
-- Gaps: 2 more.
-- SV calls: unchanged.
-
-On the same data, the D16 check would have listed both forks as `LOST`: chain0073 → chain0081, and chain0107 → chain0173 on chr5. Its break for chain0073, at 778960, is the one made by hand.
+Of six tangles, one gain: the 17-unitig chr5 telomeric tangle, which took both haplotypes telomere to telomere. The larger tangles gave no path, or the pipeline's own answer. The D16 check would have listed both of GammaCitrus's lost routes before TTT ran. Each tangle's result and the net change are in [RECORD](RECORD.md), "TTT on graph tangles" and "Lost-route forks".
