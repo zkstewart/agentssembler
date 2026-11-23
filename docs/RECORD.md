@@ -4,6 +4,29 @@
 
 This is the evidence behind the process, kept for anyone assessing it: where following the guides exposed problems, which rules survived being doubted, the experiments behind entries in [IMPROVING](IMPROVING.md), and the errors made on the way. Chain and scaffold names apply to the build named, and to no other.
 
+**Where things go.** This file is the one home for numbers and for what happened. Each other document keeps its own role and links here:
+
+- an idea not yet tested is in [IMPROVING](IMPROVING.md);
+- once tested, its evidence comes here, under the genome it was run on;
+- a rule that follows goes into a decision guide or [TRAPS](TRAPS.md);
+- a lesson that holds beyond one case gets one line in [LESSONS](LESSONS.md);
+- IMPROVING keeps a single line with the outcome.
+
+## Genomes run so far
+
+Other documents name these genomes rather than count them.
+
+| Genome | Ploidy, chromosomes | Haplotype depth | `collapsed` | What it tested first | Decisions |
+|---|---|---|---|---|---|
+| 13Q010 | 3, 9 | 27x | false | The graph-first build; ploidy 3; organelle decoys; gene sets across translocations | [`examples/13Q010`](../examples/README.md) |
+| WatsonsChoice | 2, 9 | 28x | true | `hap_first` grouping; read correction against raw reads; the raw-read join audit | [`examples/WatsonsChoice`](../examples/README.md) |
+| Busk | 2, 9 | 62x | true | The first run made by following the guides; connectors | [`examples/Busk`](../examples/README.md) |
+| GammaCitrus | 2, 9 | – | true | Tangles, TTT and lost-route forks | Kept outside the repository (confidential) |
+| irma | – | – | – | Hi-C density only ([SETTINGS](SETTINGS.md)) | – |
+| 292 | 2, 9 | 84x | true | Hi-C allele rescue, collapsed hubs, unlocalized scaffolds, genes on the unitigs | Not yet adopted |
+
+All are citrus, so the findings are evidence, not laws.
+
 ## Busk: where following the guides disagreed with the process
 
 Busk was the first genome run by following the guides and making each decision, not replaying earlier ones. Each row is a point where following the repository as it stood would have given a worse result, or where it failed. Every change listed is now in the repository. Busk's decisions are in [`examples/`](../examples/README.md).
