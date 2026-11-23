@@ -8,7 +8,7 @@ from . import report, compare
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEFAULTS = dict(telomere_motif="CCCTAAA", telomere_window=20000, telomere_min_copies=50, link_bonus=20000, hops=12, restore_connectors=True, read_preset="lr:hq", raw_preset="lr:hq", hic_allele_rescue=False)
-TOOLS = dict(minimap2="minimap2", samtools="samtools", seqkit="seqkit", bwa="bwa", samblaster="samblaster", filter_bam="filter_bam", juicer_tools="", compleasm="", plot_python="")
+TOOLS = dict(minimap2="minimap2", samtools="samtools", seqkit="seqkit", bwa="bwa", samblaster="samblaster", juicer_tools="", compleasm="", plot_python="")
 
 def now(): return datetime.datetime.now().isoformat(timespec="seconds")
 def wd(a):

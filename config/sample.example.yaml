@@ -37,7 +37,6 @@ tools:
   seqkit: seqkit
   bwa: bwa
   samblaster: samblaster
-  filter_bam: /path/to/HapHiC/utils/filter_bam
   juicer_tools: /path/to/HapHiC/utils/juicer_tools.1.9.9_jcuda.0.8.jar
   compleasm: /path/to/envs/compleasm/bin/compleasm
   plot_python: python3    # a Python with matplotlib

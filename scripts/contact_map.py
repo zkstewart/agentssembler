@@ -8,7 +8,7 @@ Method
 ------
 Input pairs (pairs.tsv.gz: unitigA, posA, unitigB, posB; one line per read pair) are the
 allele-specific Hi-C pairs mapped to the hifiasm unitigs (bwa mem -5SP, samblaster, HapHiC
-filter_bam with MAPQ >= 1 and NM < 3), taken from read 1 of each pair.
+hic_pairs.py: MAPQ >= 1 and NM < 3), taken from read 1 of each pair.
 
 1. Each read position is lifted from unitig to scaffold coordinates through the AGP(s),
    reversing the coordinate for components in '-' orientation. Reads in unitigs not placed

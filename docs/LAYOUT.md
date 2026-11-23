@@ -114,9 +114,9 @@ Three rounds of chains. Each round has `chains.agp`, `chains.fasta`, `chains.fas
 
 ## `09_hic_map/` (stage 05)
 
-`chains.fasta` and `chains.fasta.fai` (symlinks to `08_final_chains/`), `decoys.txt`, `targets.fasta` (chains plus `decoy_*` unitigs) with its bwa index (`.amb`, `.ann`, `.bwt`, `.pac`, `.sa`), `bwa_index.log`, `bwa.log`, `samblaster.log`, `HiC.bam`, `HiC.filtered.bam`, `pairs.tsv.gz`; `alleles08.pairs.tsv`, `alleles08.blocks.tsv` (alleles of these chains), `pairs.rescued.tsv.gz` (pairs with an allele-ambiguous end), `rescue.log`; `rescue_signal.txt` and `rescue_signal.tsv` (Hi-C-blind chains, read at D04).
+`chains.fasta` and `chains.fasta.fai` (symlinks to `08_final_chains/`), `decoys.txt`, `targets.fasta` (chains plus `decoy_*` unitigs) with its bwa index (`.amb`, `.ann`, `.bwt`, `.pac`, `.sa`), `bwa_index.log`, `bwa.log`, `samblaster.log`, `HiC.bam`, `pairs.tsv.gz` with `pairs.log` (pairs kept and why the rest were dropped; earlier builds also have `HiC.filtered.bam`); `alleles08.pairs.tsv`, `alleles08.blocks.tsv` (alleles of these chains), `pairs.rescued.tsv.gz` (pairs with an allele-ambiguous end), `rescue.log`; `rescue_signal.txt` and `rescue_signal.tsv` (Hi-C-blind chains, read at D04).
 
-Only `pairs.tsv.gz` and `pairs.rescued.tsv.gz` are read later, by any stage or review script. When it was linked in from another build, nothing else is here. The two BAMs are large (about 20 GB together on the genomes tried). `HiC.bam` only saves the remap if stage 05 is ever re-run with other filters, and `HiC.filtered.bam` can be remade from it. Deleting either is the user's call; say what was deleted in `README.md`.
+Only `pairs.tsv.gz` and `pairs.rescued.tsv.gz` are read later, by any stage or review script. When it was linked in from another build, nothing else is here. `HiC.bam` is large (8 GB on 292). It only saves the remap if stage 05 is ever re-run with other filters; an older build's `HiC.filtered.bam` can be remade from it. Deleting either is the user's call; say what was deleted in `README.md`.
 
 ## `10_groups/` (stages 05 to 08)
 

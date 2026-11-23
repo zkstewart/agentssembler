@@ -22,9 +22,8 @@ if [ ! -s pairs.tsv.gz ]; then
   "$AS_BWA" index targets.fasta > bwa_index.log 2>&1
   "$AS_BWA" mem -5SP -t "$AS_THREADS" targets.fasta "../$AS_HIC_R1_LINK" "../$AS_HIC_R2_LINK" 2> bwa.log | "$AS_SAMBLASTER" 2> samblaster.log | "$AS_SAMTOOLS" view - -@ 4 -S -h -b -F 3340 -o HiC.bam.part
   mv HiC.bam.part HiC.bam
-  "$AS_FILTER_BAM" HiC.bam 1 --nm 3 --threads "$AS_THREADS" | "$AS_SAMTOOLS" view - -b -@ 4 -o HiC.filtered.bam.part
-  mv HiC.filtered.bam.part HiC.filtered.bam
-  "$AS_SAMTOOLS" view -@ 4 -f 64 HiC.filtered.bam | awk -F'\t' -v OFS='\t' '$3 !~ /^decoy_/ && $7 !~ /^decoy_/ {print $3, $4, ($7 == "=" ? $3 : $7), $8}' | gzip -1 > pairs.tsv.gz.part
+  # both ends MAPQ >= 1 and NM < 3, no decoy end, read 1's coordinates: HapHiC's filter_bam and the extraction in one pass
+  "$AS_SAMTOOLS" view -@ 4 HiC.bam | python3 "$S/hic_pairs.py" --minMapq 1 --maxNM 3 2> pairs.log | gzip -1 > pairs.tsv.gz.part
   mv pairs.tsv.gz.part pairs.tsv.gz; target_sum chains.fasta > pairs.tsv.gz.target
 fi
 # Pairs with an allele-ambiguous end (MAPQ 0, every other hit on an allele partner), for settings.hic_allele_rescue. Made whatever the

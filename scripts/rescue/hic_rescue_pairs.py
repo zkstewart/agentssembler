@@ -3,7 +3,7 @@
 # If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''Stage 05: Hi-C pairs with an allele-ambiguous end (settings.hic_allele_rescue). Reads SAM on stdin: stage 05's HiC.bam, primary,
 deduplicated, mates adjacent. An end is unique (u: MAPQ >= --minQ) or allele-ambiguous (a: MAPQ 0, and every alternative hit in XA on a
-chain that is an allele partner of the primary chain in alleles.pairs.tsv). Both ends need NM < --maxNM, as filter_bam; decoy hits are
+chain that is an allele partner of the primary chain in alleles.pairs.tsv). Both ends need NM < --maxNM, as hic_pairs.py; decoy hits are
 dropped. Pairs with two unique ends are stage 05's pairs.tsv.gz and are not written again. Where most Hi-C reads have MAPQ 0 because
 the two haplotypes are near-identical, these pairs say which chromosome a chain is on, not which haplotype.
 Output: chain, pos, chain, pos, kinds (ua, au or aa: first end, second end).

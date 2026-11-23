@@ -182,7 +182,7 @@ Thus, `agentssembler` is *not* meant to be a tool that is used for decades to co
 
 ## Requirements
 
-Python 3.10 or later with NumPy, PyYAML and matplotlib. minimap2 2.27 or later, samtools 1.12 or later, seqkit, bwa, samblaster, HapHiC's `filter_bam`. Optional: juicer_tools and compleasm; TTT (with PuLP 2.9 and GLPK) and GraphAligner, each in its own environment, if D16's tangle check calls for them ([TANGLES](docs/TANGLES.md)). About 16 cores and 30 GB RAM were enough beyond the unitig alignments, which ran on an HPC with up to 50 GB.
+Python 3.10 or later with NumPy, PyYAML and matplotlib. minimap2 2.27 or later, samtools 1.12 or later, seqkit, bwa, samblaster. Optional: juicer_tools and compleasm; TTT (with PuLP 2.9 and GLPK) and GraphAligner, each in its own environment, if D16's tangle check calls for them ([TANGLES](docs/TANGLES.md)). About 16 cores and 30 GB RAM were enough beyond the unitig alignments, which ran on an HPC with up to 50 GB.
 
 # How to cite
 `agentssembler` is currently being evaluated. It is the author's hope that this will validate its use, and that reviewers will see its value as a potential publication.

@@ -3,7 +3,7 @@
 # If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 # Report which tools can be found. Missing required tools stop the run; missing optional ones disable the steps named.
 fail=0
-for v in AS_MINIMAP2 AS_SAMTOOLS AS_SEQKIT AS_BWA AS_SAMBLASTER AS_FILTER_BAM; do
+for v in AS_MINIMAP2 AS_SAMTOOLS AS_SEQKIT AS_BWA AS_SAMBLASTER; do
   t="${!v:-}"; if command -v "$t" >/dev/null 2>&1; then echo "ok       $v=$t"; else echo "MISSING  $v=$t"; fail=1; fi
 done
 for v in AS_JUICER_TOOLS AS_COMPLEASM AS_PLOT_PYTHON; do

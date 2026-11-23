@@ -13,5 +13,5 @@ dependencies:
   - samblaster
   - openjdk               # juicer_tools
   # Separately:
-  #   HapHiC, for utils/filter_bam and juicer_tools: https://github.com/zengxiaofei/HapHiC
+  #   juicer_tools (optional, for the Juicebox map), e.g. from HapHiC's utils: https://github.com/zengxiaofei/HapHiC
   #   compleasm in its own environment, with a lineage library
