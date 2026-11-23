@@ -175,7 +175,7 @@ def r_group(w, c, s):
         m = re.search(r"short genes made whole: (\d+) of (\d+)", open(gp).read())
         if m and int(m.group(1)) >= max(10, 0.1 * int(m.group(2))):
             al.append(f"The Hi-C allele rescue would make {m.group(1)} of {m.group(2)} short genes whole (10_groups/genes_placed.txt). If D04 did not settle it, decide now: "
-                      "set hic_allele_rescue and `reset 07_group` (stages 05-06 already made its pairs). Later, it costs everything from here.")
+                      "record D05 with `--set hic_allele_rescue=true` and `reset 07_group --keepDecision`, which keeps that setting (stages 05-06 already made its pairs). Later, it costs everything from here.")
     if os.path.exists(f"{w}/10_groups/eval_groups.txt"): out.append("Reference alarm table: 10_groups/eval_groups.txt. It says where to look, never what to change.")
     return out, al
 def r_bridges(w, c, s):
@@ -290,9 +290,12 @@ def r_raw(w, c, s):
     cmp = f"{w}/17_raw_reads/cmp.sites.tsv"
     if os.path.exists(cmp):
         H = open(cmp).readline().rstrip("\n").split("\t"); S = [dict(zip(H, l.rstrip("\n").split("\t"))) for l in open(cmp).readlines()[1:]]
-        for k in ("gap", "ctl"):
-            x = [g for g in S if g["kind"] == k]; R = sum(int(g["raw_spanq20"]) for g in x); O = sum(int(g["corr_spanq20"]) for g in x)
-            out.append(f"{k}: q20 spanning reads raw {R}, corrected {O}, kept {100 * O / max(R, 1):.0f}%.")
+        for k in ("gap", "ctl"):   # per site, not pooled: one repeat array once held 37 of 40 spanners (T13)
+            x = [g for g in S if g["kind"] == k]
+            if not x: continue
+            R = [int(g["raw_spanq20"]) for g in x]; O = [int(g["corr_spanq20"]) for g in x]
+            out.append(f"{k}: {len(x)} sites; with a q20 spanning read: raw {sum(r > 0 for r in R)}, corrected {sum(o > 0 for o in O)}; "
+                       f"median q20 spanners per site raw {st.median(R):g}, corrected {st.median(O):g}.")
     al += tail_alarms(f"{w}/17_raw_reads/gap_tails.tsv")
     ph = list(rows(f"{w}/17_raw_reads/phase_reads.tsv", "scaffold"))
     if ph:

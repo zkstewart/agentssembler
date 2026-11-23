@@ -10,4 +10,4 @@
 
 **Act only on** a clear and contiguous excess. Otherwise add the region to `16_validate/curation_targets.tsv` for the human review. The weakest WatsonsChoice cases, chain0003 (1.2x) and chain0302 (ambiguous), were left as ordered and listed there.
 
-**At this stage the question is mostly a check.** Record `--reason "cross_links: N links; weakest ...; no switch shown."`. If a chain moves between haplotypes, it is a group edit: `reset 08_bridges --keepDecision`.
+**At this stage the question is mostly a check.** Record `--reason "cross_links: N links; weakest ...; no switch shown."`. If a chain moves between haplotypes, it is a group edit: `reset 08_bridges`. Leave out `--keepDecision`: it would keep D07, and the telomeric tips can change with the groups.

@@ -28,7 +28,8 @@ def main():
 
     def ends(name, seq):
         s = seq.upper()
-        head, tail = s[:args.window], s[-args.window:]
+        w = min(args.window, len(s) // 2)   # a chain shorter than two windows would count one telomere at both ends
+        head, tail = s[:w], s[len(s) - w:]
         h = head.count(fwd) + head.count(rev)
         t = tail.count(rev) + tail.count(fwd)
         call = ("T" if h >= args.minCopies else "-") + ("T" if t >= args.minCopies else "-")

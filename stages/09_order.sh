@@ -17,7 +17,7 @@ if [ ! -s $D/order.raw.tsv ]; then
     pids+=($!)
   done
   for p in "${pids[@]:-}"; do [ -n "$p" ] && wait "$p"; done
-  { head -n 1 $D/by_chrom/$(cut -f2 $CH | sort -u | head -1).order.tsv; for c in $(cut -f2 $CH | sort -u); do grep -v '^#' $D/by_chrom/$c.order.tsv; done; } | sort -s -t$'\t' -k1,1 > $D/order.raw.tsv
+  { head -n 1 $D/by_chrom/$(cut -f2 $CH | sort -u | head -1).order.tsv; for c in $(cut -f2 $CH | sort -u); do grep -v '^#' $D/by_chrom/$c.order.tsv; done; } | LC_ALL=C sort -s -t$'\t' -k1,1 > $D/order.raw.tsv
 fi
 if has_rows edits/order_edits.tsv; then python3 "$S/apply_order_edits.py" edits/order_edits.tsv $D/order.raw.tsv $D/groups.tsv $D/order.tsv $D/groups.edited.tsv; else cp $D/order.raw.tsv $D/order.tsv; fi
 has_ref && python3 "$S/eval_order.py" $D/order.tsv $D/chains.agp 03_unitig_align/unitigs_vs_ref.paf.gz > $D/eval_order.txt || true
