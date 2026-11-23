@@ -24,4 +24,10 @@ A breakpoint inside one unitig has read-level support from the assembler. At a H
 
 **An opposite direction between homologs with flat Hi-C and no reads is undetermined, not an inversion.** WatsonsChoice chr5 chains 0275 and 0350 are the example.
 
+**After rebuilding an adopted build,** expect more than the gaps to change ([RECORD](../RECORD.md), "What rebuilding with connectors changed"):
+
+- A block between Hi-C-only gaps can change orientation once a graph join sets it. Re-test every SV call touching such a block; two WatsonsChoice calls were withdrawn this way.
+- Satellite stacks can become placed by graph bridges. Check them in Juicebox.
+- Haplotype numbers can change with the same content. Map old to new names by shared unitigs before comparing calls, and warn anyone whose annotation uses the old names.
+
 **Never fix toward the reference.** Report the disagreement.
