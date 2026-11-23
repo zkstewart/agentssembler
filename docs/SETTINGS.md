@@ -40,7 +40,7 @@ Genomes of these kinds break an assumption the process makes. None has been run.
 |---|---|---|
 | Heteromorphic sex chromosomes (XY, ZW, X0) | Every chromosome has `ploidy` homologs at the same depth | The hemizygous parts read 1x as on any homolog, but have no allele: grouping looks for a partner that does not exist, and depth classes call the X's unique sequence a lost haplotype |
 | Aneuploidy, B chromosomes | The same | A chromosome at another copy number is called collapsed or missing; a B chromosome has no homolog to group with |
-| More than six haplotypes (octoploid and above) | Haplotypes separate in the unitigs and depth steps are distinguishable | Depth classes are 1/ploidy of the total apart, so at 8 copies the steps between dosages are within noise |
+| More than six haplotypes (octoploid and above) | Haplotypes separate in the unitigs and depth steps are distinguishable | Adjacent dosages differ by one haplotype depth, a small fraction of the total near full dosage (7 against 8 copies: 12%), which read depth cannot separate reliably |
 | Pore-C or other multi-contact libraries | Hi-C reads are pairs | Concatemers would need splitting into pairs first; the pair filters were tuned on Hi-C |
 | Telomeres that are degenerate or retrotransposon-based (some insects) | A short motif repeated at chromosome ends | Telomere calls fail, so ends are never closed and tips go unplaced. `telomere_motif`, `telomere_window` and `telomere_min_copies` change the call, not the kind of telomere |
 | Partly inbred diploids with long runs of homozygosity | Homologs are distinct in the unitigs except at small collapses | Long collapsed runs make many chains shared, and ordering and arm phase lose the haplotype-specific evidence they need (D14, D15) |
