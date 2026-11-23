@@ -22,6 +22,8 @@ printf '%s\n' "${BA[@]}" > $D/build_args.txt
 step $D/pre/$AS_SAMPLE.junctions.tsv python3 "$S/build_scaffolds.py" "${BA[@]}" --out $D/pre/$AS_SAMPLE
 # Hi-C gaps a swap of two chains between homologs would close, on the pre-build: a swap is a group edit and `reset 08_bridges`, cheapest now (D16, D13)
 RS=(); [ -s 10_groups/groups.rescued.tsv ] && RS=(--rescued 10_groups/groups.rescued.tsv)
+# Homologs written in opposite directions, on the pre-build: listed in edits/flip.txt at D16, stage 12 applies the flip before it maps reads (D12)
+step $D/homolog_direction.tsv python3 "$S/review/homolog_direction.py" $D/pre/$AS_SAMPLE.agp 03_unitig_align/unitigs_self.paf.gz $D/homolog_direction.tsv
 step $D/rescue_swaps.tsv python3 "$S/review/rescue_swaps.py" $D/pre/$AS_SAMPLE.junctions.tsv $D/end_links.tsv $D/graph.bridges.tsv $D/rescue_swaps.tsv "${RS[@]}"
 step $D/tails.tsv python3 "$S/make_tails.py" --order "$O" --junctions $D/pre/$AS_SAMPLE.junctions.tsv --placement $D/pre/$AS_SAMPLE.placement.tsv --links $D/end_links.tsv --groups "$GRP" --chroms 10_groups/final.chroms.tsv --choices $D/choices.tsv --telomeres $D/telomeres.tsv --hic 12_broken/links.tsv --class 11_ont_chains/chain_class.tsv --agp 12_broken/chains.agp --gfa 00_inputs/unitigs.gfa --paf 11_ont_chains/ont_vs_chains.paf.gz --exclude 12_broken/connector_chains.tsv --out $D/tails.tsv --report $D/tail_report.tsv --twoX "$AS_TWO_X" --hap "$AS_HAP" --ploidy "$AS_PLOIDY" --maxDepth "$AS_MAX_DEPTH"
 # Genes on each tail (D16): what a tail would add, from compleasm on the unitigs (stage 01)

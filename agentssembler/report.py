@@ -93,12 +93,13 @@ def r_hic(w, c, s):
     out = [f"Candidate positions in {p}: {len(V)}. A break needs two signals: different Hi-C partners each side and weak reads across the join."]
     out += [f"Both signals (trans >= 200 on both sides, partner_cos < 0.8, under 10 reads at MAPQ>=20): {len(both)}."] + both
     out += [f"Different partners alone (partner_cos < 0.6, enough trans), usually overruled by reads: {len(hic)}."] + hic
+    out.append("This table only lists. Weak reads with little Hi-C on one side are mostly near-identical sequence, not chimeras.")
     al = []; H = list(rows(f"{w}/10_groups/hub_cores.d04.tsv")); yes = [r for r in H if r[-1] == "yes"]
     if yes: al.append(f"{len(yes)} breakable collapsed hubs (10_groups/hub_cores.d04.tsv): " + ", ".join(f"{r[0]} at {r[10]}/{r[11]}" for r in yes[:12]) + (" ..." if len(yes) > 12 else "")
-                      + ". A 2x core of unique reads inside a chain whose arms read 1x. Breaking now, with the chimera breaks, saves a `reset 06_evidence --remap` at D06; "
-                      "check each edge against 07_chains2/depth.windows.tsv, then mark the core shared at D14.")
+                      + ". A 2x core of unique reads inside a chain whose arms read 1x. Breaking now, with the chimera breaks, saves a `reset 06_evidence --remap` at D06. "
+                      "Positions are on 08_final_chains, the chains D04 breaks; 07_chains2/depth.windows.tsv holds the depth on stage 04's chains, before D03's breaks, so "
+                      "check each edge there by the unitig at the break (08_final_chains/chains.agp), then mark the core shared at D14.")
     if len(H) > len(yes): out.append(f"Hub cores not breakable here: {len(H) - len(yes)} (inside one unitig, or the freed piece would carry 1x arms); stage 06 lists them again for D06 and D14.")
-    out.append("This table only lists. Weak reads with little Hi-C on one side are mostly near-identical sequence, not chimeras.")
     rs = f"{w}/09_hic_map/rescue_signal.txt"
     if os.path.exists(rs):
         L_ = open(rs).read().splitlines(); out += ["Hi-C allele rescue signal (09_hic_map/rescue_signal.txt, D04):"] + [x for x in L_ if not x.startswith("ALARM")]
@@ -165,8 +166,11 @@ def r_group(w, c, s):
         hc = sorted(HC.items(), key=lambda kv: -sum(int(r[6]) for r in kv[1])); yes = [kv for kv in hc if any(r[-1] == "yes" for r in kv[1])]; no = [kv for kv in hc if kv not in yes]
         if yes: al.append(f"{len(yes)} chains classed single-copy hold a breakable core of 2x unique reads (10_groups/hub_cores.tsv): " + ", ".join(map(fmt, yes[:15])) + (" ..." if len(yes) > 15 else "")
                           + ". Each is a collapsed hub whose arms read 1x on MAPQ 0 reads. Unless a chain is already shared, break it at break_left/break_right, mark the core shared, and `reset 06_evidence --remap` in one round (D04, D06, D14).")
-        if no: al.append(f"{len(no)} chains classed single-copy hold a 2x unique-read core inside one unitig, which no D04 break can separate (10_groups/hub_cores.tsv): " + ", ".join(map(fmt, no[:15])) + (" ..." if len(no) > 15 else "")
-                         + ". Each chain's core is missing from one haplotype as placed. The choice is D14's: leave it on one haplotype, or mark the chain shared and duplicate its 1x arms; weigh the genes on each.")
+        why = lambda kv: "inside one unitig" if any("inside" in r[12] for r in kv[1]) else "freed piece would carry 1x arms"
+        if no: al.append(f"{len(no)} chains classed single-copy hold a 2x unique-read core that no D04 break can separate cleanly (10_groups/hub_cores.tsv): "
+                         + ", ".join(f"{fmt(kv)[:-1]}, {why(kv)})" for kv in no[:15]) + (" ..." if len(no) > 15 else "")
+                         + ". Inside one unitig: break_chain splits only between unitigs. Freed piece with 1x arms: a break would put those arms on both haplotypes (core_2x_frac below 0.75). "
+                         "Each chain's core is missing from one haplotype as placed. The choice is D14's: leave it on one haplotype, or mark the chain shared and duplicate its 1x arms; weigh the genes on each.")
     RS = [r for r in rows(f"{w}/10_groups/groups.rescued.tsv") if r[4] in ("collapsed", "redundant")]
     if RS:
         k = collections.defaultdict(list)
@@ -218,7 +222,7 @@ def r_arms(w, c, s):
                       "A tail that fails the tests keeps its genes as unlocalized sequence (stage 15).")
     A = list(rows(f"{w}/12_shared/arm_report.tsv"))
     if A: out.append("Arm labels: " + str(dict(collections.Counter(r[3] for r in A if len(r) > 3))))
-    al = []
+    al = direction_alarms(w, "12_shared/homolog_direction.tsv")
     al += swap_alarms(f"{w}/12_shared/rescue_swaps.tsv")
     F = [r for r in rows(f"{w}/12_shared/chain_forks.tsv") if r[0] == "LOST"]
     if F:
@@ -228,11 +232,14 @@ def r_arms(w, c, s):
     return out, al
 def r_build(w, c, s):
     p = f"{w}/13_scaffold/{c['sample']}.graph"; L = fai(p + ".fasta.fai"); J = collections.Counter(r[4] for r in rows(p + ".junctions.tsv") if len(r) > 4)
-    fl = {r[0] for r in rows(f"{w}/edits/flip.txt")}
-    inv = [r for r in rows(f"{w}/13_scaffold/homolog_direction.tsv") if r[4] == "inverted" and not {r[0], r[1]} & fl]
-    al = [f"{r[0]} is written in reverse against {r[1]} ({Mb(int(r[3]))} inverted, {Mb(int(r[2]))} forward; 13_scaffold/homolog_direction.tsv). A direction flag, not biology: "
-          "list one of the two in edits/flip.txt now, before 12_fill, which applies it. Found after stage 12, it costs `reset 12_fill` (D12)." for r in inv]
+    al = direction_alarms(w, "13_scaffold/homolog_direction.tsv")
     return [f"Scaffolds {len(L)}, {Mb(sum(L.values()))}. Junction types: {dict(J)}.", "Build log: 13_scaffold/build.log."], al + swap_alarms(f"{w}/13_scaffold/rescue_swaps.tsv")
+def direction_alarms(w, p):
+    """Homologs written in opposite directions (review/homolog_direction.py), less those edits/flip.txt already lists."""
+    fl = {r[0] for r in rows(f"{w}/edits/flip.txt")}
+    inv = [r for r in rows(f"{w}/{p}") if r[4] == "inverted" and not {r[0], r[1]} & fl]
+    return [f"{r[0]} is written in reverse against {r[1]} ({Mb(int(r[3]))} inverted, {Mb(int(r[2]))} forward; {p}). A direction flag, not biology: "
+            "list one of the two in edits/flip.txt now, before 12_fill, which applies it. Found after stage 12, it costs `reset 12_fill` (D12)." for r in inv]
 def swap_alarms(p):
     """Hi-C gaps that swapping two chains between homologs would close (review/rescue_swaps.py)."""
     S = list(rows(p))

@@ -41,7 +41,8 @@ map_paf() {
     if [ "$f" -lt "$AS_MIN_FREE_GB" ]; then kill $p; pkill -P $$ minimap2 || true; echo "ERROR: disk guard stopped $o" >&2; exit 3; fi
     sleep 30
   done
-  wait $p; gzip -t "$o.part"; mv "$o.part" "$o"; [ -f "$t" ] && target_sum "$t" > "$o.target"
+  wait $p; gzip -t "$o.part"; mv "$o.part" "$o"
+  if [ -f "$t" ]; then target_sum "$t" > "$o.target"; fi
 }
 agp2fa() { python3 "$S/agp_to_fasta.py" "$1" "$2" "$3.part"; mv "$3.part" "$3"; "$AS_SAMTOOLS" faidx "$3"; }
 # has_rows FILE: true when an edit file holds more than comments
