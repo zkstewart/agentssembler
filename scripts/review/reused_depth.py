@@ -4,7 +4,9 @@
 '''Are arms used by both haplotypes truly 2x? For every chain in a path used by both groups of a chromosome, measures
 depth outside the graph overlaps at both ends, and lists alternative paths for the junctions that used it.
 Usage: reused_depth.py arm_report.tsv choices_base.tsv groups.tsv chroms.tsv chains.agp unitigs.gfa ont_vs_chains.paf.gz out.tsv'''
-import sys, gzip, collections
+import os, sys, gzip, collections
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from chainlib import chain_interior, end_overlaps
 rep, ch, grp, chroms, agp, gfa, paf, out = sys.argv[1:9]
 g2c = {}
 for l in open(chroms):
@@ -23,17 +25,7 @@ for l in open(agp):
     s = l.rstrip("\n").split("\t")
     if s[4] != "W": continue
     parts[s[0]].append((s[5], s[8])); L[s[0]] = max(L.get(s[0], 0), int(s[2]))
-ov = collections.defaultdict(int)     # (unitig, strand leaving) -> largest overlap
-for l in open(gfa):
-    if l[0] != "L": continue
-    s = l.rstrip("\n").split("\t"); o = int(s[5].rstrip("M")) if s[5] != "*" else 0
-    k = (s[1], s[2]); ov[k] = max(ov[k], o)
-    k = (s[3], {"+": "-", "-": "+"}[s[4]]); ov[k] = max(ov[k], o)
-iv = {}
-for c in both:
-    u, o = parts[c][-1]; right = ov[(u, o)]
-    u, o = parts[c][0]; left = ov[(u, {"+": "-", "-": "+"}[o])]
-    iv[c] = (left, L[c] - right)
+iv = chain_interior(parts, L, end_overlaps(gfa), both)
 cov = {c: collections.Counter() for c in both}; n = collections.Counter(); nq = collections.Counter(); span = collections.Counter()
 opn = gzip.open if paf.endswith(".gz") else open
 for l in opn(paf, "rt"):
