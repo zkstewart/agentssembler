@@ -31,7 +31,7 @@
 Read `09_hic_map/rescue_signal.txt`. Its Hi-C-blind chains have an allele partner, almost no unique Hi-C, and many pairs with an allele-ambiguous end: grouping will leave them unassigned however good the rest is. When they are a large share (the report's alarm: 1% of chain sequence or more), or carry many genes, record D04 with `--set hic_allele_rescue=true` and say why. This is the cheapest point: the setting acts in stages 06-08.
 
 - Repeat chains are Hi-C-blind too (chain0091 on 292: 74% repeat). The rescue leaves chains over half repeat alone, so they do not count for it.
-- The rescue knows which chromosome, rarely which haplotype: most of its haplotype calls are `arbitrary` or `allele_of_arbitrary`. It also brings orientation risk in the rescued region: on 292 inverted homolog blocks rose from 9 to 14, mostly in rescued chr2 sequence. Say so at D13 and hand those regions over for Juicebox.
+- The rescue knows which chromosome, rarely which haplotype: most of its haplotype calls are `arbitrary` or `allele_of_arbitrary`. It also brings orientation risk in the rescued region: on 292 inverted homolog blocks rose from 9 to 13, mostly in rescued chr2 sequence ([RECORD](../RECORD.md)). Say so at D13 and hand those regions over for Juicebox.
 - It leaves three kinds of chain unassigned, each named in `10_groups/groups.rescued.tsv`:
   - `allele_in_every_group`: an allele of 50 kb or more in every group of the chromosome.
   - `redundant`: allele blocks of any length cover half the chain or more in every group. 292's chain0288 was a 105 kb near-copy whose copies were each under 50 kb. Placed, it fell between a chain and its telomeric tip.
