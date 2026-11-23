@@ -3,6 +3,7 @@
 # If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''
 After tails are placed: reads across each flank-to-tail join, at any MAPQ and at MAPQ >= 20, with --flank bp each side, using the AGP the reads were mapped to.
+The join is on the side of the flank chain (the tail's end, column 1), so a tail beside a gap that a fill closed is still checked.
 Usage: tail_joins.py --tails tails.tsv --chainsAgp chains.agp --agp scaffolds.agp --names names.tsv --paf a.paf.gz [b.paf.gz ...] --out out.tsv
 '''
 import argparse, collections, gzip
@@ -10,7 +11,7 @@ ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDe
 for x in ("tails", "chainsAgp", "agp", "names", "out"): ap.add_argument("--" + x, required=True)
 ap.add_argument("--paf", nargs="+", required=True); ap.add_argument("--flank", type=int, default=3000)
 a = ap.parse_args()
-names = {l.split("\t")[0]: l.split("\t")[1] for l in open(a.names) if l[0] != "#"}
+names = {l.split("\t")[0]: l.rstrip("\n").split("\t")[1] for l in open(a.names) if l[0] != "#"}
 chain = collections.defaultdict(list)
 for l in open(a.chainsAgp):
     if l[0] == "#": continue
@@ -26,8 +27,14 @@ for l in open(a.tails):
     s = l.rstrip("\n").split("\t"); sc = names[s[1]]; ut = {u for p in s[2].split(",") for u in chain[p[:-1].split(".")[0]]}
     v = agp[sc]; idx = [i for i, r in enumerate(v) if r[4] == "W" and r[5] in ut]; t = dict(end=s[0], sc=sc, path=s[2], label=s[3], any=0, q20=0, j=None)
     if idx:
-        x, y = min(idx), max(idx); lg = x == 0 or v[x - 1][4] != "W"; rg = y == len(v) - 1 or v[y + 1][4] != "W"
-        if lg and not rg: t["j"] = int(v[y][2])
+        # the join is where the tail meets its flank chain (column 1's chain). A tail can sit at a gap rather than a scaffold end, and a fill
+        # that closed that gap leaves sequence on both sides, so the flank is found by its unitigs, not by which side has no neighbour.
+        x, y = min(idx), max(idx); fu = set(chain[s[0][:-1].split(".")[0]]) - ut
+        lf = x > 0 and v[x - 1][4] == "W" and v[x - 1][5] in fu; rf = y < len(v) - 1 and v[y + 1][4] == "W" and v[y + 1][5] in fu
+        lg = x == 0 or v[x - 1][4] != "W"; rg = y == len(v) - 1 or v[y + 1][4] != "W"
+        if lf and not rf: t["j"] = int(v[x][1]) - 1
+        elif rf and not lf: t["j"] = int(v[y][2])
+        elif lg and not rg: t["j"] = int(v[y][2])                        # no flank found by name: the side with sequence
         elif rg and not lg: t["j"] = int(v[x][1]) - 1
     T.append(t)
 by = collections.defaultdict(list)

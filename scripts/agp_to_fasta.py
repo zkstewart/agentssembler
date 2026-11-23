@@ -9,13 +9,16 @@ import sys
 COMP = str.maketrans("ACGTNacgtn", "TGCANtgcan")
 def read_fasta(fileName):
     seqs, name, chunks = {}, None, []
+    def put(name, seq):
+        if name in seqs and seqs[name] != seq: sys.exit(f"ERROR: {name} appears twice in {fileName} with different sequences; a fill name was reused")
+        seqs[name] = seq
     with open(fileName) as fileIn:
         for line in fileIn:
             if line.startswith(">"):
-                if name is not None: seqs[name] = "".join(chunks)
+                if name is not None: put(name, "".join(chunks))
                 name, chunks = line[1:].split()[0], []
             else: chunks.append(line.strip())
-    if name is not None: seqs[name] = "".join(chunks)
+    if name is not None: put(name, "".join(chunks))
     return seqs
 
 agpFile, fastaFile, outFile = sys.argv[1:4]

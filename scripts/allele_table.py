@@ -7,7 +7,7 @@ merged on each chain. Output: chain_a chain_b bp_a bp_b median_de blocks in pair
 between the chains: the alignment's unitig strand, reversed once for each unitig that lies reversed in its chain (project_rescued.py
 carries positions through it).
 Usage: allele_table.py chains.agp unitigs_self.paf.gz out_prefix'''
-import gzip, argparse, statistics, collections, sys, os
+import math, gzip, argparse, statistics, collections, sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from chainlib import read_agp, lift_strand
 p=argparse.ArgumentParser(); p.add_argument("agp"); p.add_argument("paf"); p.add_argument("out"); p.add_argument("--minLen",type=int,default=20000); a=p.parse_args()
@@ -36,7 +36,7 @@ with open(a.out+".pairs.tsv","w") as o:
     o.write("#chain_a\tchain_b\tbp_a\tbp_b\tmedian_de\tblocks\n")
     for (x,y),v in pairs.items():
         ia=[(b[1],b[2]) if b[0]==x else (b[4],b[5]) for b in v]; ib=[(b[4],b[5]) if b[0]==x else (b[1],b[2]) for b in v]
-        o.write(f"{x}\t{y}\t{merged(ia)}\t{merged(ib)}\t{statistics.median(b[6] for b in v):.4f}\t{len(v)}\n")
+        o.write(f"{x}\t{y}\t{merged(ia)}\t{merged(ib)}\t{(statistics.median(de) if (de:=[b[6] for b in v if not math.isnan(b[6])]) else float('nan')):.4f}\t{len(v)}\n")
 with open(a.out+".blocks.tsv","w") as o:
     o.write("#chain_a\tstart_a\tend_a\tchain_b\tstart_b\tend_b\tde\tstrand\n")
     for b in blocks: o.write("\t".join(map(str,b))+"\n")
