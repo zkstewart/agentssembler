@@ -24,7 +24,8 @@ with gzip.open(readsTab, 'rt') as f:
         r = S[b]; r[0] += 1; r[1] += n
         c = corr.get(i)
         if n >= 5000:
-            qual[i] = float(q); qb = Q[min(int(float(q))//5*5, 30)]; qb[0] += 1; qb[1] += n; qb[2] += bool(c); qb[3] += sum(c) if c else 0
+            if q != 'NA':   # FASTA reads, and BAMs without dorado's qs tag, carry no mean quality
+                qual[i] = float(q); qb = Q[min(int(float(q))//5*5, 30)]; qb[0] += 1; qb[1] += n; qb[2] += bool(c); qb[3] += sum(c) if c else 0
         if c:
             seen += 1; r[2] += 1; r[3] += sum(c); r[4] += len(c) > 1
             if len(c) == 1 and c[0] < 0.9*n: r[5] += 1

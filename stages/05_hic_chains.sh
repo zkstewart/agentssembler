@@ -9,6 +9,7 @@ ln -sfn ../08_final_chains/chains.fasta chains.fasta; ln -sfn ../08_final_chains
 # Decoys: unitigs of the high-copy chains that stage 04 set aside (07_chains2/repeat_chains.txt), organelles among them.
 # Without them, chloroplast Hi-C reads land on nuclear plastid insertions as if unique: on 13Q010, 21,394 pairs at one
 # point joined a chr9 and a chr5 chain and changed the grouping. Pairs touching a decoy are dropped.
+[ -s pairs.tsv.gz ] && check_target pairs.tsv.gz chains.fasta
 if [ ! -s pairs.tsv.gz ]; then
   guard
   [ -s targets.fasta ] || {
@@ -24,7 +25,7 @@ if [ ! -s pairs.tsv.gz ]; then
   "$AS_FILTER_BAM" HiC.bam 1 --nm 3 --threads "$AS_THREADS" | "$AS_SAMTOOLS" view - -b -@ 4 -o HiC.filtered.bam.part
   mv HiC.filtered.bam.part HiC.filtered.bam
   "$AS_SAMTOOLS" view -@ 4 -f 64 HiC.filtered.bam | awk -F'\t' -v OFS='\t' '$3 !~ /^decoy_/ && $7 !~ /^decoy_/ {print $3, $4, ($7 == "=" ? $3 : $7), $8}' | gzip -1 > pairs.tsv.gz.part
-  mv pairs.tsv.gz.part pairs.tsv.gz
+  mv pairs.tsv.gz.part pairs.tsv.gz; target_sum chains.fasta > pairs.tsv.gz.target
 fi
 # Pairs with an allele-ambiguous end (MAPQ 0, every other hit on an allele partner), for settings.hic_allele_rescue. Made whatever the
 # setting, at about 10 min for 50 M pairs, so that D04 can see whether grouping will need them (rescue_signal.txt) and turning the

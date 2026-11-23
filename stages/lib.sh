@@ -22,9 +22,17 @@ step() {
   need "$o"
 }
 # map_paf OUT.paf.gz minimap2-args...: a guarded mapping that writes OUT only when complete
+# A kept mapping (`keep` in stages.py) survives a reset without --remap. OUT.target holds the checksum of the sequence it was mapped to, so
+# a kept mapping whose target has since changed stops the stage instead of being reused. Mappings made before this have no OUT.target.
+target_sum() { md5sum < "$1" | cut -d' ' -f1; }
+check_target() { # OUT TARGET
+  [ -s "$1.target" ] && [ -f "$2" ] && [ "$(target_sum "$2")" != "$(cat "$1.target")" ] && {
+    echo "ERROR: $1 was mapped to an earlier $2. Reset with --remap so it is made again." >&2; exit 4; }
+  return 0
+}
 map_paf() {
-  local o="$1"; shift
-  [ -s "$o" ] && { log "skip, exists: $o"; return 0; }
+  local o="$1"; shift; local t="${@: -2:1}"
+  [ -s "$o" ] && { check_target "$o" "$t"; log "skip, exists: $o"; return 0; }
   guard; log "map: $o"
   "$AS_MINIMAP2" "$@" 2> "$o.log" | gzip -1 > "$o.part" &
   local p=$!
@@ -33,7 +41,7 @@ map_paf() {
     if [ "$f" -lt "$AS_MIN_FREE_GB" ]; then kill $p; pkill -P $$ minimap2 || true; echo "ERROR: disk guard stopped $o" >&2; exit 3; fi
     sleep 30
   done
-  wait $p; gzip -t "$o.part"; mv "$o.part" "$o"
+  wait $p; gzip -t "$o.part"; mv "$o.part" "$o"; [ -f "$t" ] && target_sum "$t" > "$o.target"
 }
 agp2fa() { python3 "$S/agp_to_fasta.py" "$1" "$2" "$3.part"; mv "$3.part" "$3"; "$AS_SAMTOOLS" faidx "$3"; }
 # has_rows FILE: true when an edit file holds more than comments

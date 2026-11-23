@@ -31,5 +31,6 @@ def n(c, r1, r2):
     return sum(1 for u, v in P[c] if (r1[0] <= u < r1[1] and r2[0] <= v < r2[1]) or (r2[0] <= u < r2[1] and r1[0] <= v < r1[1]))
 print("#block\tleft_vs_near\tleft_vs_far\tright_vs_near\tright_vs_far")
 for c, x, y in B:
-    L, R = (x - W, x), (y, y + W); ne, fa = (x, x + W), (y - W, y)
+    w = min(W, (y - x) // 2)              # windows inside a block shorter than 2 * --win would overlap and count its own contacts
+    L, R = (x - w, x), (y, y + w); ne, fa = (x, x + w), (y - w, y)
     print(f"{c}:{x/1e6:.2f}-{y/1e6:.2f}\t{n(c,L,ne)}\t{n(c,L,fa)}\t{n(c,R,fa)}\t{n(c,R,ne)}")

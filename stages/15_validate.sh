@@ -72,7 +72,7 @@ fi
 if [ "$AS_PLOIDY" = 2 ] && [ -n "${AS_HAP:-}" ]; then
   mkdir -p $V/unloc
   python3 "$S/validate/unloc_scaffolds.py" $AGP $UN $V/unloc --hap "$AS_HAP" --purge "$AS_UNLOC_PURGE" --components $V/unplaced_components.txt \
-    --placement $D/pre/$AS_SAMPLE.placement.tsv --repeat 10_groups/chain_repeat.tsv --depth 04_copynumber/depth.unitigs.tsv --chainsAgp 12_broken/chains.agp --alleles 10_groups/alleles.pairs.tsv > $V/unloc/unloc.txt 2>&1 || echo "unloc_scaffolds failed: see $V/unloc/unloc.txt; only a suggestion, so continuing"
+    --placement 13_scaffold/$AS_SAMPLE.graph.placement.tsv --repeat 10_groups/chain_repeat.tsv --depth 04_copynumber/depth.unitigs.tsv --chainsAgp 12_broken/chains.agp --alleles 10_groups/alleles.pairs.tsv > $V/unloc/unloc.txt 2>&1 || echo "unloc_scaffolds failed: see $V/unloc/unloc.txt; only a suggestion, so continuing"
   if [ -n "${AS_COMPLEASM:-}" ] && [ -s $V/unloc/$AS_SAMPLE.unloc.fasta ]; then
    ( cd $V/compleasm
      for h in $(haps_of "$AS_WORK/$AGP"); do [ -e ${h}_unloc/summary.txt ] && continue

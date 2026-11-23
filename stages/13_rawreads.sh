@@ -11,12 +11,12 @@ stream() { # stream TAB|- : FASTA of reads >= 5 kb to stdout
     {l=length($2); if(tab!="-") print $1,l,$3 | cmd; if(l>=5000) print ">"$1"\n"$2}'
 }
 map_stream() { # OUT target tab
-  local o="$1" t="$2" tab="$3"; [ -s "$o" ] && { log "skip, exists: $o"; return 0; }
+  local o="$1" t="$2" tab="$3"; [ -s "$o" ] && { check_target "$o" "$t"; log "skip, exists: $o"; return 0; }
   guard; log "stream map: $o"
   stream "$tab" | "$MM" -x "$AS_RAW_PRESET" -t "$AS_THREADS" --secondary=no "$t" - 2> "$o.log" | gzip -1 > "$o.part" &
   local p=$!
   while kill -0 $p 2>/dev/null; do f=$(df -B1G "$AS_GUARD_PATH" | awk 'NR==2{print $4}'); if [ "$f" -lt "$AS_MIN_FREE_GB" ]; then kill $p; pkill -P $$ || true; echo "ERROR: disk guard" >&2; exit 3; fi; sleep 30; done
-  wait $p; gzip -t "$o.part"; mv "$o.part" "$o"
+  wait $p; gzip -t "$o.part"; mv "$o.part" "$o"; target_sum "$t" > "$o.target"
 }
 [ -s $A/corrected.lens.tsv.gz ] || "$AS_SEQKIT" fx2tab -n -i -l "$AS_READS_LINK" | cut -f1,2 | gzip -1 > $A/corrected.lens.tsv.gz
 SETS=(); tab=$A/reads.tsv.gz; [ -s $tab ] && tab=-

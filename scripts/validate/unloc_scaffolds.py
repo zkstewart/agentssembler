@@ -52,7 +52,7 @@ haps_of = collections.defaultdict(list)
 for s in scaf: haps_of[key(s)].append(s)
 place = {}                                                                # placed chain (base name) -> scaffolds
 for s in rows(a.placement):
-    if s[4] == "placed": place.setdefault(s[0].split(".")[0], set()).add(s[3])
+    if s[4].startswith("placed"): place.setdefault(s[0].split(".")[0], set()).add(s[3])   # bridge and tail chains too
 rep = {s[0]: float(s[2]) for s in rows(a.repeat)}
 ud = {s[0]: float(s[2]) for s in rows(a.depth)}
 dsum = collections.Counter(); dlen = collections.Counter()               # depth per chain, length-weighted over its unitigs
