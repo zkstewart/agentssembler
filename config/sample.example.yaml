@@ -42,7 +42,7 @@ tools:
   compleasm: /path/to/envs/compleasm/bin/compleasm
   plot_python: python3    # a Python with matplotlib
 
-# compleasm is optional, but with it stage 02 maps genes on the unitigs and D04, D05, D16 can count genes each choice gains.
+# compleasm is optional, but with it stage 01 maps genes on the unitigs and D04, D05, D16 can count genes each choice gains.
 compleasm:
   library: /path/to/mb_downloads
   lineage: eudicotyledons_odb12

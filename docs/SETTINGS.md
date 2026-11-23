@@ -101,3 +101,5 @@ A chain is low-information when its Hi-C reads rarely place uniquely, as in a sa
 | `compute.threads` | Threads per job. About 16 cores and 30 GB RAM were enough, except for the stage 02 mappings, which took up to 50 GB |
 | `compute.min_free_gb` | Mappings stop below this. Default 40 |
 | `compute.guard_path` | Path whose free space counts. **Under WSL use the host drive**, such as `/mnt/d`, because `df /` overstates it |
+| `compleasm.min_complete` | Validation alarm when a haplotype, with its unlocalized scaffolds, is less complete than this (%). Default 95 |
+| `inputs.baseline_agp` | Optional: an earlier build's AGP, for the reference alarm table of stage 07 (`eval_groups.txt`) to compare against |

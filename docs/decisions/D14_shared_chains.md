@@ -10,7 +10,7 @@
 
 **The score ratio alone is too strict.** Hub chains at 2x with a ratio of 1.5 were left unassigned or forced into one haplotype on WatsonsChoice. Read the call with depth and graph position. 11 chains were promoted by hand, for example:
 
-`chain0175  shared  c8  Interior depth 64.6x; Hi-C to chr3 5.23x next chromosome (32,356 pairs), no separation between g17 and g18; 13 complete genes; graph-linked hub of the chr3 gap`
+`chain0175  shared  with:<a chain of that chromosome>  Interior depth 64.6x; Hi-C to chr3 5.23x next chromosome (32,356 pairs), no separation between g17 and g18; 13 complete genes; graph-linked hub of the chr3 gap`
 
 On Busk five short hubs (190-340 kb) had medians of 71-84x, depth class `specific`, with 50-130 kb overlaps at each end and 125-145x in between. The auto-candidates missed them, because class comes from the median. The report lists such chains from the middle third of their windows, **which only nominates them**.
 

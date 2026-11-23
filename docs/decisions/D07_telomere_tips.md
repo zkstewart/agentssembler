@@ -17,7 +17,7 @@
 
 **Edit:**
 
-1. `edits/group_edits.tsv`: `chain0221<TAB>group<TAB>g16<TAB>reason`
+1. `edits/group_edits.tsv`: `chain0221<TAB>group<TAB>with:chain0139<TAB>reason`. `with:` names the group by a chain in it; a bare `g16` shifts when groups are renumbered (T19).
 2. `edits/order_links.tsv`: `chain0139+<TAB>chain0221-<TAB>telomere_tip<TAB>reason`
 
 Then `agentssembler reset WORK 08_bridges --keepDecision`, because group edits are applied in that stage.
