@@ -2,6 +2,7 @@
 # This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
 # If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """Fast checks with no data: every script parses and states its purpose, no hard-coded paths or samples, and the edit-applying scripts behave. Run: python3 tests/test_units.py"""
+import numpy as np
 import ast, glob, gzip, os, re, shutil, subprocess, sys, tempfile, textwrap, unittest
 R = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SCRIPTS = glob.glob(f"{R}/scripts/*.py") + glob.glob(f"{R}/scripts/*/*.py")
@@ -420,6 +421,59 @@ class T(unittest.TestCase):
             self.assertIn(got, (names, names[::-1]))
             run("hic_order.py", *args, f"{d}/o2", "--minPairs", "1")
             self.assertEqual(open(f"{d}/o1").read(), open(f"{d}/o2").read())
+    def test_kept_mappings_keep_target(self):
+        # a kept .paf.gz must take its .target with it, or a reset --remap leaves a stale checksum that stops the next copied-in mapping
+        sys.path.insert(0, R); from agentssembler.stages import STAGES
+        for st in STAGES:
+            for k in st.keep:
+                if ".paf.gz" in k: self.assertTrue(k.endswith("*"), f"{st.id}: {k}")
+    def test_check_target(self):
+        with tempfile.TemporaryDirectory() as d:
+            open(f"{d}/t.fa", "w").write(">a\nACGT\n"); open(f"{d}/m.paf.gz", "w").write("x")
+            sh = lambda: subprocess.run(["bash", "-c", f'source {R}/stages/lib.sh; check_target m.paf.gz t.fa; echo ok'], capture_output=True, text=True,
+                                    env=dict(os.environ, AS_WORK=d, AS_REPO=R, AS_MINIMAP2="/bin/true", AS_SAMTOOLS="/bin/true", AS_SEQKIT="/bin/true"))
+            self.assertEqual(sh().stdout.strip(), "ok")                               # no .target: a mapping made before checksums
+            subprocess.run(["bash", "-c", f"md5sum < {d}/t.fa | cut -d' ' -f1 > {d}/m.paf.gz.target"])
+            self.assertEqual(sh().stdout.strip(), "ok")
+            open(f"{d}/t.fa", "w").write(">a\nACGTA\n")
+            r = sh(); self.assertEqual(r.returncode, 4); self.assertIn("--remap", r.stderr)
+    def test_tail_joins_filled_gap(self):
+        # flank | tail | gap | other flank, the gap since filled: sequence on both sides of the tail, so the join is found by the flank's unitigs
+        W = lambda c, k, x0, x1, u: f"{c}\t{x0 + 1}\t{x1}\t{k}\tW\t{u}\t1\t{x1 - x0}\t+\n"
+        with tempfile.TemporaryDirectory() as d:
+            open(f"{d}/c.agp", "w").write(W("cF", 1, 0, 10000, "uF") + W("cT", 1, 0, 5000, "uT") + W("cB", 1, 0, 10000, "uB"))
+            open(f"{d}/n.tsv", "w").write("#g\tname\ng1\ts_h1\n")
+            open(f"{d}/t.tsv", "w").write("#end\tgroup\tpath\tlabel\tpairs\tbp\ncF+\tg1\tcT+\tonly\t5\t5000\n")
+            for agp, j in ((W("s_h1", 1, 0, 10000, "uF") + W("s_h1", 2, 10000, 15000, "uT") + W("s_h1", 3, 15000, 15500, "fill1") + W("s_h1", 4, 15500, 25500, "uB"), 10000),
+                           (W("s_h1", 1, 0, 10000, "uB") + W("s_h1", 2, 10000, 10500, "fill1") + W("s_h1", 3, 10500, 15500, "uT") + W("s_h1", 4, 15500, 25500, "uF"), 15500)):
+                open(f"{d}/s.agp", "w").write(agp)
+                with gzip.open(f"{d}/r.paf.gz", "wt") as o: o.write(f"r1\t9000\t0\t9000\t+\ts_h1\t25500\t{j - 4000}\t{j + 4000}\t8000\t8000\t60\n")
+                o = run("rawreads/tail_joins.py", "--tails", f"{d}/t.tsv", "--chainsAgp", f"{d}/c.agp", "--agp", f"{d}/s.agp", "--names", f"{d}/n.tsv", "--paf", f"{d}/r.paf.gz", "--out", f"{d}/o.tsv")
+                self.assertEqual(o.returncode, 0, o.stderr)
+                self.assertEqual([l.rstrip("\n").split("\t")[4:] for l in open(f"{d}/o.tsv") if l[0] != "#"], [[str(j), "1", "1"]])
+    def test_decay_norm(self):
+        sys.path.insert(0, f"{R}/scripts"); import hic_order as ho
+        # one chain ending just inside the lower half of a populated bin (the review's case): the old midpoint opportunity there was 0,
+        # clamped to 1, and the extrapolated slope turned positive. Contact must not rise with distance past the data.
+        edges = np.logspace(2, 9, 141); k = int(np.searchsorted(edges, 2e6)); L = edges[k] * 1.02
+        d = []                                                       # contact ~ 1/x times the positions x apart, (L - x): its counts per bin
+        for a, b in zip(edges[:-1], edges[1:]):
+            if a >= L: break
+            b = min(b, L); n = round(0.15 * (L * np.log(b / a) - (b - a)))
+            d += list(np.linspace(a, b, n, endpoint=False))
+        self.assertGreaterEqual(sum(x >= edges[k] for x in d), 50)
+        lp = ho.decay_model(d, lengths=[L])
+        self.assertLessEqual(lp(np.array([1e8]))[0], lp(np.array([1e6]))[0])
+        self.assertTrue(np.all(np.isfinite(ho.decay_model([500, 600, 700])(np.array([1e3, 1e6])))))   # sparse: no bin with 50 pairs
+        self.assertEqual(ho.decay_model([])(np.array([1e3]))[0], 0.0)
+    def test_first_undecided(self):
+        sys.path.insert(0, f"{R}/scripts"); from chainlib import first_undecided
+        dec = lambda o0, o1: o0 >= 10 + o1 and o0 >= 2 * max(o1, 1)
+        # the review's case: equal reads (200), Hi-C 5 against 30. Reads + Hi-C (205 against 230) would not decide and keep the first.
+        self.assertEqual(first_undecided([((200, 5), "p1"), ((200, 30), "p2")], dec), "p2")
+        self.assertEqual(first_undecided([((200, 5), "p1"), ((200, 9), "p2")], dec), "p1")          # undecided: the first
+        self.assertEqual(first_undecided([((100, 5), "p1"), ((180, 20), "p2")], dec), "p1")         # reads differ: 200 does not decide 105
+        self.assertEqual(first_undecided([((10, 5), "p1"), ((180, 30), "p2")], dec), "p2")
     def test_hub_cores(self):
         # Each chain: 300 kb, 1x arms (unique 20x) around a 2x core of unique reads at 100-200 kb, except C (an allele bubble: 1x, MAPQ 0)
         # and D (classed shared). The core's unitigs are those at least half inside the run; breaks go at their outer boundaries.
@@ -454,6 +508,21 @@ class T(unittest.TestCase):
             self.assertEqual(o.returncode, 0, o.stderr)
             F = {l.split("\t")[0]: l.rstrip("\n").split("\t") for l in open(f"{d}/o.tsv") if l[0] != "#"}
             self.assertEqual(F["Eb"][4:6] + F["Eb"][10:], ["50000", "150000", "50000", "150000", "unitig/unitig", "1.00", "yes"])
+            self.assertEqual(F["Eb"][2:4], ["specific", "80.0"])      # median depth from the windows, in its own column
+            # E lifted onto chains stored the other way round (R: a 50 kb unitig, then E reversed), split right of the core, and split on both sides
+            W = lambda c, k, x0, x1, u, st: f"{c}\t{x0 + 1}\t{x1}\t{k}\tW\t{u}\t1\t{x1 - x0}\t{st}\n"
+            for agp, want in (
+                    (W("R", 1, 0, 50000, "X", "+") + W("R", 2, 50000, 150000, "Eu2", "-") + W("R", 3, 150000, 250000, "Eu1", "-") + W("R", 4, 250000, 350000, "Eu0", "-"),
+                     ("R", ["150000", "250000", "150000", "250000", "unitig/unitig", "1.00", "yes"])),
+                    (W("E1", 1, 0, 100000, "Eu0", "+") + W("E1", 2, 100000, 200000, "Eu1", "+") + W("E2", 1, 0, 100000, "Eu2", "+"),
+                     ("E1", ["100000", "200000", "100000", ".", "unitig/end", "1.00", "yes"])),
+                    (W("E1", 1, 0, 100000, "Eu0", "+") + W("E2", 1, 0, 100000, "Eu1", "+") + W("E3", 1, 0, 100000, "Eu2", "+"),
+                     ("E2", ["0", "100000", ".", ".", "end/end", "1.00", "no"]))):
+                open(f"{d}/l.agp", "w").write(agp)
+                o = run("review/hub_cores.py", f"{d}/w.tsv", f"{d}/c.agp", "-", f"{d}/o.tsv", "--sharedLo", "129", "--liftAgp", f"{d}/l.agp")
+                self.assertEqual(o.returncode, 0, o.stderr)
+                F = {l.split("\t")[0]: l.rstrip("\n").split("\t") for l in open(f"{d}/o.tsv") if l[0] != "#"}
+                self.assertEqual(F[want[0]][4:6] + F[want[0]][10:], want[1])
     def test_rescue_collapsed_redundant(self):
         # a1 (g1) and a2 (g2) anchor chromosome c1. x has a breakable 2x unique-read core: collapsed. y is covered in both groups by short
         # allele blocks (each under --minConflict): redundant. z is placed. w links only to x: it still finds c1 through x.
@@ -469,7 +538,7 @@ class T(unittest.TestCase):
             open(f"{d}/al.tsv", "w").write("#h\n")
             open(f"{d}/rep.tsv", "w").write("#h\n" + "".join(f"{c}\t{n}\t0.0\n" for c, n in L.items()))
             open(f"{d}/b.tsv", "w").write("#h\ny\t0\t40000\ta1\t5000\t45000\t0.0\t+\ny\t40000\t70000\ta1\t9000\t39000\t0.0\t+\ny\t0\t70000\ta2\t1000\t71000\t0.0\t+\n")
-            open(f"{d}/h.tsv", "w").write("#chain\n" + "x\t300000\tspecific\t80\t100000\t200000\t100\t160\t160\t0.25\t100000\t200000\tunitig/unitig\tyes\n")
+            open(f"{d}/h.tsv", "w").write("#chain\n" + "x\t300000\tspecific\t80\t100000\t200000\t100\t160\t160\t0.25\t100000\t200000\tunitig/unitig\t1.00\tyes\n")
             o = run("rescue/rescue_groups.py", f"{d}/g", f"{d}/r.tsv.gz", f"{d}/u.tsv.gz", f"{d}/al.tsv", f"{d}/rep.tsv", "--hubCores", f"{d}/h.tsv", "--blocks", f"{d}/b.tsv")
             self.assertEqual(o.returncode, 0, o.stderr)
             C = {l.split("\t")[0]: (l.split("\t")[3], l.split("\t")[4]) for l in open(f"{d}/g.rescued.tsv") if l[0] != "#"}
