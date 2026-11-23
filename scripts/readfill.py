@@ -26,7 +26,8 @@ this one) are counted; when they outnumber the spanning reads the join is report
 'read_conflict' (a candidate misjoin for curation) and not filled.
 
 Outputs (--out prefix):
-  .agp            the input AGP with the filled gaps replaced (fill components rf_*)
+  .agp            the input AGP with the filled gaps replaced (fill components rf_[TAG_]SCAFFOLD_N; N continues past names already in the
+                  input AGP, and --fillTag keeps each pass's names apart: a later FASTA would otherwise silently replace an earlier fill)
   .fills.fasta    the fill sequences (components of the AGP besides the unitigs)
   .report.tsv     one row per gap of the input AGP
   .membership.tsv fill component -> scaffold, how = readfill
@@ -169,6 +170,7 @@ def main():
     p.add_argument("--seqkit", default="seqkit")
     p.add_argument("--preset", default="lr:hq", help="minimap2 preset for the reads (lr:hq corrected/Q20 ONT, map-hifi, map-ont)")
     p.add_argument("--threads", type=int, default=8)
+    p.add_argument("--fillTag", default="", help="tag in fill names, rf_TAG_SCAFFOLD_N: one per pass (retry, raw)")
     p.add_argument("--minMapq", type=int, default=20)
     p.add_argument("--minAnchor", type=int, default=5000)
     p.add_argument("--slack", type=int, default=1000, help="anchors must reach within this of the gap edge")
@@ -437,7 +439,8 @@ def main():
     for sc in sorted(rows, key=lambda s: [ int(t) if t.isdigit() else t for t in re.split(r"(\d+)", s) ]):
         rs = [ list(r) for r in rows[sc] ]
         edits = {} # gap row -> fill component row (or None)
-        nfill = 0
+        pre = f"rf_{a.fillTag + '_' if a.fillTag else ''}{sc}_"
+        nfill = max([int(r[5][len(pre):]) for r in rs if r[4] == "W" and r[5].startswith(pre) and r[5][len(pre):].isdigit()] or [0])
         for g in sorted((J for J in joins if J[0] == sc), key=lambda J: J[1]):
             _, i, i2, g0, g1 = g
             left, right = rs[i-1], rs[i2+1]
@@ -474,7 +477,7 @@ def main():
                 if int(left[7]) < int(left[6]) or int(right[7]) < int(right[6]):
                     sys.exit(f"ERROR: trimming emptied a component at {gid[(sc, i)]}")
                 if fill:
-                    nfill += 1; name = f"rf_{sc}_{nfill}"
+                    nfill += 1; name = f"{pre}{nfill}"
                     out_fa.write(f">{name}\n{fill}\n")
                     edits[i] = [sc, "0", "0", "0", "W", name, "1", str(len(fill)), "+"]
                     memb.write(f"{name}\t{sc}\treadfill\n")

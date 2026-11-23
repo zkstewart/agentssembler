@@ -4,10 +4,11 @@
 '''
 Audit a finished assembly against the reference (never used to build it). Unitig-to-reference alignments are lifted
 through the AGP, merged along each scaffold into blocks, and blocks >= --minLen on a chromosome other than the
-scaffold's name, or on its own chromosome but opposite to the scaffold's main direction, are reported as SV candidates.
+scaffold's own, or on its own chromosome but opposite to the scaffold's main direction, are reported as SV candidates. A scaffold's own
+chromosome is its name without the _hN haplotype suffix when the reference has that sequence, else the reference sequence it aligns to most.
 Usage: sv_candidates.py final.agp unitigs_vs_ref.paf.gz out.tsv [--minLen 500000 --minAln 20000]
 '''
-import sys, gzip, argparse, collections
+import sys, gzip, argparse, collections, re
 p = argparse.ArgumentParser(); p.add_argument("agp"); p.add_argument("paf"); p.add_argument("out")
 p.add_argument("--minLen", type=int, default=500000); p.add_argument("--minAln", type=int, default=20000); a = p.parse_args()
 U = collections.defaultdict(list)
@@ -31,7 +32,11 @@ with gzip.open(a.paf, "rt") as fh:
 with open(a.out, "w") as o:
     o.write("#scaffold\tstart\tend\tref\tref_start\tref_end\tstrand\tkind\taligned_bp\n")
     for c, xs in sorted(A.items()):
-        xs.sort(); chrom = c.split("_")[0]
+        xs.sort(); chrom = re.sub(r"_h\d+$", "", c)
+        if chrom not in {x[2] for x in xs}:
+            tot = collections.Counter()
+            for x in xs: tot[x[2]] += x[1] - x[0]
+            chrom = tot.most_common(1)[0][0]
         by = collections.Counter()
         for x in xs:
             if x[2] == chrom: by[x[3]] += x[1] - x[0]

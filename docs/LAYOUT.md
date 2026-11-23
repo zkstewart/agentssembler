@@ -122,7 +122,7 @@ Only `pairs.tsv.gz` and `pairs.rescued.tsv.gz` are read later, by any stage or r
 |---|---|
 | `chain_breaks.tsv` | 05, read at D04 |
 | `alleles.pairs.tsv`, `alleles.blocks.tsv`, `chain_stats.tsv`, `chain_repeat.tsv`, `end_links.tsv`, `shared.candidates.txt` | 06 |
-| `hub_cores.tsv` **[C]**: chains classed single-copy with a 2x core of unique reads, and the breaks that free it | 06, read at D06 |
+| `hub_cores.tsv` **[C]**: chains classed single-copy with a 2x core of unique reads, the unitig-boundary breaks that free it, and whether it is breakable | 06, read at D06 |
 | `groups.tsv`, `groups.chroms.tsv`, `groups.shared.tsv` **[C]**, `groups.dosage.tsv` **[C]** (above ploidy 2, and only if a shared chain is in fewer haplotypes than its chromosome has), `hic_group.log`, `shared.txt` **[C]**, `eval_groups.txt` **[ref]**, `chain_forks.txt` **[C]**; `groups.rescued.tsv` and `groups.hic.tsv` (grouping before the rescue) **[set: hic_allele_rescue]**, or `rescue_preview/` and `rescue_preview.txt` (what it would place) when off; `genes_placed.txt`, `genes_placed.tsv` **[opt: compleasm]** | 07, read at D05 |
 | `final.tsv`, `final.chroms.tsv`, `final.shared.tsv` **[C]**, `final.dosage.tsv` **[C]** | 08, the groups after `edits/group_edits.tsv` |
 
@@ -142,6 +142,7 @@ The working set for ordering. When **[C]**, shared chains appear here as one cop
 | Files | Stage |
 |---|---|
 | `groups.tsv`, `chains.agp`, `chains.fasta.fai`, `pairs.tsv.gz`, `end_links.tsv`, `chain_stats.tsv`, `telomeres.tsv`, `copies.log` **[C]** | 08 |
+| `pairs.rescue_order.tsv.gz` and `projected.log` **[set: hic_allele_rescue]**: rescued pairs projected onto one group, read by ordering only; `pairs.tsv.gz` keeps unique pairs, which validation uses | 08 |
 | `graph.bridges.tsv`, `graph.tips.tsv` (read at D07), `base.bridges.tsv` **[C]** | 08 |
 | `order_links.base.tsv`, `order_links.tsv`, `by_chrom/cN.groups.tsv`, `by_chrom/cN.order.tsv`, `by_chrom/cN.log`, `order.raw.tsv`, `order.tsv`, `groups.edited.tsv` **[edit: order_edits]**, `eval_order.txt` **[ref]**, `unhonoured.txt` | 09 |
 | `choices.tsv`, `arm_report.tsv` `arm_depth.tsv` `arm_usage.tsv` **[C]**, `build_args.txt` | 10 |

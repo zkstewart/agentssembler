@@ -31,7 +31,7 @@ if collapsed; then
   if has_rows edits/fill_retry.tsv; then
     grep -v '^#' edits/fill_retry.tsv | while IFS=$'\t' read -r sc mq why; do
       h=${sc##*_}; d=$R/retry_$sc; mkdir -p $d; awk -F'\t' -v s="$sc" '$1~/^#/||$1==s' $R/$h/in.agp > $d/in.agp
-      python3 "$S/readfill.py" --agp $d/in.agp --fasta $R/$h/in.fasta --paf $R/$h/ont.paf.gz --reads $READS --out $d/fill "${RF[@]}" --threads "$AS_THREADS" --minMapq "$mq" > $d/fill.log 2>&1
+      python3 "$S/readfill.py" --agp $d/in.agp --fasta $R/$h/in.fasta --paf $R/$h/ont.paf.gz --reads $READS --out $d/fill "${RF[@]}" --threads "$AS_THREADS" --minMapq "$mq" --fillTag retry > $d/fill.log 2>&1
       awk -F'\t' -v s="$sc" '$1!=s' $R/merged.agp > $R/merged.tmp; grep -v '^#' $d/fill.agp >> $R/merged.tmp; mv $R/merged.tmp $R/merged.agp
       cat $d/fill.fills.fasta >> $R/fills.fasta
     done

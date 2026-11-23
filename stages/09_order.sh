@@ -7,12 +7,13 @@ D=12_shared
 step $D/order_links.base.tsv python3 "$S/make_order_links.py" $D/groups.tsv $D/end_links.tsv $D/graph.bridges.tsv $D/order_links.base.tsv
 { cat $D/order_links.base.tsv; if has_rows edits/order_links.tsv; then grep -v '^#' edits/order_links.tsv | cut -f1-3; fi; } > $D/order_links.tsv
 mkdir -p $D/by_chrom; CH=10_groups/final.chroms.tsv
+PAIRS=$D/pairs.tsv.gz; [ -s $D/pairs.rescue_order.tsv.gz ] && PAIRS+=",$D/pairs.rescue_order.tsv.gz"   # rescued pairs order, never validate
 if [ ! -s $D/order.raw.tsv ]; then
   pids=()
   for c in $(cut -f2 $CH | sort -u); do
     if [ -s $D/by_chrom/$c.order.tsv ]; then continue; fi
     awk -v c="$c" 'NR==FNR{if($2==c)k[$1]=1;next} /^#/{print;next} ($3 in k)' $CH $D/groups.tsv > $D/by_chrom/$c.groups.tsv
-    python3 "$S/hic_order.py" $D/by_chrom/$c.groups.tsv $D/pairs.tsv.gz $D/chains.fasta.fai $D/by_chrom/$c.order.tsv --endLinks $D/order_links.tsv --linkBonus "$AS_LINK_BONUS" --telomeres $D/telomeres.tsv --stats $D/chain_stats.tsv --minWithin "$AS_MIN_WITHIN" > $D/by_chrom/$c.log 2>&1 &
+    python3 "$S/hic_order.py" $D/by_chrom/$c.groups.tsv "$PAIRS" $D/chains.fasta.fai $D/by_chrom/$c.order.tsv --endLinks $D/order_links.tsv --linkBonus "$AS_LINK_BONUS" --telomeres $D/telomeres.tsv --stats $D/chain_stats.tsv --minWithin "$AS_MIN_WITHIN" > $D/by_chrom/$c.log 2>&1 &
     pids+=($!)
   done
   for p in "${pids[@]:-}"; do [ -n "$p" ] && wait "$p"; done

@@ -31,6 +31,6 @@ Read `09_hic_map/rescue_signal.txt`. Its Hi-C-blind chains have an allele partne
 - It leaves three kinds of chain unassigned, each named in `10_groups/groups.rescued.tsv`:
   - `allele_in_every_group`: an allele of 50 kb or more in every group of the chromosome.
   - `redundant`: allele blocks of any length cover half the chain or more in every group. 292's chain0288 was a 105 kb near-copy whose copies were each under 50 kb. Placed, it fell between a chain and its telomeric tip.
-  - `collapsed`: a 2x unique-read core, so the chain holds both haplotypes there. That is for D06 to break; no haplotype call fits.
+  - `collapsed`: a breakable 2x unique-read core (`10_groups/hub_cores.tsv`), so the chain holds both haplotypes there. That is for D06 to break; no haplotype call fits. A core inside one unitig cannot be broken off, so its chain is placed as usual.
   Collapsed and redundant chains still count towards their chromosome, so chains rescued in later rounds can anchor on them.
 - Turned on later, it costs `reset 07_group` (from D05) or more.

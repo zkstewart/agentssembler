@@ -66,7 +66,7 @@ for l in open(a.alleles):
     if l[0]=="#": continue
     s=l.split("\t"); x,y,bx,by=s[0],s[1],int(s[2]),int(s[3])
     if x in sat or y in sat: continue
-    if min(bx,by)>=a.minConflict and min(bx/L[x],by/L[y])>=a.minConflictFrac: conf[x].add(y); conf[y].add(x)
+    if min(bx,by)>=a.minConflict and min(bx,by)>=a.minConflictFrac*min(L[x],L[y]): conf[x].add(y); conf[y].add(x)   # fraction of the shorter
 lowinfo=set()
 if a.stats:
     for l in open(a.stats):

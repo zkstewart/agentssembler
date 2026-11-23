@@ -11,27 +11,24 @@ known, as with arbitrary arms at D15). Longer chains go first, so an allele pair
 Call allele_of_arbitrary: the excluding allele was itself placed arbitrarily by this script, so the call carries no phase evidence.
 A chain with an allele in every group of its chromosome is reported once (allele_in_every_group) and left unassigned.
 Two more calls leave a chain unassigned, tested before the haplotype, once its chromosome is known:
-  collapsed  with --windows: a run of >= --minCore bp at 2x unique-read depth (chainlib.core_runs, as review/hub_cores.py). The chain holds both
-             haplotypes there, so no haplotype call can be right: its unique Hi-C splits evenly and it fell to arbitrary (292: chain0115, chain0119).
-             It needs a D06 break and a shared core, not a haplotype.
+  collapsed  with --hubCores: a breakable row in review/hub_cores.py's table (a 2x unique-read core with a unitig boundary at each inner edge).
+             The chain holds both haplotypes there, so no haplotype call can be right: its unique Hi-C splits evenly and it fell to arbitrary
+             (292: chain0115, chain0119). It needs a D06 break and a shared core, not a haplotype. A core inside one unitig cannot be broken
+             off, so that chain is placed as before, on one haplotype, and stage 07's report lists it for D14.
   redundant  with --blocks: allele blocks of any length (alleles.blocks.tsv), merged, cover >= --redundant of the chain in every group of the
              chromosome: a near-copy of sequence both haplotypes already hold. The allele rule counts only alleles of >= --minConflict bp, so a short
              chain whose copies are each under that passed it (292: chain0288, 83 kb, covered 0.79 and 0.65 by blocks of 30-83 kb, dropped
              between a chain and its telomeric tip). Tested when the chain's chromosome is found, and again after the last round.
 Shared and high-repeat chains are left alone. Rewrites prefix.tsv (the original is kept as prefix.hic.tsv) and writes prefix.rescued.tsv.
 Usage: rescue_groups.py groups_prefix rescued_pairs.tsv.gz unique_pairs.tsv.gz alleles.pairs.tsv chain_repeat.tsv
-       [--windows depth.windows.tsv --sharedLo A] [--blocks alleles.blocks.tsv]'''
+       [--hubCores hub_cores.tsv] [--blocks alleles.blocks.tsv]'''
 import argparse, collections, gzip, os, shutil, sys
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from chainlib import read_windows, core_runs
 p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
 for x in "prefix rescued unique alleles repeat".split(): p.add_argument(x)
 p.add_argument("--minLinks", type=int, default=10); p.add_argument("--ratio", type=float, default=2.0); p.add_argument("--rounds", type=int, default=5)
 p.add_argument("--minConflict", type=int, default=50000); p.add_argument("--minConflictFrac", type=float, default=0.1); p.add_argument("--maxRepeat", type=float, default=0.5)
-p.add_argument("--windows"); p.add_argument("--sharedLo", type=float); p.add_argument("--minCore", type=int, default=50000)
-p.add_argument("--blocks"); p.add_argument("--redundant", type=float, default=0.5)
+p.add_argument("--hubCores"); p.add_argument("--blocks"); p.add_argument("--redundant", type=float, default=0.5)
 a = p.parse_args()
-if a.windows and a.sharedLo is None: p.error("--windows needs --sharedLo")
 rows = [l.rstrip("\n").split("\t") for l in open(a.prefix + ".tsv")]
 hdr = [r for r in rows if r[0].startswith("#")]; rows = [r for r in rows if not r[0].startswith("#")]
 L = {r[0]: int(r[1]) for r in rows}; grp = {r[0]: r[2] for r in rows}
@@ -60,7 +57,10 @@ for l in gzip.open(a.unique, "rt"):
     if x == y: continue
     if x in cand: U[x][y] += 1
     if y in cand: U[y][x] += 1
-W = read_windows(a.windows) if a.windows else {}
+HUB = set()
+if a.hubCores:
+    for l in open(a.hubCores):
+        if l[0] != "#" and l.rstrip("\n").split("\t")[-1] == "yes": HUB.add(l.split("\t")[0])
 BL = collections.defaultdict(list)                           # chain -> [(start, end, other chain)], allele blocks of any length
 if a.blocks:
     for l in open(a.blocks):
@@ -97,7 +97,7 @@ for rnd in range(1, a.rounds + 1):
         new.append((c, d[0][2], d[0][1], r))
     if not new: break
     for c, ch, n, r in new:
-        if W and core_runs(W.get(c, ()), a.sharedLo, a.minCore):
+        if c in HUB:
             out.append((c, L[c], ch, "unassigned", "collapsed", n, r, rnd)); blocked.add(c); on[c] = ch; continue
         if BL and all(covered(c, g) >= a.redundant for g in groups_of[ch]):
             out.append((c, L[c], ch, "unassigned", "redundant", n, r, rnd)); blocked.add(c); on[c] = ch; continue

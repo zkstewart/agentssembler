@@ -20,7 +20,10 @@ def read_fasta(fileName):
 
 agpFile, fastaFile, outFile = sys.argv[1:4]
 seqs = {}
-for f in fastaFile.split(","): seqs.update(read_fasta(f))
+for f in fastaFile.split(","):
+    for k, v in read_fasta(f).items():
+        if k in seqs and seqs[k] != v: sys.exit(f"ERROR: {k} has different sequences in two FASTA files; a fill name was reused")
+        seqs[k] = v
 order, parts = [], {}
 for line in open(agpFile):
     if line.startswith("#"): continue

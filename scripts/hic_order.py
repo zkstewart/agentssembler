@@ -37,7 +37,7 @@ Output columns: group, rank, chain, orientation, length, links to group, orienta
 end_link (whether the junction with the previous chain has a link). The LLRs are the best alternative's
 loss in log-likelihood: small values mean Hi-C does not settle that chain's orientation or position.
 
-Usage: hic_order.py groups.tsv pairs.tsv.gz chains.fai out.tsv [--endLinks links.tsv]
+Usage: hic_order.py groups.tsv pairs.tsv.gz[,more.tsv.gz] chains.fai out.tsv [--endLinks links.tsv]
 '''
 import gzip, math, argparse, collections, sys, zlib
 import numpy as np
@@ -81,13 +81,12 @@ def main():
         c, n, g = l.rstrip().split("\t")
         if g != "unassigned": gr[g].append(c); of[c] = g
     within = []; P = collections.defaultdict(list)
-    with gzip.open(a.pairs, "rt") as fh:
-        for l in fh:
-            x, u, y, v = l.split("\t"); u = int(u); v = int(v)
-            if x == y: within.append(abs(u - v)); continue
-            if x in of and y in of and of[x] == of[y]:
-                if x < y: P[(x, y)].append((u, v))
-                else: P[(y, x)].append((v, u))
+    for l in (l for f in a.pairs.split(",") for l in gzip.open(f, "rt")):
+        x, u, y, v = l.split("\t"); u = int(u); v = int(v)
+        if x == y: within.append(abs(u - v)); continue
+        if x in of and y in of and of[x] == of[y]:
+            if x < y: P[(x, y)].append((u, v))
+            else: P[(y, x)].append((v, u))
     logp = decay_model(within)
     rng = np.random.default_rng(1)
     A = {}; W = {}

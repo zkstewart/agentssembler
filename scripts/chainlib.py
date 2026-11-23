@@ -17,6 +17,11 @@ def lift(P, u, x):
     for c, cs, a, b, st in P.get(u, ()):
         if a <= x < b: return c, (cs + x - a if st == "+" else cs + b - 1 - x)
     return None, None
+def lift_strand(P, u, x):
+    '''as lift, plus the unitig's strand in that chain: (chain, position, strand), or (None, None, None)'''
+    for c, cs, a, b, st in P.get(u, ()):
+        if a <= x < b: return c, (cs + x - a if st == "+" else cs + b - 1 - x), st
+    return None, None, None
 def stable_key(parts, c):
     '''A sort key for chain c that renumbering chains does not change: its unitig names, sorted, then any copy suffix (.gNN).
     parts: base chain -> [(unitig, strand), ...] from the chain AGP. Ties broken by this key give the same choice when a re-run

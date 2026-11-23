@@ -156,16 +156,18 @@ def r_group(w, c, s):
     HC = collections.defaultdict(list)
     for r in rows(f"{w}/10_groups/hub_cores.tsv"): HC[r[0]].append(r)
     if HC:
-        hc = sorted(HC.items(), key=lambda kv: -sum(int(r[6]) for r in kv[1]))
-        al.append(f"{len(hc)} chains classed single-copy hold a core of 2x unique reads (10_groups/hub_cores.tsv): " + ", ".join(f"{c} ({sum(int(r[6]) for r in v)} kb, {G.get(c, '?')})" for c, v in hc[:15])
-                  + (" ..." if len(hc) > 15 else "") + ". Each is a collapsed hub whose arms read 1x on MAPQ 0 reads; neither the shared class nor the rescue can see it. "
-                  "Unless a chain is already shared, break it at break_left/break_right, mark the core shared, and `reset 06_evidence --remap` in one round (D04, D06, D14).")
+        fmt = lambda kv: f"{kv[0]} ({sum(int(r[6]) for r in kv[1])} kb, {G.get(kv[0], '?')})"
+        hc = sorted(HC.items(), key=lambda kv: -sum(int(r[6]) for r in kv[1])); yes = [kv for kv in hc if any(r[-1] == "yes" for r in kv[1])]; no = [kv for kv in hc if kv not in yes]
+        if yes: al.append(f"{len(yes)} chains classed single-copy hold a breakable core of 2x unique reads (10_groups/hub_cores.tsv): " + ", ".join(map(fmt, yes[:15])) + (" ..." if len(yes) > 15 else "")
+                          + ". Each is a collapsed hub whose arms read 1x on MAPQ 0 reads. Unless a chain is already shared, break it at break_left/break_right, mark the core shared, and `reset 06_evidence --remap` in one round (D04, D06, D14).")
+        if no: al.append(f"{len(no)} chains classed single-copy hold a 2x unique-read core inside one unitig, which no D04 break can separate (10_groups/hub_cores.tsv): " + ", ".join(map(fmt, no[:15])) + (" ..." if len(no) > 15 else "")
+                         + ". Each chain's core is missing from one haplotype as placed. The choice is D14's: leave it on one haplotype, or mark the chain shared and duplicate its 1x arms; weigh the genes on each.")
     RS = [r for r in rows(f"{w}/10_groups/groups.rescued.tsv") if r[4] in ("collapsed", "redundant")]
     if RS:
         k = collections.defaultdict(list)
         for r in RS: k[r[4]].append(r[0])
         out.append("Rescue left unassigned (10_groups/groups.rescued.tsv): " + "; ".join(f"{x} {len(v)} ({', '.join(v[:10])}{' ...' if len(v) > 10 else ''})" for x, v in sorted(k.items()))
-                   + ". collapsed: a 2x unique-read core, both haplotypes, for D06 to break (10_groups/hub_cores.tsv). redundant: a near-copy of sequence every group already holds.")
+                   + ". collapsed: a breakable 2x unique-read core, both haplotypes, for D06 to break (10_groups/hub_cores.tsv). redundant: a near-copy of sequence every group already holds.")
     for f, lab in ((f"{w}/10_groups/rescue_preview.txt", "Rescue preview (hic_allele_rescue off; what it would place, in 10_groups/rescue_preview/)"), (f"{w}/10_groups/genes_placed.txt", "Genes in the groups")):
         if os.path.exists(f): out.append(f"{lab}: " + " ".join(open(f).read().split()))
     gp = f"{w}/10_groups/genes_placed.txt"

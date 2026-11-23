@@ -14,8 +14,8 @@ if [ ! -s 10_groups/groups.tsv ]; then python3 "$S/hic_group.py" 12_broken/links
 # When it is off, the same step runs on a copy (10_groups/rescue_preview/) so that D05 sees what turning it on would place:
 # that costs `reset 07_group`, since stages 05-06 made the pairs either way.
 RP=(12_broken/pairs.rescued.tsv.gz 12_broken/pairs.tsv.gz 10_groups/alleles.pairs.tsv 10_groups/chain_repeat.tsv --blocks 10_groups/alleles.blocks.tsv); RT=""
-# collapsed chains (a 2x unique-read core) get no haplotype; with collapsed sharing off there is no shared class to send them to
-collapsed && RP+=(--windows 11_ont_chains/depth.windows.tsv --sharedLo "$AS_SHARED_LO")
+# chains with a breakable 2x unique-read core get no haplotype; with collapsed sharing off there is no shared class to send them to
+collapsed && [ -s 10_groups/hub_cores.tsv ] && RP+=(--hubCores 10_groups/hub_cores.tsv)
 if hic_rescue; then
   [ -s 10_groups/groups.rescued.tsv ] || python3 "$S/rescue/rescue_groups.py" 10_groups/groups "${RP[@]}" | tee -a 10_groups/hic_group.log
   RT=10_groups/groups.rescued.tsv; GB=10_groups/groups.hic.tsv

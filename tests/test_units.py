@@ -94,6 +94,10 @@ class T(unittest.TestCase):
             open(f"{d}/a.agp", "w").write("s\t1\t4\t1\tW\ta\t1\t4\t+\ns\t5\t7\t2\tU\t3\tscaffold\tyes\tx\ns\t8\t11\t3\tW\tb\t1\t4\t-\n")
             r = run("agp_to_fasta.py", f"{d}/a.agp", f"{d}/u.fa", f"{d}/o.fa"); self.assertEqual(r.returncode, 0, r.stderr)
             self.assertEqual(open(f"{d}/o.fa").read(), ">s\nAACCNNNAACC\n")
+            # a fill name defined twice with different sequence (one pass's fill overwriting another's) must stop the build
+            open(f"{d}/f1.fa", "w").write(">rf_s_1\nAAAA\n"); open(f"{d}/f2.fa", "w").write(">rf_s_1\nCCCC\n")
+            r = run("agp_to_fasta.py", f"{d}/a.agp", f"{d}/u.fa,{d}/f1.fa,{d}/f2.fa", f"{d}/o.fa"); self.assertNotEqual(r.returncode, 0)
+            r = run("agp_to_fasta.py", f"{d}/a.agp", f"{d}/u.fa,{d}/f1.fa,{d}/f1.fa", f"{d}/o.fa"); self.assertEqual(r.returncode, 0, r.stderr)
     def test_group_edits_need_reason(self):
         with tempfile.TemporaryDirectory() as d:
             open(f"{d}/g.tsv", "w").write("#chain\tlength\tgroup\nc1\t10\tg01\nc2\t10\tg02\nc3\t10\tshared\n")
@@ -416,10 +420,18 @@ class T(unittest.TestCase):
             self.assertEqual(o.returncode, 0, o.stderr)
             F = {l.split("\t")[0]: l.rstrip("\n").split("\t") for l in open(f"{d}/o.tsv") if l[0] != "#"}
             self.assertEqual(sorted(F), ["A", "B"])
-            self.assertEqual(F["A"][4:7] + F["A"][10:], ["100000", "200000", "100", "100000", "200000", "inside"])
-            self.assertEqual(F["B"][10:], ["95000", "200000", "inside/unitig"])
+            self.assertEqual(F["A"][4:7] + F["A"][10:], ["100000", "200000", "100", ".", ".", "inside/inside", "no"])   # break_chain.py splits only between unitigs
+            self.assertEqual(F["B"][10:], ["95000", ".", "unitig/inside", "no"])
+            # E: the core's edges sit on unitig boundaries, so it is breakable
+            open(f"{d}/c.agp", "a").write("E\t1\t100000\t1\tW\tu5\t1\t100000\t+\nE\t100001\t200000\t2\tW\tu6\t1\t100000\t+\nE\t200001\t300000\t3\tW\tu7\t1\t100000\t+\n")
+            with open(f"{d}/w.tsv", "a") as o:
+                for i in range(30): o.write(f"E\t{i * 10000}\t{(i + 1) * 10000}\t{160 if 10 <= i < 20 else 80}\t{160 if 10 <= i < 20 else 20}\t0\n")
+            open(f"{d}/k.tsv", "a").write("E\t300000\t80\t0.3\t0.7\t0.00\tspecific\n")
+            run("review/hub_cores.py", f"{d}/w.tsv", f"{d}/c.agp", f"{d}/k.tsv", f"{d}/o.tsv", "--sharedLo", "129")
+            F = {l.split("\t")[0]: l.rstrip("\n").split("\t") for l in open(f"{d}/o.tsv") if l[0] != "#"}
+            self.assertEqual(F["E"][10:], ["100000", "200000", "unitig/unitig", "yes"])
     def test_rescue_collapsed_redundant(self):
-        # a1 (g1) and a2 (g2) anchor chromosome c1. x has a 2x unique-read core: collapsed. y is covered in both groups by short
+        # a1 (g1) and a2 (g2) anchor chromosome c1. x has a breakable 2x unique-read core: collapsed. y is covered in both groups by short
         # allele blocks (each under --minConflict): redundant. z is placed. w links only to x: it still finds c1 through x.
         with tempfile.TemporaryDirectory() as d:
             L = {"a1": 2000000, "a2": 2000000, "x": 300000, "y": 120000, "z": 200000, "w": 150000}
@@ -433,10 +445,8 @@ class T(unittest.TestCase):
             open(f"{d}/al.tsv", "w").write("#h\n")
             open(f"{d}/rep.tsv", "w").write("#h\n" + "".join(f"{c}\t{n}\t0.0\n" for c, n in L.items()))
             open(f"{d}/b.tsv", "w").write("#h\ny\t0\t40000\ta1\t5000\t45000\t0.0\t+\ny\t40000\t70000\ta1\t9000\t39000\t0.0\t+\ny\t0\t70000\ta2\t1000\t71000\t0.0\t+\n")
-            with open(f"{d}/w.tsv", "w") as o:
-                for c, n in L.items():
-                    for i in range(n // 10000): o.write(f"{c}\t{i * 10000}\t{(i + 1) * 10000}\t80\t{160 if c == 'x' and 10 <= i < 20 else 70}\t0\n")
-            o = run("rescue/rescue_groups.py", f"{d}/g", f"{d}/r.tsv.gz", f"{d}/u.tsv.gz", f"{d}/al.tsv", f"{d}/rep.tsv", "--windows", f"{d}/w.tsv", "--sharedLo", "129", "--blocks", f"{d}/b.tsv")
+            open(f"{d}/h.tsv", "w").write("#chain\n" + "x\t300000\tspecific\t80\t100000\t200000\t100\t160\t160\t0.25\t100000\t200000\tunitig/unitig\tyes\n")
+            o = run("rescue/rescue_groups.py", f"{d}/g", f"{d}/r.tsv.gz", f"{d}/u.tsv.gz", f"{d}/al.tsv", f"{d}/rep.tsv", "--hubCores", f"{d}/h.tsv", "--blocks", f"{d}/b.tsv")
             self.assertEqual(o.returncode, 0, o.stderr)
             C = {l.split("\t")[0]: (l.split("\t")[3], l.split("\t")[4]) for l in open(f"{d}/g.rescued.tsv") if l[0] != "#"}
             self.assertEqual(C["x"], ("unassigned", "collapsed")); self.assertEqual(C["y"], ("unassigned", "redundant"))

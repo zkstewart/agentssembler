@@ -52,7 +52,7 @@ PY
 fi
 # re-fill the current final AGP from raw reads, then map to the candidate with CIGARs for the audit
 cat $F/$AS_SAMPLE.final.fasta $F/$AS_SAMPLE.final.unplaced.fasta > $A/fill/in.fasta; "$AS_SAMTOOLS" faidx $A/fill/in.fasta
-RF=(--seqkit "$AS_SEQKIT" --minimap2 "$MM" --preset "$AS_RAW_PRESET"); AUD=(); REPORTS=()
+RF=(--seqkit "$AS_SEQKIT" --minimap2 "$MM" --preset "$AS_RAW_PRESET" --fillTag raw); AUD=(); REPORTS=()
 if collapsed; then
   python3 "$S/mask_shared.py" $F/$AS_SAMPLE.final.agp $A/fill/in.fasta $A/fill/target
   HAPS=$(haps_of $AGP)
