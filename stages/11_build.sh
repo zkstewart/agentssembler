@@ -9,3 +9,6 @@ if has_rows edits/accepted_tails.tsv; then BA+=(--tails edits/accepted_tails.tsv
 python3 "$S/build_scaffolds.py" "${BA[@]}" --out $T/$AS_SAMPLE.graph > $T/build.log
 cat $T/$AS_SAMPLE.graph.fasta $T/$AS_SAMPLE.graph.unplaced.fasta > $T/target.fasta
 "$AS_SAMTOOLS" faidx $T/target.fasta; "$AS_SAMTOOLS" faidx $T/$AS_SAMPLE.graph.fasta
+# Hi-C gaps a swap of two chains between homologs would close: usually the allele rescue calling against the graph (D10, D13)
+RS=(); [ -s 10_groups/groups.rescued.tsv ] && RS=(--rescued 10_groups/groups.rescued.tsv)
+python3 "$S/review/rescue_swaps.py" $T/$AS_SAMPLE.graph.junctions.tsv $D/end_links.tsv $D/graph.bridges.tsv $T/rescue_swaps.tsv "${RS[@]}" >> $T/build.log

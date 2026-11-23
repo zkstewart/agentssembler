@@ -28,4 +28,9 @@ Read `09_hic_map/rescue_signal.txt`. Its Hi-C-blind chains have an allele partne
 
 - Repeat chains are Hi-C-blind too (chain0091 on 292: 74% repeat). The rescue leaves chains over half repeat alone, so they do not count for it.
 - The rescue knows which chromosome, rarely which haplotype: most of its haplotype calls are `arbitrary` or `allele_of_arbitrary`. It also brings orientation risk in the rescued region: on 292 inverted homolog blocks rose from 9 to 14, mostly in rescued chr2 sequence. Say so at D13 and hand those regions over for Juicebox.
+- It leaves three kinds of chain unassigned, each named in `10_groups/groups.rescued.tsv`:
+  - `allele_in_every_group`: an allele of 50 kb or more in every group of the chromosome.
+  - `redundant`: allele blocks of any length cover half the chain or more in every group. 292's chain0288 was a 105 kb near-copy whose copies were each under 50 kb. Placed, it fell between a chain and its telomeric tip.
+  - `collapsed`: a 2x unique-read core, so the chain holds both haplotypes there. That is for D06 to break; no haplotype call fits.
+  Collapsed and redundant chains still count towards their chromosome, so chains rescued in later rounds can anchor on them.
 - Turned on later, it costs `reset 07_group` (from D05) or more.

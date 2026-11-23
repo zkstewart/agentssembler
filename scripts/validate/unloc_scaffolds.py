@@ -9,10 +9,15 @@ Haplotype, within a chromosome: allele pairs (--alleles; >= --minAllele bp align
   opposite_placed   an allele placed on one haplotype's scaffold sends the chain to the other
   arbitrary_pair    other allele sets are split heaviest pairs first, then the larger side goes to the haplotype with less unloc sequence:
                     the phase of the set is not known
-  copy_2x           no allele and about 2x haplotype depth: written to both haplotypes
+  copy_2x           about 2x haplotype depth (--copy2x) and no allele placed on a scaffold: written to both haplotypes. It holds both
+                    haplotypes collapsed, so its unloc alleles are its own fragments: they leave the phasing, and --purge drops them
+                    (292: chain0095, 618 kb at 1.98x, had gone to one haplotype as arbitrary_pair through three such fragments)
   arbitrary_single  no allele: the lighter haplotype
 Left unplaced (unloc.skipped.tsv): repeats (> --maxRepeat repeated 31-mers), chains with alleles placed on both haplotypes, and, with --purge f,
-the shorter of two chains on one haplotype that align over >= f of its length (overlapping fragments of one haplotype: these duplicate genes).
+the shorter of two chains on one haplotype that align over >= f of its length (overlapping fragments of one haplotype: these duplicate genes;
+a copy_2x chain is on both haplotypes).
+Allele conflicts: allele pairs that cannot all be split (an odd loop, A~B, B~C, A~C), counted once per pair; the weakest are overruled.
+Each is listed in unloc.conflicts.tsv. Collapsed chains, which align as alleles to both haplotypes' copies, are the usual cause.
 Measure the result with compleasm on each haplotype plus its unloc sequences (stage 15 does): adding the per-haplotype and unplaced
 tables does not work, because compleasm drops weaker copies only when a better one is in the same run (on one 292 build that sum gave
 D 3.4% where the run gave 2.0%).
@@ -86,30 +91,35 @@ def union(x, y, diff):
     rx, ry = find(x), find(y); px, py = parity(x), parity(y)
     if rx == ry: return (px ^ py) == diff
     par[ry] = rx; pty[ry] = px ^ py ^ diff; return True
-out_rows, conflicts = [], collections.Counter()
+out_rows, conflicts, conflict_rows = [], collections.Counter(), []
 for k in sorted(set(chrom.values())):
     h1, h2 = sorted(haps_of[k]); H = {h1: "H1", h2: "H2"}
     par.clear(); pty.clear(); union("H1", "H2", 1)
     cs = sorted((c for c in chrom if chrom[c] == k), key=lambda c: -L[c])
+    twox = {c for c in cs if depth.get(c, 0) >= a.copy2x * a.hap and not any(o in place for o in al[c])}
     edges = []
     for c in cs:
+        if c in twox: continue
         for o, b in al[c].items():
-            if chrom.get(o) == k: edges.append((b, c, o))
+            if o in twox: continue
+            if chrom.get(o) == k:
+                if c < o: edges.append((b, c, o))                          # each allele pair once
             elif o in place: edges += [(10**12 + b, c, H[sc]) for sc in place[o] if sc in H]   # placed alleles bind first
     for b, x, y in sorted(edges, reverse=True):
-        if not union(x, y, 1): conflicts[k] += 1
+        if not union(x, y, 1): conflicts[k] += 1; conflict_rows.append((k, x, y, b % 10**12, "placed" if b >= 10**12 else "unplaced"))
     for c in cs:
         if len({sc for o in al[c] if o in place for sc in place[o] if sc in H}) == 2: skip[c] = "allele placed on both haplotypes"
     cs = [c for c in cs if c not in skip]
     hbp = collections.Counter(); tied = find("H1"); sets = collections.defaultdict(list); side = {}
-    for c in cs: sets[find(c)].append(c)
+    for c in cs:
+        if c in twox: side[c] = ("both", "copy_2x")
+        else: sets[find(c)].append(c)
     for r, mem in sorted(sets.items(), key=lambda t: (-sum(L[c] for c in t[1]), t[1][0])):
         if r == tied:
             for c in mem: side[c] = (h1 if parity(c) == parity("H1") else h2, "opposite_placed")
             continue
         if len(mem) == 1 and not any(chrom.get(o) == k for o in al[mem[0]]):
             c = mem[0]
-            if depth.get(c, 0) >= a.copy2x * a.hap: side[c] = ("both", "copy_2x"); continue
             t = min((h1, h2), key=lambda h: (hbp[h], h)); side[c] = (t, "arbitrary_single"); hbp[t] += L[c]; continue
         a0 = sum(L[c] for c in mem if parity(c) == 0); a1 = sum(L[c] for c in mem if parity(c) == 1)
         light, heavy = sorted((h1, h2), key=lambda h: (hbp[h], h)); big = 0 if a0 >= a1 else 1
@@ -119,7 +129,7 @@ for k in sorted(set(chrom.values())):
         for c in sorted(cs, key=lambda c: (L[c], c)):
             if side[c][0] == "both": continue
             for o, b in sorted(alAll[c].items()):
-                if o != c and o in side and o not in skip and side[o][0] == side[c][0] and L[o] >= L[c] and b >= a.purge * L[c]:
+                if o != c and o in side and o not in skip and side[o][0] in (side[c][0], "both") and L[o] >= L[c] and b >= a.purge * L[c]:
                     skip[c] = f"overlaps {o} on the same haplotype ({b} bp aligned)"; break
         cs = [c for c in cs if c not in skip]
     for c in cs:
@@ -139,6 +149,9 @@ with open(f"{a.out}/{sample}.unplaced_rest.fasta", "w") as fo:
 with open(f"{a.out}/{sample}.unloc.skipped.tsv", "w") as fo:
     fo.write("#chain\tlength\treason\n")
     for c, r in sorted(skip.items()): fo.write(f"{c}\t{L.get(c, 0)}\t{r}\n")
+with open(f"{a.out}/{sample}.unloc.conflicts.tsv", "w") as fo:
+    fo.write("#chromosome\tchain\tallele_or_haplotype\taligned_bp\tallele_is\n")
+    for k, x, y, b, kind in conflict_rows: fo.write(f"{k}\t{x}\t{y}\t{b}\t{kind}\n")
 ph = collections.Counter(); bp = collections.Counter()
 for r in out_rows: ph[r[3]] += 1; bp[r[3]] += r[2]
 print(f"Unlocalized: {len(used)} chains, {sum(L[c] for c in used) / 1e6:.2f} Mb as {len(out_rows)} sequences ({a.out}/{sample}.unloc.fasta); "

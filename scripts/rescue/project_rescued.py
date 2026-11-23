@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
 # If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
-'''Rescued Hi-C pairs for ordering (settings.hic_allele_rescue). Only pairs touching a chain placed by rescue_groups.py are used,
+'''Stage 08: rescued Hi-C pairs for ordering (settings.hic_allele_rescue). Only pairs touching a chain placed by rescue_groups.py are used,
 so the rest of the build orders on unique pairs as before. An allele-ambiguous end is moved to the chain or allele (alleles.blocks.tsv,
 position carried through the aligned block) that lies in the group of the pair's other end; a pair whose ends cannot be put in one
 group is dropped. Ordering then reads these pairs with the unique ones. Two homologs are assumed collinear here, which a

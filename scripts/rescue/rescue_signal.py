@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
 # If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
-'''Does grouping need the Hi-C allele rescue (settings.hic_allele_rescue)? Read at D04, before any grouping is built on this Hi-C.
+'''Stage 05, for D04: does grouping need the Hi-C allele rescue (settings.hic_allele_rescue)? Read at D04, before any grouping is built on this Hi-C.
 Where two haplotypes are near-identical, most Hi-C reads on them have MAPQ 0 and stage 05 keeps none of their pairs, so Hi-C
 cannot group those chains and they end unassigned. Per chain of >= --minLen with an allele partner: unique pairs per Mb (both
 ends MAPQ >= 1, stage 05's pairs.tsv.gz) and allele-ambiguous ends per Mb (hic_rescue_pairs.py). A chain is Hi-C-blind when its

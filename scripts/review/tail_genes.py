@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
 # If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
-'''Genes on each tail candidate, from compleasm on the unitigs (stage 01), for D16. genes: complete genes with a copy on the tail's
+'''Stage 10, for D16: genes on each tail candidate, from compleasm on the unitigs (stage 01). genes: complete genes with a copy on the tail's
 chains. short: those of them whose copies on placed chains of the pre-build (placement status placed*) number under the ploidy, the
 genes this tail would add a missing copy of. A tail with short genes is worth the tests; it is not a reason to skip them, and a tail
 that fails them still keeps its genes in the assembly as unlocalized sequence (stage 15, unloc/).
