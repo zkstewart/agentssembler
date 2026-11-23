@@ -10,8 +10,9 @@ Each chain has a copy target from its depth outside the graph overlaps at both e
 rounded, from 2 to --ploidy. At ploidy 2 that is 1 or 2. A chain with no sequence outside its overlaps carries no weight. Junctions sharing candidate chains are solved together. A solution
 scores + interior bp for a chain used as often as its target and - interior bp per use above the target. Ties go to the most
 observations, counting reads through the path's joins and Hi-C pairs between its chains and the group's own chains, but only when
-they decide (>= --ratio times and >= --minObs more than the alternative's): among solutions the best does not beat by that much, the
-first by unitig names wins (chainlib.stable_key). Counts below that bar move with each read mapping, and chain names change when
+they decide (>= --ratio times and >= --minObs more than the alternative's). Where two solutions have the same reads (homolog junctions
+swapping arms see the same paths), the reads cancel and Hi-C alone is compared, as for the labels below. Among solutions no other
+decides against, the first by unitig names wins (chainlib.stable_key, chainlib.first_undecided). Counts below that bar move with each read mapping, and chain names change when
 connectors are renumbered; the choice is arbitrary either way, and this way a re-run makes the same one.
 
 A junction's label records what settled its arm:
@@ -27,7 +28,7 @@ Usage: assign_arms2.py --order order.tsv --bridges graph.bridges.tsv --ranked ch
          --report report.tsv --depth depth.tsv --unused unused.tsv --twoX X --hap H --ploidy N --minAllele A --maxPair M
 '''
 import argparse, collections, gzip, itertools
-from chainlib import stable_end, stable_path
+from chainlib import first_undecided, stable_end, stable_path
 ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
 for x in ("order", "bridges", "ranked", "groups", "links", "agp", "gfa", "paf", "out", "report", "depth", "unused"):
     ap.add_argument("--" + x, required=True)
@@ -152,6 +153,10 @@ def score(sol):
     return s
 def key(sol): return (score(sol), sum(obs(j, p) for j, p in sol.items()))
 def decided(o0, o1): return o0 >= a.minObs + o1 and o0 >= a.ratio * max(o1, 1)
+# reads that are the same on both sides of a comparison cannot tell it apart: two homolog junctions swapping arms see the same paths, so their
+# reads cancel, and added to Hi-C they only dilute its ratio. Such comparisons are judged on Hi-C alone. x, y: (reads, hic).
+def tie_decided(x, y): return decided(x[1], y[1]) if x[0] == y[0] else decided(x[0] + x[1], y[0] + y[1])
+def rh(sol): return (sum(reads(j, p) for j, p in sol.items()), sum(hic(j, p) for j, p in sol.items()))
 
 chosen = {}; stats = collections.Counter(); searched = collections.Counter()
 for root, js in comps.items():
@@ -160,9 +165,9 @@ for root, js in comps.items():
     for o in opts: n *= len(o)
     if n <= a.maxCombos:
         searched["exhaustive"] += 1
-        ks = [(key(t), t) for t in (dict(zip(js, c)) for c in itertools.product(*opts))]
-        top = max(k[0] for k, t in ks); bo = max(k[1] for k, t in ks if k[0] == top)
-        best = next(t for k, t in ks if k[0] == top and not decided(bo, k[1]))   # first in unitig-name order: opts are sorted
+        ks = [(score(t), t) for t in (dict(zip(js, c)) for c in itertools.product(*opts))]
+        top = max(k for k, t in ks); tops = [(rh(t), t) for k, t in ks if k == top]
+        best = first_undecided(tops, decided)    # by the rule the labels use; first in unitig-name order: opts are sorted
     else:                                        # local search from each junction's first path
         searched["local"] += 1
         best = {j: o[0] for j, o in zip(js, opts)}; moved = True
@@ -193,9 +198,6 @@ for j, p in chosen.items():
                 if q2 == chosen[k]: continue
                 t2 = dict(t); t2[k] = q2
                 if score(t2) >= here: ties.append(((reads(j, p) + reads(k, chosen[k]), hic(j, p) + hic(k, chosen[k])), (reads(j, q) + reads(k, q2), hic(j, q) + hic(k, q2))))
-    # reads that are the same on both sides of a tie cannot tell it apart: two homolog junctions swapping arms see the same paths, so their
-    # reads cancel, and added to Hi-C they only dilute its ratio. Such ties are judged on Hi-C alone.
-    tie_decided = lambda x, y: decided(x[1], y[1]) if x[0] == y[0] else decided(x[0] + x[1], y[0] + y[1])
     if not ties: labels[j] = "coverage"
     elif all(tie_decided(x, y) for x, y in ties): labels[j] = "supported"
     else: labels[j] = "arbitrary"

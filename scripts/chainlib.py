@@ -61,3 +61,11 @@ def core_runs(wins, lo, minRun):
         else: cur = None
     med = lambda v: sorted(v)[len(v) // 2]
     return [(a, b, med(us), med(ts)) for a, b, us, ts in runs if b - a >= minRun]
+def first_undecided(tops, decided):
+    '''tops: [((reads, hic), solution), ...] in preference order. The first solution that no other decides against, where reads the same
+    on both sides cancel (the comparison is then on Hi-C alone) and otherwise reads + Hi-C are compared. Against one with the same reads only
+    the most Hi-C matters; against the rest only the most reads + Hi-C. The solution with the most reads + Hi-C is never decided against.'''
+    mh, mt = {}, {}
+    for (r, h), _ in tops: mh[r] = max(mh.get(r, h), h); mt[r] = max(mt.get(r, r + h), r + h)
+    def beaten(r, h): return decided(mh[r], h) or any(decided(v, r + h) for r2, v in mt.items() if r2 != r)
+    return next(t for (r, h), t in tops if not beaten(r, h))
