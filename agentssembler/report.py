@@ -1,7 +1,7 @@
 # This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
 # If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """One short report per stage: the numbers to look at, alarms, and what to decide. Reports describe; they never decide."""
-import collections, glob, gzip, json, os, re, statistics as st
+import math, collections, glob, gzip, json, os, re, statistics as st
 from .stages import BY_ID, GUIDES
 
 def rows(p, comment="#"):
@@ -28,20 +28,24 @@ def r_inputs(w, c, s):
     return out, []
 def r_depth(w, c, s):
     L = fai(f"{w}/00_inputs/unitigs.fasta.fai")
+    C = [(r[0], float(r[2]), float(r[6])) for r in rows(f"{w}/04_copynumber/class_depth.tsv")]
+    # one scale for all three histograms, from the data: the top bin (cap, and everything above) sits past 1.5 x the 99th percentile of
+    # primary depth, at least 200x, in about 60 bins at most. A fixed 200x cap held 2x of a sample at 84x per haplotype in one bin.
+    q = sorted(p for _, p, _c in C)[int(0.99 * (len(C) - 1))] if C else 0
+    cap = max(200, 4 * math.ceil(1.5 * q / 4)); bw = 4 * max(1, math.ceil(cap / 240)); cap = bw * math.ceil(cap / bw)
     def hist(title, pairs):
         H = collections.Counter()
-        for d, n in pairs: H[min(int(d // 4) * 4, 200)] += n
-        t = sum(H.values()) or 1; o = [f"{title} ({Mb(t)}), percentage per 4x bin:", "```"]
+        for d, n in pairs: H[min(int(d // bw) * bw, cap)] += n
+        t = sum(H.values()) or 1; o = [f"{title} ({Mb(t)}), percentage per {bw}x bin (the last bin holds {cap}x and above):", "```"]
         o += [f"{k:4d}x {100 * H[k] / t:5.1f}% {'#' * int(100 * H[k] / t)}" for k in sorted(H) if H[k] / t >= 0.002]
         return o + ["```"], max(H, key=H.get) if H else 0
-    C = [(r[0], float(r[2]), float(r[6])) for r in rows(f"{w}/04_copynumber/class_depth.tsv")]
     out = []
     o, _ = hist("Primary depth, all unitigs", [(p, 10000) for _, p, _c in C]); out += o
     long = min(1000000, n50(L.values())) if L else 1000000      # a genome whose unitigs never reach 1 Mb still needs a histogram of its long ones
     o, peak = hist(f"Primary depth, unitigs of {'1 Mb' if long == 1000000 else f'{long / 1e3:.0f} kb (their N50)'} or more", [(p, 10000) for u, p, _c in C if L.get(u, 0) >= long]); out += o
     o, _ = hist("Class depth, adding near-identical copies, all unitigs", [(k, 10000) for _, _p, k in C]); out += o
     # Everything below uses the main peak in long unitigs, and only describes. The peak is a candidate for hap_depth, not a decision.
-    h = peak + 2 if peak else 0
+    h = peak + bw // 2 if peak else 0
     by = collections.defaultdict(list)
     for u, p, k in C: by[u].append((p, k))
     M = {u: (st.median(x[0] for x in v), st.median(x[1] for x in v)) for u, v in by.items()}
