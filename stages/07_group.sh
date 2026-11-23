@@ -13,7 +13,7 @@ if [ ! -s 10_groups/groups.tsv ]; then python3 "$S/hic_group.py" 12_broken/links
 # settings.hic_allele_rescue: chains left unassigned, placed by allele-ambiguous Hi-C; calls in 10_groups/groups.rescued.tsv (D04, D05).
 # When it is off, the same step runs on a copy (10_groups/rescue_preview/) so that D05 sees what turning it on would place:
 # that costs `reset 07_group`, since stages 05-06 made the pairs either way.
-RP=(12_broken/pairs.rescued.tsv.gz 12_broken/pairs.tsv.gz 10_groups/alleles.pairs.tsv 10_groups/chain_repeat.tsv --blocks 10_groups/alleles.blocks.tsv); RT=""
+RP=(12_broken/pairs.rescued.tsv.gz 12_broken/pairs.tsv.gz 10_groups/alleles.pairs.tsv 10_groups/chain_repeat.tsv --blocks 10_groups/alleles.blocks.tsv --endLinks 10_groups/end_links.tsv); RT=""
 # chains with a breakable 2x unique-read core get no haplotype; with collapsed sharing off there is no shared class to send them to
 collapsed && [ -s 10_groups/hub_cores.tsv ] && RP+=(--hubCores 10_groups/hub_cores.tsv)
 if hic_rescue; then

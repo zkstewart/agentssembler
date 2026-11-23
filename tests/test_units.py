@@ -575,6 +575,22 @@ class T(unittest.TestCase):
             shutil.copy(f"{d}/g.hic.tsv", f"{d}/g.tsv")
             o = run("rescue/rescue_groups.py", f"{d}/g", f"{d}/r.tsv.gz", f"{d}/u.tsv.gz", f"{d}/al.tsv", f"{d}/rep.tsv")
             self.assertNotIn("collapsed", open(f"{d}/g.rescued.tsv").read())
+    def test_rescue_graph_tiebreak(self):
+        # x has rescued links to chromosome c1 and no unique Hi-C to either haplotype: a graph link to a2 alone decides it (call graph);
+        # without --endLinks, or with links to both haplotypes, it is arbitrary
+        with tempfile.TemporaryDirectory() as d:
+            open(f"{d}/g.chroms.tsv", "w").write("#group\tchrom\ng1\tc1\ng2\tc1\n"); open(f"{d}/al.tsv", "w").write("#h\n")
+            open(f"{d}/rep.tsv", "w").write("#h\na1\t2000000\t0.0\na2\t2000000\t0.0\nx\t300000\t0.0\n")
+            with gzip.open(f"{d}/r.tsv.gz", "wt") as o: o.write("".join(f"x\t1\t{'a1' if i % 2 else 'a2'}\t1\n" for i in range(40)))
+            with gzip.open(f"{d}/u.tsv.gz", "wt") as o: o.write("")
+            def call(links):
+                open(f"{d}/g.tsv", "w").write("#chain\tlength\tgroup\na1\t2000000\tg1\na2\t2000000\tg2\nx\t300000\tunassigned\n")
+                open(f"{d}/el.tsv", "w").write("#end_a\tend_b\treads\tq_gap_median\tgraph_overlap\n" + links)
+                r = run("rescue/rescue_groups.py", f"{d}/g", f"{d}/r.tsv.gz", f"{d}/u.tsv.gz", f"{d}/al.tsv", f"{d}/rep.tsv", "--endLinks", f"{d}/el.tsv"); self.assertEqual(r.returncode, 0, r.stderr)
+                return {l.split("\t")[0]: tuple(l.split("\t")[3:5]) for l in open(f"{d}/g.rescued.tsv") if l[0] != "#"}["x"]
+            self.assertEqual(call("x+\ta2-\t0\tNA\t9000\n"), ("g2", "graph"))
+            self.assertEqual(call("x+\ta2-\t0\tNA\t9000\nx-\ta1+\t0\tNA\t9000\n")[1], "arbitrary")
+            self.assertEqual(call("x+\ta2-\t1\tNA\t900\n")[1], "arbitrary")                     # too weak a link
     def test_rescue_swaps(self):
         # c_h1: Z - A | gap | Y - B; c_h2: Z2 - P - X - Q. A links only X; P, B and Q link both X and Y: swapping X and Y closes the gap.
         with tempfile.TemporaryDirectory() as d:

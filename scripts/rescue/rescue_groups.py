@@ -6,8 +6,10 @@ Chromosome: links from rescued pairs (hic_rescue_pairs.py) to chains already in 
 best chromosome needs >= --minLinks links and >= --ratio times the next, as hic_group.py's step 3. Rounds repeat with the chains placed
 so far, so a block of chains can follow its anchored end inward.
 Haplotype, in this order: a group holding an allele of the chain is excluded (call allele); else unique Hi-C pairs to each group,
->= --ratio times the other (call hic); else the group with less sequence placed by this script so far (call arbitrary: the phase is not
-known, as with arbitrary arms at D15). Longer chains go first, so an allele pair is split between the groups.
+>= --ratio times the other (call hic); else, with --endLinks, the one group the chain has graph links to (>= 5 kb overlap or >= 3 reads,
+as make_order_links.py; call graph: a tie-break only, since near-identical alleles can both link, which is why a link to every group
+decides nothing and a confident Hi-C call is never overruled); else the group with less sequence placed by this script so far (call
+arbitrary: the phase is not known, as with arbitrary arms at D15). Longer chains go first, so an allele pair is split between the groups.
 Call allele_of_arbitrary: the excluding allele was itself placed arbitrarily by this script, so the call carries no phase evidence.
 A chain with an allele in every group of its chromosome is reported once (allele_in_every_group) and left unassigned.
 Two more calls leave a chain unassigned, tested before the haplotype, once its chromosome is known:
@@ -21,13 +23,13 @@ Two more calls leave a chain unassigned, tested before the haplotype, once its c
              between a chain and its telomeric tip). Tested when the chain's chromosome is found, and again after the last round.
 Shared and high-repeat chains are left alone. Rewrites prefix.tsv (the original is kept as prefix.hic.tsv) and writes prefix.rescued.tsv.
 Usage: rescue_groups.py groups_prefix rescued_pairs.tsv.gz unique_pairs.tsv.gz alleles.pairs.tsv chain_repeat.tsv
-       [--hubCores hub_cores.tsv] [--blocks alleles.blocks.tsv]'''
+       [--hubCores hub_cores.tsv] [--blocks alleles.blocks.tsv] [--endLinks end_links.tsv]'''
 import argparse, collections, gzip, os, shutil, sys
 p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
 for x in "prefix rescued unique alleles repeat".split(): p.add_argument(x)
 p.add_argument("--minLinks", type=int, default=10); p.add_argument("--ratio", type=float, default=2.0); p.add_argument("--rounds", type=int, default=5)
 p.add_argument("--minConflict", type=int, default=50000); p.add_argument("--minConflictFrac", type=float, default=0.1); p.add_argument("--maxRepeat", type=float, default=0.5)
-p.add_argument("--hubCores"); p.add_argument("--blocks"); p.add_argument("--redundant", type=float, default=0.5)
+p.add_argument("--hubCores"); p.add_argument("--blocks"); p.add_argument("--endLinks"); p.add_argument("--redundant", type=float, default=0.5)
 a = p.parse_args()
 rows = [l.rstrip("\n").split("\t") for l in open(a.prefix + ".tsv")]
 hdr = [r for r in rows if r[0].startswith("#")]; rows = [r for r in rows if not r[0].startswith("#")]
@@ -61,6 +63,14 @@ HUB = set()
 if a.hubCores:
     for l in open(a.hubCores):
         if l[0] != "#" and l.rstrip("\n").split("\t")[-1] == "yes": HUB.add(l.split("\t")[0])
+GL = collections.defaultdict(set)                            # candidate -> chains it has a graph link to (end_links.tsv)
+if a.endLinks:
+    for l in open(a.endLinks):
+        if l[0] == "#": continue
+        s = l.rstrip("\n").split("\t"); x, y = s[0][:-1], s[1][:-1]
+        if x != y and (int(s[4]) >= 5000 or int(s[2]) >= 3):
+            if x in cand: GL[x].add(y)
+            if y in cand: GL[y].add(x)
 BL = collections.defaultdict(list)                           # chain -> [(start, end, other chain)], allele blocks of any length
 if a.blocks:
     for l in open(a.blocks):
@@ -109,7 +119,9 @@ for rnd in range(1, a.rounds + 1):
             call = "allele_of_arbitrary" if ex and all(how.get(x) in ("arbitrary", "allele_of_arbitrary") for x in ex) else "allele"
         if len(gs) > 1:
             u = sorted(((sum(m for o, m in U[c].items() if grp.get(o) == g), g) for g in gs), reverse=True)
+            gl = [g for g in gs if any(grp.get(x) == g for x in GL[c])]
             if u[0][0] >= a.minLinks and u[0][0] >= a.ratio * max(u[1][0], 1): gs, call = [u[0][1]], "hic"
+            elif len(gl) == 1: gs, call = gl, "graph"
             else: gs, call = [min(gs, key=lambda g: (placed_bp[g], g))], "arbitrary"
         grp[c] = gs[0]; placed_bp[gs[0]] += L[c]; how[c] = call; out.append((c, L[c], ch, gs[0], call, n, r, rnd))
 if BL:   # again once every round is done: a copy placed after the chain can make it redundant. Shortest first, and a chain unassigned here
