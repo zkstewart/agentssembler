@@ -355,6 +355,9 @@ def r_validate(w, c, s):
     cg = f"{V}/compleasm/complement.txt"
     if os.path.exists(cg): out.append(open(cg).read().strip().replace("\n", "\n\n"))
     al += completeness_alarms(V, c)
+    sc = f"{V}/juicebox/out_JBAT.scale"
+    if os.path.exists(sc) and open(sc).read().strip() not in ("", "1"):
+        al.append(f"The Juicebox map is scaled by {open(sc).read().strip()} (assembly over 2.1 Gb; 16_validate/juicebox/out_JBAT.scale). Say so in the hand-over, and check that scaffold edges fall where the .assembly puts them: a scaled map has not been tried here.")
     ut = f"{V}/unloc/unloc.txt"
     if os.path.exists(ut): out.append("Unlocalized scaffolds, part of the assembly handed over (leaving them out is the user's call, D13): " + open(ut).read().strip().replace("\n", "\n\n"))
     ct = f"{V}/maps/specific/crosstalk.tsv"

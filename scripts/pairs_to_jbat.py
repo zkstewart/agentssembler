@@ -5,6 +5,9 @@
 Juicebox assembly-mode input from pairs already lifted to scaffold coordinates. `juicer pre` works from a BAM on components, and a unitig
 placed in two haplotypes cannot be told apart there, so each AGP sequence line becomes its own component and pairs are placed directly.
 Writes prefix.assembly, prefix.components.tsv (component to scaffold, span, unitig, strand), prefix.txt (for juicer_tools pre) and prefix.sizes.
+Juicebox stores positions in 32 bits, so an assembly over 2,147,483,647 bp is scaled: positions in prefix.txt and the size in prefix.sizes
+are divided by the smallest whole factor that fits, written to prefix.scale (1 otherwise; .assembly keeps true lengths, as 3D-DNA and YaHS do).
+A scaled map has not been tried here: check in Juicebox that scaffold edges fall where the .assembly puts them.
 Usage: pairs_to_jbat.py final.agp pairs.scaffold.tsv.gz prefix
 '''
 import sys, gzip, bisect, collections
@@ -27,7 +30,8 @@ with open(pre + ".assembly", "w") as o:
             o.write(f">{nm} {i} {L}\n"); starts.append((a, b, pos)); pos += L
         off[sc] = starts
     for sc, v in Sc.items(): o.write(" ".join(str(x[2]) for x in v) + "\n")
-open(pre + ".sizes", "w").write(f"assembly {pos}\n")
+MAXI = 2 ** 31 - 1; scale = -(-pos // MAXI)            # smallest whole factor that brings the assembly under the 32-bit limit
+open(pre + ".sizes", "w").write(f"assembly {-(-pos // scale)}\n"); open(pre + ".scale", "w").write(f"{scale}\n")
 st = {k: [x[0] for x in v] for k, v in off.items()}
 def lift(c, p):
     v = off.get(c)
@@ -42,5 +46,6 @@ with open(pre + ".txt", "w") as o:
         a, x, b, y = l.rstrip("\n").split("\t"); u = lift(a, int(x)); w = lift(b, int(y))
         if u is None or w is None: d += 1; continue
         if u > w: u, w = w, u
+        if scale > 1: u, w = -(-u // scale), -(-w // scale)
         o.write(f"0 assembly {u} 0 0 assembly {w} 1\n"); k += 1
-print("components", n, "assembly bp", pos, "pairs", k, "dropped", d)
+print("components", n, "assembly bp", pos, "scale", scale, "pairs", k, "dropped", d)
