@@ -42,11 +42,19 @@ Usage: hic_order.py groups.tsv pairs.tsv.gz[,more.tsv.gz] chains.fai out.tsv [--
 import gzip, math, argparse, collections, sys, zlib
 import numpy as np
 
-def decay_model(pairs_within, bg=1e-3):
+def decay_model(pairs_within, bg=1e-3, lengths=None):
+    """log P(contact | distance), up to a constant, from pairs within chains. With lengths (the chains the pairs came from), each bin is
+    divided by the bp of chain at which that distance can be seen, sum(max(L - d, 0)): near the chain lengths few positions are that
+    far apart, so raw counts fall away and understate long-range contact."""
     d = np.asarray(pairs_within, dtype=float); d = d[d > 0]
     edges = np.logspace(2, 9, 141)
     h, _ = np.histogram(d, bins=edges)
     w = np.diff(edges); dens = (h + 0.5) / w / max(h.sum(), 1)
+    if lengths is not None:
+        Ls = np.sort(np.asarray(lengths, dtype=float)); cs = np.concatenate(([0.0], np.cumsum(Ls[::-1])))[::-1]   # cs[i] = sum of Ls[i:]
+        mid = np.sqrt(edges[:-1] * edges[1:]); i = np.searchsorted(Ls, mid, side="right")
+        opp = cs[i] - mid * (len(Ls) - i)                                           # sum over chains longer than mid of (L - mid)
+        dens = dens / np.maximum(opp, 1.0)
     c = np.sqrt(edges[:-1] * edges[1:]); lc, ld = np.log(c), np.log(dens)
     # beyond the observed range, extend with the slope of the last well-populated decade
     ok = np.where(h >= 50)[0]; last = ok[-1]; first = ok[max(0, len(ok) - 20)]
@@ -73,6 +81,7 @@ def main():
     p.add_argument("--minLen", type=int, default=20000)
     p.add_argument("--minPairs", type=int, default=10)
     p.add_argument("--maxPairs", type=int, default=3000, help="subsample per chain pair (scaled back in the score)")
+    p.add_argument("--decayNorm", action="store_true", help="divide the distance histogram by the bp at which each distance can be seen")
     a = p.parse_args()
     L = { l.split("\t")[0]: int(l.split("\t")[1]) for l in open(a.fai) }
     gr = collections.defaultdict(list); of = {}
@@ -80,14 +89,14 @@ def main():
         if l[0] == "#": continue
         c, n, g = l.rstrip().split("\t")
         if g != "unassigned": gr[g].append(c); of[c] = g
-    within = []; P = collections.defaultdict(list)
+    within = []; wchains = set(); P = collections.defaultdict(list)
     for l in (l for f in a.pairs.split(",") for l in gzip.open(f, "rt")):
         x, u, y, v = l.split("\t"); u = int(u); v = int(v)
-        if x == y: within.append(abs(u - v)); continue
+        if x == y: within.append(abs(u - v)); wchains.add(x); continue
         if x in of and y in of and of[x] == of[y]:
             if x < y: P[(x, y)].append((u, v))
             else: P[(y, x)].append((v, u))
-    logp = decay_model(within)
+    logp = decay_model(within, lengths=[L[c] for c in wchains] if a.decayNorm else None)
     rng = np.random.default_rng(1)
     A = {}; W = {}
     for k, v in P.items():

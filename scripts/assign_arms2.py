@@ -141,9 +141,10 @@ for j, (g, ps) in J.items():
 comps = collections.defaultdict(list)
 for j in J: comps[find(j)].append(j)
 
-def obs(j, p):
-    x, y = j; g = J[j][0]; r = rank.get((bend(x), bend(y), p), (0, 0, 0))
-    return r[0] + r[1] + 5 * r[2] + sum(lk[z[:-1]].get(m, 0) for z in p for m in members[g])
+def reads(j, p):
+    x, y = j; r = rank.get((bend(x), bend(y), p), (0, 0, 0)); return r[0] + r[1] + 5 * r[2]
+def hic(j, p): g = J[j][0]; return sum(lk[z[:-1]].get(m, 0) for z in p for m in members[g])
+def obs(j, p): return reads(j, p) + hic(j, p)
 def score(sol):
     n = collections.Counter(z[:-1] for p in sol.values() for z in p); s = 0
     for c, k in n.items():
@@ -186,14 +187,17 @@ for j, p in chosen.items():
     for q in ps:
         if q == p: continue
         t = dict(chosen); t[j] = q
-        if score(t) >= here: ties.append((obs(j, p), obs(j, q)))
+        if score(t) >= here: ties.append(((reads(j, p), hic(j, p)), (reads(j, q), hic(j, q))))
         for k in others:
             for q2 in J[k][1]:
                 if q2 == chosen[k]: continue
                 t2 = dict(t); t2[k] = q2
-                if score(t2) >= here: ties.append((obs(j, p) + obs(k, chosen[k]), obs(j, q) + obs(k, q2)))
+                if score(t2) >= here: ties.append(((reads(j, p) + reads(k, chosen[k]), hic(j, p) + hic(k, chosen[k])), (reads(j, q) + reads(k, q2), hic(j, q) + hic(k, q2))))
+    # reads that are the same on both sides of a tie cannot tell it apart: two homolog junctions swapping arms see the same paths, so their
+    # reads cancel, and added to Hi-C they only dilute its ratio. Such ties are judged on Hi-C alone.
+    tie_decided = lambda x, y: decided(x[1], y[1]) if x[0] == y[0] else decided(x[0] + x[1], y[0] + y[1])
     if not ties: labels[j] = "coverage"
-    elif all(decided(x, y) for x, y in ties): labels[j] = "supported"
+    elif all(tie_decided(x, y) for x, y in ties): labels[j] = "supported"
     else: labels[j] = "arbitrary"
     stats[labels[j]] += 1
 stats["only"] = sum(1 for v in labels.values() if v == "only")

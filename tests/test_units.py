@@ -275,6 +275,12 @@ class T(unittest.TestCase):
             self.assertEqual([x[5] for x in o], ["a", "10", "b", "c"])
             self.assertEqual(o[0][6:8], ["1", "100"]); self.assertEqual(o[2][6:8], ["11", "100"]); self.assertEqual(o[3][6:8], ["1", "100"])
             self.assertEqual(o[-1][2], str(100 + 10 + 90 + 100))
+            # the same scaffold written the other way round (edits/flip.txt) after pre.agp: the join is still found and the same unitig ends restored
+            w(f"{d}/cand.agp", [("s",1,100,1,"W","c",1,100,"-"),("s",101,180,2,"W","b",11,90,"+"),("s",181,275,3,"W","a",1,95,"-")])
+            r = run("apply_join_decisions.py", f"{d}/cand.agp", f"{d}/pre.agp", f"{d}/dec.tsv", f"{d}/o.agp"); self.assertEqual(r.returncode, 0, r.stderr)
+            o = [l.split("\t") for l in open(f"{d}/o.agp").read().splitlines() if l[0] != "#"]
+            self.assertEqual([x[5] for x in o], ["c", "b", "10", "a"])
+            self.assertEqual(o[1][6:8], ["11", "100"]); self.assertEqual(o[3][6:8], ["1", "100"])
     def test_homolog_and_tail_alarms(self):
         sys.path.insert(0, R)
         from agentssembler import report as r

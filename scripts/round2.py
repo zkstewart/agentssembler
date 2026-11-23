@@ -45,17 +45,20 @@ def wdepth(c,x):
     return v[min(len(v)-1,max(0,x//10000))][1]
 red=[];rep=[];kept2=[]
 for c,w in W.items():
-    n=len(w); cov=0; cls=[]
+    n=len(w); cov=0; cls=[]; fam=[]
     for st,d in w:
-        m=st+5000; best={}
+        m=st+5000; best={}; anyc={}
         for a0,e0,t,ts,te,sd in A.get(c,()):
-            if a0<=m<e0 and L[t]>L[c]:
-                f=(m-a0)/max(1,e0-a0); x=ts+f*(te-ts) if sd=='+' else te-f*(te-ts)
-                best[t]=max(best.get(t,0),wdepth(t,int(x)))
+            if a0<=m<e0:
+                f=(m-a0)/max(1,e0-a0); x=ts+f*(te-ts) if sd=='+' else te-f*(te-ts); dt_=wdepth(t,int(x))
+                anyc[t]=max(anyc.get(t,0),dt_)
+                if L[t]>L[c]: best[t]=max(best.get(t,0),dt_)
         if best: cov+=1
-        cls.append(d+sum(best.values()))
+        cls.append(d+sum(best.values())); fam.append(d+sum(anyc.values()))
     med=float(np.median(cls))
-    if med>=a.repeat: rep.append(c)
+    # repeat class from every copy, longer or not: reads of a high-copy family spread over all copies, so the longest copy alone can read
+    # low and pass as a chain. Redundancy still needs a longer copy: the shorter of two is the one dropped.
+    if float(np.median(fam))>=a.repeat: rep.append(c)
     elif cov/n>=0.9 and med<1.5*a.hap: red.append(c)
 drop=set(c for c in red)|set(rep)
 # terminal unitig ends; a chain's + end is its last component's leaving end

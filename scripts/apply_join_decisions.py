@@ -22,16 +22,21 @@ for l in open(dec):
     p = P[sc]; gi = next((i for i in range(1, len(p) - 1) if p[i][4] in "NU" and {p[i - 1][5], p[i + 1][5]} == {lc, rc}), None)
     if gi is None: sys.exit(f"{sc}: no gap between {lc} and {rc} in {pre}")
     pl, pg, pr = p[gi - 1], p[gi], p[gi + 1]; v = C[sc]
-    idx = next((i for i in range(len(v) - 1) if v[i][5] == pl[5] and (v[i + 1][5] == pr[5] or (v[i + 1][5].startswith("rf_") and i + 2 < len(v) and v[i + 2][5] == pr[5]))), None)
+    def find(a, b):
+        return next((i for i in range(len(v) - 1) if v[i][5] == a[5] and (v[i + 1][5] == b[5] or (v[i + 1][5].startswith("rf_") and i + 2 < len(v) and v[i + 2][5] == b[5]))), None)
+    idx = find(pl, pr); flipped = idx is None
+    if flipped: idx = find(pr, pl)        # edits/flip.txt wrote the scaffold the other way round after pre.agp
     if idx is None: sys.exit(f"{sc}: join {lc} {rc} not found in {cand}")
-    jr = idx + 1 if v[idx + 1][5] == pr[5] else idx + 2
+    jr = idx + 1 if v[idx + 1][5] == (pl if flipped else pr)[5] else idx + 2
     L = v[idx][:]; R = v[jr][:]
-    # restore only the end facing this gap, so a closure at the other end of a component stays
-    if pl[8] == "+": L[7] = pl[7]
-    else: L[6] = pl[6]
-    if pr[8] == "+": R[6] = pr[6]
-    else: R[7] = pr[7]
-    v[idx:jr + 1] = [L, pg[:], R]
+    # restore only the unitig end facing this gap, so a closure at the other end of a component stays. The facing end is the same
+    # unitig end in either writing direction: the right end of a "+" component on the left of the gap is its unitig's end (column 8).
+    def restore(row, pre, left_of_gap):
+        col = 7 if (pre[8] == "+") == left_of_gap else 6; row[col] = pre[col]
+    if not flipped: restore(L, pl, True); restore(R, pr, False)
+    else: restore(L, pr, False); restore(R, pl, True)
+    g = pg[:]; g[0] = sc
+    v[idx:jr + 1] = [L, g, R]
 with open(out, "w") as o:
     o.write("##agp-version 2.1\n")
     for sc, v in C.items():
