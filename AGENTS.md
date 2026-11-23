@@ -37,7 +37,7 @@ agentssembler run WORK                 # continue
 - Keep `WORK/README.md` current. It says which files are the assembly, what was re-run and why, and anything the driver did not make.
 - A claim about biology must survive a direct test before it is written down. See [D12](docs/decisions/D12_sv_calls.md).
 - A value that is exactly 0, or exactly 100%, is a question about the test before it is a result.
-- Do not stop at numbers that look good. Every significant fix on the three genomes tried began with a result that looked wrong while every command had succeeded.
+- Do not stop at numbers that look good. Every significant fix on the genomes tried so far began with a result that looked wrong while every command had succeeded.
 
 ## What only you can do
 

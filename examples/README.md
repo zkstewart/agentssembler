@@ -1,6 +1,6 @@
 # Worked examples
 
-Real hand decisions from the three genomes, to show the form and the depth of reasoning expected. **Chain names apply to one run only: never copy these into another sample.**
+Real hand decisions from 13Q010, WatsonsChoice and Busk, to show the form and the depth of reasoning expected. **Chain names apply to one run only: never copy these into another sample.**
 
 ## 13Q010 (triploid, 9 chromosomes, 27x per haplotype)
 

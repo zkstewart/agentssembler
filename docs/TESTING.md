@@ -1,5 +1,7 @@
 # Testing
 
+**Not needed to run the pipeline.** How the code is tested, and what the regression runs showed about the driver.
+
 Two levels. `tests/test_units.py` runs in seconds on small made-up data. `tests/regress.py` replays a saved assembly through the driver, seeding costly mappings and replaying every hand decision, and compares outputs with those of the saved run.
 
 ```bash

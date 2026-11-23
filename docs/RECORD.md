@@ -86,7 +86,7 @@ A tip path whose junction reads are all MAPQ 0, because the tip is near-identica
 
 ### Why reads stop at gaps
 
-**Result, on three genomes: nothing physically stops reads there.** Use `review/edge_reads.py` and `review/edge_seq_depth.py` to repeat it on a new genome.
+**Result, on WatsonsChoice, 13Q010 and Busk: nothing physically stops reads there.** Use `review/edge_reads.py` and `review/edge_seq_depth.py` to repeat it on a new genome.
 
 | Test | Result | So |
 |---|---|---|

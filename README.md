@@ -71,7 +71,7 @@ After exploring the repository, please begin by initialising a directory at `<my
 ```
 
 # Getting started (for agents)
-Before beginning an analysis, read through this repository. The `docs/` folder contains a wealth of information collated by previous agents which helped them to complete their work.
+Before beginning an analysis, read [AGENTS.md](AGENTS.md), [docs/TRAPS.md](docs/TRAPS.md) and [docs/decisions/README.md](docs/decisions/README.md). Read the rest of `docs/` when the table below says to: each decision's guide when the run stops there, and the reference documents when you need them. The development record (LESSONS, RECORD, IMPROVING, TESTING) is not needed to run an assembly.
 
 Coordinate with the human user to set up the necessary conda environment and/or the `sample.yaml` configuration file.
 
@@ -148,24 +148,24 @@ Thus, `agentssembler` is *not* meant to be a tool that is used for decades to co
 
 ## Where things are
 
-| Path | Contents |
-|---|---|
-| [AGENTS.md](AGENTS.md) | **Start here if you are an agent.** Rules and the loop |
-| [docs/PROCESS.md](docs/PROCESS.md) | Start to end: the whole run, then each stage and what to check |
-| [docs/LAYOUT.md](docs/LAYOUT.md) | The work directory: which stage writes what, every file, and the files you write |
-| [docs/HPC.md](docs/HPC.md) | Running a mapping on another machine and putting it in place |
-| [docs/decisions/](docs/decisions/README.md) | One guide per decision |
-| [docs/SETTINGS.md](docs/SETTINGS.md) | Every setting and how to choose it |
-| [docs/TRAPS.md](docs/TRAPS.md) | Things that cost real time |
-| [docs/TANGLES.md](docs/TANGLES.md) | D16's tangle check: lost-route forks, and TTT for small tangles |
-| [docs/LESSONS.md](docs/LESSONS.md) | Findings from the three genomes, and my errors |
-| [docs/IMPROVING.md](docs/IMPROVING.md) | Ideas not yet tried, and what is out of scope |
-| [docs/RECORD.md](docs/RECORD.md) | The evidence behind the process. Not needed to run it |
-| [docs/SCRIPTS.md](docs/SCRIPTS.md) | Every script |
-| [docs/TESTING.md](docs/TESTING.md) | Tests and how the regression was run |
-| `examples/` | Hand decisions from each genome, as worked examples |
-| `stages/` | One bash script per stage |
-| `scripts/` | The tools |
+| Path | Contents | Read when |
+|---|---|---|
+| [AGENTS.md](AGENTS.md) | **Start here if you are an agent.** Rules and the loop | Before starting |
+| [docs/TRAPS.md](docs/TRAPS.md) | Things that cost real time | Before starting |
+| [docs/decisions/](docs/decisions/README.md) | One guide per decision | The index before starting; each guide when the run stops at it |
+| [docs/PROCESS.md](docs/PROCESS.md) | Start to end: the whole run, then each stage and what to check | Before starting, then at each stage |
+| [docs/LAYOUT.md](docs/LAYOUT.md) | The work directory: which stage writes what, every file, and the files you write | When looking for a file |
+| [docs/SETTINGS.md](docs/SETTINGS.md) | Every setting and how to choose it | When writing the config, or when a guide sets a value |
+| [docs/HPC.md](docs/HPC.md) | Running a mapping on another machine and putting it in place | Only if mapping elsewhere |
+| [docs/TANGLES.md](docs/TANGLES.md) | D16's tangle check: lost-route forks, and TTT for small tangles | At D16 |
+| [docs/SCRIPTS.md](docs/SCRIPTS.md) | Every script | When a guide names a script |
+| [docs/LESSONS.md](docs/LESSONS.md) | Principles the genomes taught, each linked to its evidence and its rule | Development record: not needed for a run |
+| [docs/RECORD.md](docs/RECORD.md) | The evidence behind the process, genome by genome: experiments, numbers, errors | Development record: not needed for a run |
+| [docs/IMPROVING.md](docs/IMPROVING.md) | What comes next: ideas not yet tried, open questions, what is out of scope or not worth repeating | Development record; at D13, before proposing a trial |
+| [docs/TESTING.md](docs/TESTING.md) | Tests and how the regression was run | When changing code |
+| `examples/` | Hand decisions from each genome, as worked examples | At a decision, for the form expected |
+| `stages/` | One bash script per stage | |
+| `scripts/` | The tools | |
 
 ## What gets automated, and what does not
 
