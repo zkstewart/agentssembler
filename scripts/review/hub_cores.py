@@ -16,7 +16,8 @@ High-class chains are repeat arrays, not hubs, and are left out.
 Allele bubbles do not pass: both alleles are separate chains at about 1x each. Connector chains (chain8*, chain9*) are left out.
 Stage 05 runs it before D04, so that hub breaks go in with the chimera breaks: on stage 04's chains (07_chains2, with class "-": the class
 is then the windows' median depth against --sharedLo), with --liftAgp lifting chains and positions onto the chains D04 breaks
-(08_final_chains, which D03's breaks may have split). A break that lifts onto a chain end is no longer needed. Stage 06 runs it again on the
+(08_final_chains, which D03's breaks may have split). A break that lifts onto a chain end is no longer needed (both sides of the boundary are lifted, so a
+chain stored reversed lifts exactly); a core whose breaks are all gone is already its own chain and is not breakable. Stage 06 runs it again on the
 broken chains, as a check.
 Usage: hub_cores.py depth.windows.tsv chains.agp chain_class.tsv|- out.tsv --sharedLo A [--minRun 50000] [--liftAgp chains.agp]'''
 import argparse, os, sys
@@ -29,7 +30,7 @@ W = read_windows(a.win)
 if a.cls == "-":   # class from the windows alone: median depth against --sharedLo
     cls = {}
     for c, ws in W.items():
-        m = sorted(w[2] for w in ws)[len(ws) // 2]; cls[c] = [c, str(ws[-1][1]), "", f"{m:.1f}", "", "", "specific" if m < a.sharedLo else "shared"]
+        m = sorted(w[2] for w in ws)[len(ws) // 2]; cls[c] = [c, str(ws[-1][1]), f"{m:.1f}", "", "", "", "specific" if m < a.sharedLo else "shared"]
 else: cls = {l.split("\t")[0]: l.rstrip("\n").split("\t") for l in open(a.cls) if l[0] != "#"}
 ROWS = {}                                                 # chain -> AGP components (chain start, end, unitig, unitig start, end, strand)
 for l in open(a.agp):
@@ -67,12 +68,14 @@ if a.liftAgp:
         bk = r[12].split("/")
         for i, k in ((10, 0), (11, 1)):
             if r[i] == ".": continue
-            c2, x2 = to2(c, int(r[i]) - 1)
-            if c2 != cs: r[i] = "."; bk[k] = "end"; continue  # already a chain end after D03
-            r[i] = x2 + 1
+            b = int(r[i])                                    # boundary between bases b-1 and b (0-based): lift both sides
+            cl, xl = to2(c, b - 1); cr, xr = to2(c, b)
+            if cl != cs or cr != cs: r[i] = "."; bk[k] = "end"; continue  # already a chain end after D03
+            r[i] = min(xl, xr) + 1                           # 1-based last base of the left part, either strand
         if xs > xe:                                          # the chain lies reversed in the lifted AGP: swap sides
             r[10], r[11] = r[11], r[10]; bk.reverse()
         r[12] = "/".join(bk)
+        if r[10] == "." and r[11] == ".": r[14] = "no"      # D03 already freed the core (or nothing is left to break)
         lifted.append(tuple(r))
     out = lifted
 out.sort(key=lambda r: -r[6])
