@@ -1,7 +1,7 @@
 # This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
 # If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''Shared helpers: lift unitig coordinates through a chain AGP; sort keys for chains that survive renumbering.'''
-import collections
+import collections, gzip, re
 def read_agp(path):
     '''unitig -> list of (chain, chain_start0, comp_start0, comp_end0_exclusive, strand)'''
     P = collections.defaultdict(list); L = {}
@@ -69,3 +69,38 @@ def first_undecided(tops, decided):
     for (r, h), _ in tops: mh[r] = max(mh.get(r, h), h); mt[r] = max(mt.get(r, r + h), r + h)
     def beaten(r, h): return decided(mh[r], h) or any(decided(v, r + h) for r2, v in mt.items() if r2 != r)
     return next(t for (r, h), t in tops if not beaten(r, h))
+def gfa_overlap(cig):
+    '''GFA L-line overlap CIGAR -> bp of the link's overlap on the segment entered: M, I, S, = and X consume it. hifiasm writes one op
+    ("12345M"); other assemblers can write several ("10M1I5M"), which int(cig[:-1]) misreads. "*" (no overlap given) -> 0.'''
+    cig = cig.strip()
+    if cig in ("*", ""): return 0
+    return sum(int(n) for n, op in re.findall(r"(\d+)([MIDNSHP=X])", cig) if op in "MIS=X")
+FLIP = {"+": "-", "-": "+"}
+def end_overlaps(gfa):
+    '''(unitig, end) -> longest overlap of any GFA link at that end; end "+" is the 3' end, "-" the 5' end'''
+    ov = collections.defaultdict(int)
+    for l in open(gfa):
+        if l[0] != "L": continue
+        s = l.rstrip("\n").split("\t"); o = gfa_overlap(s[5])
+        k = (s[1], s[2]); ov[k] = max(ov[k], o); k = (s[3], FLIP[s[4]]); ov[k] = max(ov[k], o)
+    return ov
+def chain_interior(parts, L, ov, chains):
+    '''chain -> (start, end) of its sequence outside graph overlaps at both ends. parts: chain -> [(unitig, strand), ...] in order'''
+    iv = {}
+    for c in chains:
+        if not parts.get(c): continue
+        u, o = parts[c][-1]; right = ov[(u, o)]
+        u, o = parts[c][0]; left = ov[(u, FLIP[o])]
+        iv[c] = (left, L[c] - right)
+    return iv
+def interior_cover(paf, iv, q20=False):
+    '''bp of primary alignment inside each chain's interior (iv from chain_interior); with q20, also bp from MAPQ >= 20 alignments'''
+    cov, q = collections.Counter(), collections.Counter()
+    for l in gzip.open(paf, "rt"):
+        s = l.split("\t", 12); c = s[5]
+        if c not in iv or "tp:A:P" not in l: continue
+        lo, hi = max(iv[c][0], int(s[7])), min(iv[c][1], int(s[8]))
+        if hi > lo:
+            cov[c] += hi - lo
+            if int(s[11]) >= 20: q[c] += hi - lo
+    return (cov, q) if q20 else cov

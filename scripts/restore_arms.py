@@ -12,6 +12,7 @@ of those flanking neighbours is collapsed (primary depth from --lo to --hi). Uni
 Usage: restore_arms.py copy_number.tsv kept2.txt repeat_chains.txt unitigs.gfa out.tsv --lo L --hi H (about 1.54 and ploidy + 0.68 x haplotype depth)
 '''
 import argparse, collections
+from chainlib import gfa_overlap
 p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
 for x in "cn kept rep gfa out".split(): p.add_argument(x)
 p.add_argument("--lo", type=float, required=True); p.add_argument("--hi", type=float, required=True)
@@ -26,7 +27,7 @@ for l in open(a.rep):
 nb = collections.defaultdict(dict)
 for l in open(a.gfa):
     if l[0] != "L": continue
-    s = l.split("\t"); ov = int(s[5].strip()[:-1])
+    s = l.split("\t"); ov = gfa_overlap(s[5])
     nb[(s[1], s[2])][(s[3], s[4])] = ov
     nb[(s[3], inv[s[4]])][(s[1], inv[s[2]])] = ov
 # a sibling enters and leaves through the same neighbours, in the same orientation

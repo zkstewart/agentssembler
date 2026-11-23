@@ -28,7 +28,7 @@ Usage: assign_arms2.py --order order.tsv --bridges graph.bridges.tsv --ranked ch
          --report report.tsv --depth depth.tsv --unused unused.tsv --twoX X --hap H --ploidy N --minAllele A --maxPair M
 '''
 import argparse, collections, gzip, itertools
-from chainlib import first_undecided, stable_end, stable_path
+from chainlib import chain_interior, end_overlaps, first_undecided, interior_cover, stable_end, stable_path
 ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
 for x in ("order", "bridges", "ranked", "groups", "links", "agp", "gfa", "paf", "out", "report", "depth", "unused"):
     ap.add_argument("--" + x, required=True)
@@ -92,22 +92,8 @@ for l in open(a.agp):
     if l[0] == "#": continue
     s = l.rstrip("\n").split("\t")
     if s[4] == "W": parts[s[0]].append((s[5], s[8]))
-ov = collections.defaultdict(int)
-for l in open(a.gfa):
-    if l[0] != "L": continue
-    s = l.rstrip("\n").split("\t"); o = int(s[5].rstrip("M")) if s[5] != "*" else 0
-    ov[(s[1], s[2])] = max(ov[(s[1], s[2])], o); k = (s[3], fl[s[4]]); ov[k] = max(ov[k], o)
-iv = {}
-for c in need:
-    u, o = parts[c][-1]; right = ov[(u, o)]
-    u, o = parts[c][0]; left = ov[(u, fl[o])]
-    iv[c] = (left, L[c] - right)
-cov = collections.Counter()
-for l in gzip.open(a.paf, "rt"):
-    s = l.split("\t", 12); c = s[5]
-    if c not in iv or "tp:A:P" not in l: continue
-    lo, hi = max(iv[c][0], int(s[7])), min(iv[c][1], int(s[8]))
-    if hi > lo: cov[c] += hi - lo
+iv = chain_interior(parts, L, end_overlaps(a.gfa), need)
+cov = interior_cover(a.paf, iv)
 W = {}; T = {}; D = {}
 for c in need:
     w = max(iv[c][1] - iv[c][0], 0); W[c] = w; D[c] = cov[c] / w if w else float("nan")
@@ -217,7 +203,7 @@ n = collections.Counter(z[:-1] for p in chosen.values() for z in p)
 with open(a.unused, "w") as o:
     o.write("#chain\tlength\tinterior\tdepth\ttarget\tused\tstate\n")
     tot = collections.Counter()
-    for c in sorted(need, key=lambda c: -W[c]):
+    for c in sorted(need, key=lambda c: (-W[c], c)):
         k = n[c]
         st = "no_interior" if not W[c] else "ok" if k == T[c] else "unused" if k == 0 else "under" if k < T[c] else "over"
         tot[st] += W[c]; tot[st + "_n"] += 1

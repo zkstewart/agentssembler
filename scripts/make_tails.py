@@ -24,7 +24,7 @@ Usage: make_tails.py --order order.tsv --junctions pre.junctions.tsv --placement
          --class chain_class.tsv --agp chains.agp --gfa unitigs.gfa --paf ont_vs_chains.paf.gz --out tails.tsv --report report.tsv
 '''
 import os, argparse, collections, gzip, itertools
-from chainlib import stable_end, stable_path
+from chainlib import chain_interior, end_overlaps, interior_cover, stable_end, stable_path
 ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
 for x in ("order", "junctions", "placement", "links", "groups", "chroms", "choices", "telomeres", "hic", "class", "agp", "gfa", "paf", "out", "report"):
     ap.add_argument("--" + x, required=True)
@@ -110,23 +110,8 @@ for l in open(a.agp):
     if l[0] == "#": continue
     s = l.rstrip("\n").split("\t")
     if s[4] == "W": parts[s[0]].append((s[5], s[8]))
-ov = collections.defaultdict(int)
-for l in open(a.gfa):
-    if l[0] != "L": continue
-    s = l.rstrip("\n").split("\t"); o = int(s[5].rstrip("M")) if s[5] != "*" else 0
-    ov[(s[1], s[2])] = max(ov[(s[1], s[2])], o); k = (s[3], fl[s[4]]); ov[k] = max(ov[k], o)
-iv = {}
-for c in free:
-    if not parts[c]: continue
-    u, o = parts[c][-1]; right = ov[(u, o)]
-    u, o = parts[c][0]; left = ov[(u, fl[o])]
-    iv[c] = (left, L[c] - right)
-cov = collections.Counter()
-for l in gzip.open(a.paf, "rt"):
-    s = l.split("\t", 12); c = s[5]
-    if c not in iv or "tp:A:P" not in l: continue
-    lo, hi = max(iv[c][0], int(s[7])), min(iv[c][1], int(s[8]))
-    if hi > lo: cov[c] += hi - lo
+iv = chain_interior(parts, L, end_overlaps(a.gfa), free)
+cov = interior_cover(a.paf, iv)
 W = {}; D = {}; T = {}
 for c in iv:
     w = max(iv[c][1] - iv[c][0], 0); W[c] = w; D[c] = cov[c] / w if w else float("nan")
@@ -237,7 +222,7 @@ with open(a.out, "w") as o:
         if p: o.write(f"{e}\t{ends[e]}\t{','.join(p)}\t{labels[e]}\t{obs(e, p)}\t{sum(L[z[:-1]] for z in p)}\n")
 with open(a.report, "w") as o:
     o.write("#chain\tlength\tinterior\tdepth\ttarget\tused_bridges\tused_tails\tstate\n")
-    for c in sorted(iv, key=lambda c: -W[c]):
+    for c in sorted(iv, key=lambda c: (-W[c], c)):
         if used[c] or n[c] or any(c == z[:-1] for v in C.values() for p in v for z in p):
             st = "tail" if n[c] else "bridge" if used[c] else "candidate_unused"
             o.write(f"{c}\t{L[c]}\t{W[c]}\t{D[c]:.1f}\t{T[c]}\t{used[c]}\t{n[c]}\t{st}\n")

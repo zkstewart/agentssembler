@@ -451,6 +451,18 @@ class T(unittest.TestCase):
                 o = run("rawreads/tail_joins.py", "--tails", f"{d}/t.tsv", "--chainsAgp", f"{d}/c.agp", "--agp", f"{d}/s.agp", "--names", f"{d}/n.tsv", "--paf", f"{d}/r.paf.gz", "--out", f"{d}/o.tsv")
                 self.assertEqual(o.returncode, 0, o.stderr)
                 self.assertEqual([l.rstrip("\n").split("\t")[4:] for l in open(f"{d}/o.tsv") if l[0] != "#"], [[str(j), "1", "1"]])
+    def test_gfa_overlap(self):
+        sys.path.insert(0, f"{R}/scripts"); from chainlib import gfa_overlap
+        self.assertEqual([gfa_overlap(x) for x in ("12345M", "10M1I5M", "10M2D5M", "*", "0M\n")], [12345, 16, 15, 0, 0])
+    def test_chain_names_past_8000(self):
+        # chain8* and chain9* mark connectors and restored arms: past 7999 chains the main chains take six digits
+        with tempfile.TemporaryDirectory() as d:
+            for n, want in ((12, "chain0012"), (8000, "chain008000")):
+                open(f"{d}/fai", "w").write("".join(f"u{i}\t{100000 - i}\n" for i in range(n))); open(f"{d}/keep", "w").write("".join(f"u{i}\n" for i in range(n)))
+                open(f"{d}/gfa", "w").write("")
+                r = run("build_chains.py", "--keep", f"{d}/keep", "--gfa", f"{d}/gfa", "--fai", f"{d}/fai", "--out", f"{d}/c"); self.assertEqual(r.returncode, 0, r.stderr)
+                names = {l.split("\t")[0] for l in open(f"{d}/c.agp") if l[0] != "#"}
+                self.assertIn(want, names); self.assertFalse(any(x.startswith(("chain8", "chain9")) for x in names))
     def test_decay_norm(self):
         sys.path.insert(0, f"{R}/scripts"); import hic_order as ho
         # one chain ending just inside the lower half of a populated bin (the review's case): the old midpoint opportunity there was 0,

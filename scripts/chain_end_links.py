@@ -13,6 +13,7 @@ Usage: chain_end_links.py chains.agp unitigs.gfa ont_vs_chains.paf.gz chains.fai
 Output: end_a end_b reads q_gap_median graph_overlap
 '''
 import argparse, collections, gzip, statistics
+from chainlib import gfa_overlap
 p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
 p.add_argument("agp"); p.add_argument("gfa"); p.add_argument("paf"); p.add_argument("fai"); p.add_argument("out")
 p.add_argument("--minMapq", type=int, default=20)
@@ -41,7 +42,7 @@ for l in open(a.gfa):
     s = l.split("\t")
     e1 = exit_of.get((s[1], s[2])); e2 = exit_of.get((s[3], inv[s[4]]))
     if e1 and e2 and e1[0] != e2[0]:
-        ov = int(s[5].strip()[:-1])
+        ov = gfa_overlap(s[5])
         k = tuple(sorted((e1, e2)))
         graph[k] = max(graph.get(k, 0), ov)
 

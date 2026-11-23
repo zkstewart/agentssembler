@@ -11,9 +11,12 @@ Ends: u+ = u's 3' end, u- = u's 5' end.
 
 Usage: build_chains.py --keep kept.txt --gfa unitigs.gfa --fai unitigs.fai --out prefix [--breaks f]
 Writes prefix.agp (components are unitig ranges, no gaps), prefix.joins.tsv, prefix.circular.txt, and
-prefix.contained.tsv, listing unitigs wholly inside an overlap longer than themselves, which add no sequence
+prefix.contained.tsv, listing unitigs wholly inside an overlap longer than themselves, which add no sequence.
+Chains are named chain0001 onward by length, or chain000001 onward past 7999 chains, so that no main chain's name starts chain8 or
+chain9: those prefixes mark connectors and restored arms (add_restored_arms.py), and several scripts tell them apart by name.
 '''
 import argparse, collections
+from chainlib import gfa_overlap
 p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
 p.add_argument("--keep", required=True); p.add_argument("--gfa", required=True); p.add_argument("--fai", required=True)
 p.add_argument("--out", required=True); p.add_argument("--breaks"); p.add_argument("--exclude", help="unitigs never joined")
@@ -34,7 +37,7 @@ for l in open(a.gfa):
     if s[1] not in K or s[3] not in K or s[1] == s[3] or s[1] in ex or s[3] in ex: continue
     e1, e2 = (s[1], s[2]), (s[3], inv[s[4]])
     if frozenset((e1, e2)) in brk: continue
-    n = int(s[5].strip()[:-1]); adj[e1][e2] = n; adj[e2][e1] = n
+    n = gfa_overlap(s[5]); adj[e1][e2] = n; adj[e2][e1] = n
 join = {}
 for e, nb in adj.items():
     if len(nb) == 1:
@@ -61,8 +64,9 @@ for u in keep: # what is left is circular
 chains.sort(key=lambda c: -sum(L[x[0]] - x[2] for x in c))
 agp = open(a.out + ".agp", "w"); jt = open(a.out + ".joins.tsv", "w"); agp.write("##agp-version 2.1\n")
 jt.write("#chain\tpos\tleft\tright\toverlap\n"); tot = 0; contained = []
+wd = 4 if len(chains) < 8000 else 6   # chain8* and chain9* are connectors and restored arms (add_restored_arms.py): main chains never start so
 for i, c in enumerate(chains, 1):
-    name = f"chain{i:04d}"; pos = 0; carry = 0; part = 0
+    name = f"chain{i:0{wd}d}"; pos = 0; carry = 0; part = 0
     for k, (u, st, ov) in enumerate(c):
         # An overlap can be longer than the unitig it enters. That unitig is then wholly inside sequence
         # already written, and what is left of the overlap carries into the next one, which overlaps this unitig's tail.

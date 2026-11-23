@@ -17,6 +17,7 @@ Usage: read_links.py <reads.paf.gz> <unitigs.gfa> <kept.fai> <out.tsv>
 Output: end_a end_b reads graph_overlap median_query_gap
 '''
 import gzip, argparse, statistics, collections
+from chainlib import gfa_overlap
 
 def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -35,7 +36,7 @@ def main():
         if s[1] not in L or s[3] not in L: continue
         # GFA link: leave s[1] in orientation s[2], enter s[3] in orientation s[4]
         e1 = (s[1], s[2]); e2 = (s[3], inv[s[4]])
-        ov[tuple(sorted((e1, e2)))] = int(s[5][:-1])
+        ov[tuple(sorted((e1, e2)))] = gfa_overlap(s[5])
 
     alns = collections.defaultdict(list)
     with gzip.open(a.paf, "rt") as fh:
