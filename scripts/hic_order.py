@@ -44,21 +44,25 @@ import numpy as np
 
 def decay_model(pairs_within, bg=1e-3, lengths=None):
     """log P(contact | distance), up to a constant, from pairs within chains. With lengths (the chains the pairs came from), each bin is
-    divided by the bp of chain at which that distance can be seen, sum(max(L - d, 0)): near the chain lengths few positions are that
-    far apart, so raw counts fall away and understate long-range contact."""
+    divided by the bp of chain at which that distance can be seen, sum(max(L - d, 0)) averaged over the bin: near the chain lengths few
+    positions are that far apart, so raw counts fall away and understate long-range contact. The average is exact per chain (0 for
+    L <= a, L - (a + b) / 2 for L >= b, (L - a)^2 / 2(b - a) between), so a bin the longest chain ends in is never divided by ~0."""
     d = np.asarray(pairs_within, dtype=float); d = d[d > 0]
     edges = np.logspace(2, 9, 141)
     h, _ = np.histogram(d, bins=edges)
     w = np.diff(edges); dens = (h + 0.5) / w / max(h.sum(), 1)
     if lengths is not None:
-        Ls = np.sort(np.asarray(lengths, dtype=float)); cs = np.concatenate(([0.0], np.cumsum(Ls[::-1])))[::-1]   # cs[i] = sum of Ls[i:]
-        mid = np.sqrt(edges[:-1] * edges[1:]); i = np.searchsorted(Ls, mid, side="right")
-        opp = cs[i] - mid * (len(Ls) - i)                                           # sum over chains longer than mid of (L - mid)
+        Ls = np.asarray(lengths, dtype=float)[:, None]; lo, hi = edges[None, :-1], edges[None, 1:]
+        opp = np.where(Ls >= hi, Ls - (lo + hi) / 2, np.where(Ls > lo, (Ls - lo) ** 2 / (2 * (hi - lo)), 0.0)).sum(axis=0)
         dens = dens / np.maximum(opp, 1.0)
     c = np.sqrt(edges[:-1] * edges[1:]); lc, ld = np.log(c), np.log(dens)
-    # beyond the observed range, extend with the slope of the last well-populated decade
-    ok = np.where(h >= 50)[0]; last = ok[-1]; first = ok[max(0, len(ok) - 20)]
-    slope = (ld[last] - ld[first]) / (lc[last] - lc[first] + 1e-9)
+    # beyond the observed range, extend with the slope of the last well-populated decade (bins with >= 50 pairs, or any pairs in a sparse
+    # library); contact never rises with distance, so the slope is at most 0
+    ok = np.where(h >= 50)[0]
+    if len(ok) < 2: ok = np.where(h > 0)[0]
+    if len(ok) == 0: return lambda x: np.zeros_like(np.asarray(x, dtype=float))
+    last = ok[-1]; first = ok[max(0, len(ok) - 20)]
+    slope = min((ld[last] - ld[first]) / (lc[last] - lc[first] + 1e-9), 0.0)
     ld2 = ld.copy(); ld2[last + 1:] = ld[last] + slope * (lc[last + 1:] - lc[last])
     floor = np.log(bg) + ld[ok].min()
     def logp(x):
