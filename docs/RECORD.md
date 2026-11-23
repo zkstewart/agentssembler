@@ -111,7 +111,7 @@ A tip path whose junction reads are all MAPQ 0, because the tip is near-identica
 
 ### Allele-aware Hi-C for hard unplaced chains: no
 
-**Result: it cannot place 13Q010's 958 kb unplaced chain (chain0135 in the first build, chain0136 in the connector rebuild).** Scaffold names below are the first build's; its chr7_h3 is chr7_h1 in the rebuild. The user later chose to place the chain at chr5_h2's start by graph alone, accepting possible mosaicism ([LESSONS](LESSONS.md)). I expected about 3% divergence from its copy. That was wrong: it is 99.97% identical over 928 kb to the first 957 kb of chr7_h3 (`minimap2 -x asm20`, de 0.0003), and 99.2% to the end of chr4_h3. Both it and the chr7_h3 copy have about haplotype depth (primary 11.6-29.1 and 26.5-27.3, haplotype 27), so they look like two real copies, not a duplicated haplotig.
+**Result: it cannot place 13Q010's 958 kb unplaced chain (chain0135 in the first build, chain0136 in the connector rebuild).** Scaffold names below are the first build's; its chr7_h3 is chr7_h1 in the rebuild. The user later chose to place the chain at chr5_h2's start by graph alone, accepting possible mosaicism ("[The first builds, before connectors](#the-first-builds-before-connectors)" above; [D07](decisions/D07_telomere_tips.md)). I expected about 3% divergence from its copy. That was wrong: it is 99.97% identical over 928 kb to the first 957 kb of chr7_h3 (`minimap2 -x asm20`, de 0.0003), and 99.2% to the end of chr4_h3. Both it and the chr7_h3 copy have about haplotype depth (primary 11.6-29.1 and 26.5-27.3, haplotype 27), so they look like two real copies, not a duplicated haplotig.
 
 | Pairs with one end on the chain and the other elsewhere | Count | Top scaffold, against its share of length |
 |---|---:|---|
@@ -187,11 +187,11 @@ At 0.03% divergence a 150 bp read carries a difference about once in 20 reads, a
 
 **The rescue's gain and its cost.** Stage 05's signal flagged 150 Hi-C-blind chains, 27.1 Mb carrying 391 gene copies: chains with an allele partner and almost no unique Hi-C, which grouping leaves unassigned however good the rest is. The rescue placed about 26 Mb of them by allele-ambiguous Hi-C.
 
-| | First build | Rebuild with the rescue |
+| | First build | Rebuild with the rescue and the five gene-carrying tails |
 |---|---|---|
 | Assembly | 615.5 Mb | 638.2 Mb |
 | Gaps | 24 | 48: the new ones are Hi-C joins between rescued chains |
-| compleasm single-copy, h1 / h2 | 92.16% / 92.16% | 95.54% / 96.43% |
+| compleasm single-copy, h1 / h2 | 92.16% / 92.16% | 95.54% / 96.43% (the rescue alone, in a trial: 94.62% / 95.47%) |
 | Gene copies short of 2 on the scaffolds | 405 | 187 |
 | Inverted homolog blocks | 9 | 13, mostly in rescued chr2 |
 

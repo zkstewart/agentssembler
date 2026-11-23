@@ -12,17 +12,19 @@ Stages are numbered 01 to 15. Directories are numbered 00 to 17. **The two sets 
 | `02_map_unitigs` | `02_ont_map/`, `03_unitig_align/` | |
 | `03_depth` | `04_copynumber/` | D01 |
 | `04_chains` | `04_copynumber/copy_number.tsv`, `05_nonredundant/`, `06_chains/`, `07_chains2/`, `08_final_chains/` | D03 |
-| `05_hic_chains` | `09_hic_map/`, `10_groups/chain_breaks.tsv` | D04 |
+| `05_hic_chains` | `09_hic_map/`, `10_groups/chain_breaks.tsv`; collapsed only: `07_chains2/depth*`, `10_groups/hub_cores.d04.tsv` | D04 |
 | `06_evidence` | `12_broken/`, `11_ont_chains/`, `10_groups/` (alleles, chain statistics, end links, shared candidates), `16_validate/telomeres.chains.tsv` | |
 | `07_group` | `10_groups/` (`groups*`, `shared.txt`, `eval_groups.txt`, `chain_forks.txt`) | D05, D06, D14 |
 | `08_bridges` | `10_groups/final*`, `12_shared/`, `13_scaffold/bridges/` | D07 |
 | `09_order` | `12_shared/` (`order*`, `by_chrom/`) | D09, D10 |
-| `10_arms_tails` | `12_shared/` (`choices.tsv`, `arm_*`, `tails*`, `chain_forks.tsv`, `pre/`), `13_scaffold/names.tsv`, `13_scaffold/repeat_chains.fasta` | D17, D15, D16 |
+| `10_arms_tails` | `12_shared/` (`choices.tsv`, `arm_*`, `tails*`, `chain_forks.tsv`, `rescue_swaps.tsv`, `homolog_direction.tsv`, `pre/`), `13_scaffold/names.tsv`, `13_scaffold/repeat_chains.fasta` | D17, D15, D16 |
 | `11_build` | `13_scaffold/` | |
 | `12_fill` | `14_readfill/`, `15_final/` | D11 |
 | `13_rawreads` | `17_raw_reads/` | D18 |
 | `14_apply_joins` | `15_final_raw/` | |
 | `15_validate` | `16_validate/` | D12, D13 |
+
+**A read mapping has a `.target` beside it** (`X.paf.gz.target`, `pairs.tsv.gz.target`): the checksum of the sequence it was mapped to. A kept mapping whose target has since changed stops the stage instead of being reused; `reset --remap` archives the mapping and its `.target` together.
 
 Three things look like mistakes and are not:
 
@@ -150,6 +152,7 @@ The working set for ordering. When **[C]**, shared chains appear here as one cop
 | `tails.tsv`, `tail_report.tsv`, `tail_checks.tsv` (when there are candidates), `tail_genes.tsv` and `tail_genes.txt` **[opt: compleasm]** | 10, read at D16 |
 | `chain_forks.tsv` **[C]**: forks with `LOST` rows first, for D16's tangle check | 10 |
 | `rescue_swaps.tsv`: Hi-C gaps of the pre-build that swapping two chains between homologs would close; a swap is a group edit and `reset 08_bridges` | 10, read at D16 |
+| `homolog_direction.tsv`: the pre-build's scaffolds against their first homolog, bp forward and reversed; an `inverted` one goes in `edits/flip.txt`, which stage 12 applies | 10, read at D16 |
 
 ## `13_scaffold/` (stages 08, 10, 11)
 
@@ -157,7 +160,7 @@ The working set for ordering. When **[C]**, shared chains appear here as one cop
 - `names.tsv`, `repeat_chains.fasta` (stage 10).
 - `S.graph.agp`, `S.graph.fasta`, `S.graph.fasta.fai`, `S.graph.junctions.tsv`, `S.graph.placement.tsv`, `S.graph.unplaced.fasta`, `target.fasta` (scaffolds plus unplaced), `target.fasta.fai`, `build.log` (stage 11).
 - `rescue_swaps.tsv` (stage 11): the same test as stage 10's on the final scaffolds, read at D13.
-- `homolog_direction.tsv` (stage 11): bp aligned forward and reversed between each scaffold and its first homolog, from the unitig self-alignments. An `inverted` scaffold goes in `edits/flip.txt` before stage 12.
+- `homolog_direction.tsv` (stage 11): stage 10's direction check repeated on the scaffolds with tails. An `inverted` scaffold goes in `edits/flip.txt` before stage 12.
 
 Scaffolds are named `chrN_hK`. Unplaced sequence is named `unplaced_<chain>` or `repeat_*`.
 
@@ -214,7 +217,7 @@ A fill writes six files from one prefix: `.agp`, `.fills.fasta`, `.report.tsv`, 
 
 - **Do not make `12_shared_v2/`, `15_final_v3/` or the like by hand.** Stages read and write fixed paths, so a suffixed folder is invisible to them, and a reader cannot tell which one is current.
 - **`archive/` is the record of what a re-run replaced.** Compare groups by chain against it after any reset above stage 07 (T19). It can be large. Delete it only when the user agrees, and write in `README.md` what was reset, why, and that the archive was deleted.
-- **A reset archives both hand tables**, `16_validate/sv/sv_calls.tsv` and `16_validate/curation_targets.tsv`, and stage 15 starts new ones with the header only. Its report names the archived copies. **Treat them as a list to re-check, not rows to restore:** a re-run can change coordinates and haplotype numbers ([LESSONS](LESSONS.md)). Only when nothing before stage 15 was reset are the final files the same, and a row may be carried over once you have confirmed that.
+- **A reset archives both hand tables**, `16_validate/sv/sv_calls.tsv` and `16_validate/curation_targets.tsv`, and stage 15 starts new ones with the header only. Its report names the archived copies. **Treat them as a list to re-check, not rows to restore:** a re-run can change coordinates and haplotype numbers ([D12](decisions/D12_sv_calls.md)). Only when nothing before stage 15 was reset are the final files the same, and a row may be carried over once you have confirmed that.
 - **To try something that changes the method**, such as a setting that alters the chains, make a second work directory beside the first with `init`, and link the reusable mappings in before `run` ([PROCESS.md](PROCESS.md), "Reusing mappings"). Name it for what differs, and say in both `README.md` files which is current. Do this only for a trial the user has agreed to after the run (AGENTS.md, "One output, then proposals"). The D16 tangle check, TTT included, is not such a trial: it runs in the work directory itself.
 - **To keep the output of a `run` command**, redirect it into `logs/`, for example `logs/run.06.out`. The driver does not do this.
 

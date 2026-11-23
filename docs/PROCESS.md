@@ -92,13 +92,15 @@ Sets names, chooses arms at bridges (jointly if collapsed), builds once, then li
 - Look for tails that stop inside a small tangle short of unplaced telomeric chains.
 - With `hic_allele_rescue`, `12_shared/rescue_swaps.tsv` lists Hi-C gaps that swapping two chains between homologs would close ([D16](decisions/D16_tails.md)).
 
+**Direction:** `12_shared/homolog_direction.tsv` compares each pre-build scaffold with its first homolog. The report flags one written in reverse: list it in `edits/flip.txt` now, which stage 12 applies before mapping reads ([D12](decisions/D12_sv_calls.md)). Stage 11 has no stop, so this is the last stop before stage 12.
+
 **Genes on tails:** with genes on the unitigs, `12_shared/tail_genes.tsv` gives each tail's genes and how many have no full set of placed copies elsewhere. They make a tail worth testing; they do not pass it ([D16](decisions/D16_tails.md)).
 
 A break or a TTT result goes in as edits, followed by a `reset` back (`06_evidence --remap` for a break). Doing it here costs a stage-06 mapping, against stages 12-15 if it is found after validation. On GammaCitrus both chr5 telomeric arms and a 779 kb lost allele were behind such forks.
 
 ## 11_build
 
-Writes scaffolds, junctions, placements and unplaced sequence. Chains with too little Hi-C to place are left unplaced. **Check:** `build_scaffolds` places a chain by density within it, not evidence for its position, so run `scripts/review/weak_placed.py`. The report also flags a scaffold written in reverse against its homolog (`13_scaffold/homolog_direction.tsv`): list it in `edits/flip.txt` now, before stage 12, where it costs nothing ([D11](decisions/D11_gap_closures.md)).
+Writes scaffolds, junctions, placements and unplaced sequence. Chains with too little Hi-C to place are left unplaced. **Check:** `build_scaffolds` places a chain by density within it, not evidence for its position, so run `scripts/review/weak_placed.py`. It repeats stage 10's direction check with the tails (`13_scaffold/homolog_direction.tsv`). Stage 11 does not stop, so `run` goes on to stage 12: a flag raised only here is acted on at D11, for `reset 12_fill` ([D12](decisions/D12_sv_calls.md)).
 
 ## 12_fill, then D11 (about 1 h)
 

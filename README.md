@@ -45,7 +45,7 @@ This config file will allow you to specify the data inputs including:
 - A hifiasm unitig graph (`*.p_utg.gfa`) as well as the extracted FASTA from that file.
 - Long corrected nanopore reads (FASTA format as output by `dorado correct` or equivalent).
 - Hi-C reads (FASTQ with/without `gz` compression; trimmed or untrimmed).
-- (Optional) raw nanopore data (BAM format).
+- (Optional) raw nanopore data (BAM, CRAM or SAM; or FASTQ or FASTA, gzipped or not).
 - (Optional) a related reference genome (single haplotype FASTA format).
 
 In addition to biological information including:
@@ -60,7 +60,7 @@ Within the directory at `<my working directory>` you will find files to be used 
 
 - `<location of hifiasm utg gfa and fasta>` contains the unitigs GFA as output by hifiasm, as well as a FASTA extracted from that GFA.
 - `<location of hi-c data>` contains the paired Hi-C reads.
-- `<location of nanopore data>` contains corrected nanopore reads in FASTA format <OPTIONAL: and raw reads in BAM format>.
+- `<location of nanopore data>` contains corrected nanopore reads in FASTA format <OPTIONAL: and raw reads (BAM, CRAM, SAM, FASTQ or FASTA)>.
 - `<location of reference genome>` which is a related reference genome.
 
 The goal of this project is to assemble a genome of <my organism>. It is expected to be a <ploidy level> and have <number> chromosomes.
@@ -71,7 +71,7 @@ After exploring the repository, please begin by initialising a directory at `<my
 ```
 
 # Getting started (for agents)
-Before beginning an analysis, read [AGENTS.md](AGENTS.md), [docs/TRAPS.md](docs/TRAPS.md) and [docs/decisions/README.md](docs/decisions/README.md). Read the rest of `docs/` when the table below says to: each decision's guide when the run stops there, and the reference documents when you need them. The development record (LESSONS, RECORD, IMPROVING, TESTING) is not needed to run an assembly.
+Before beginning an analysis, read [AGENTS.md](AGENTS.md), [docs/TRAPS.md](docs/TRAPS.md), [docs/decisions/README.md](docs/decisions/README.md) and "The whole run" in [docs/PROCESS.md](docs/PROCESS.md). Read the rest of `docs/` when the table below says to: each stage's section of PROCESS and each decision's guide when the run reaches them, and the reference documents when you need them. The development record (LESSONS, RECORD, IMPROVING, TESTING) is not needed to run an assembly.
 
 Coordinate with the human user to set up the necessary conda environment and/or the `sample.yaml` configuration file.
 
@@ -153,7 +153,7 @@ Thus, `agentssembler` is *not* meant to be a tool that is used for decades to co
 | [AGENTS.md](AGENTS.md) | **Start here if you are an agent.** Rules and the loop | Before starting |
 | [docs/TRAPS.md](docs/TRAPS.md) | Things that cost real time | Before starting |
 | [docs/decisions/](docs/decisions/README.md) | One guide per decision | The index before starting; each guide when the run stops at it |
-| [docs/PROCESS.md](docs/PROCESS.md) | Start to end: the whole run, then each stage and what to check | Before starting, then at each stage |
+| [docs/PROCESS.md](docs/PROCESS.md) | Start to end: the whole run, then each stage and what to check | "The whole run" before starting; each stage's section when the run reaches it |
 | [docs/LAYOUT.md](docs/LAYOUT.md) | The work directory: which stage writes what, every file, and the files you write | When looking for a file |
 | [docs/SETTINGS.md](docs/SETTINGS.md) | Every setting and how to choose it | When writing the config, or when a guide sets a value |
 | [docs/HPC.md](docs/HPC.md) | Running a mapping on another machine and putting it in place | Only if mapping elsewhere |

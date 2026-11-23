@@ -6,7 +6,7 @@
 
 **Apply in this order, and record each result in `16_validate/sv/sv_calls.tsv`.** Stage 15 puts the header there (`config/handover_templates/sv_calls.tsv`); keep its columns, one row per candidate tested, including those not supported. `examples/Busk/sv_calls.tsv` is a filled one. After a reset, the report names the archived table: re-test each of its rows on the new build, and do not copy rows across.
 
-1. **Whole-scaffold direction first.** A scaffold mostly inverted against its homolog is a writing-direction flag, not an inversion. The report raises this.
+1. **Whole-scaffold direction first.** A scaffold mostly inverted against its homolog is a writing-direction flag, not an inversion. The report raises this: at D16 from the pre-build (`12_shared/homolog_direction.tsv`), at stage 11 with the tails, and at stage 15 from whole-scaffold alignments. List one of the two scaffolds in `edits/flip.txt` (scaffold, reason); stage 12 applies it before mapping reads, so before stage 12 it costs nothing. Found after stage 12, it costs `reset 12_fill`.
 2. **Dosage:** `16_validate/dosage.txt`. Do translocation partners balance to the ploidy?
 3. **Homologs:** align the region to all scaffolds **except its own** (`scripts/validate/summarise_regions.py`). A self-hit otherwise hides everything else. A real inversion is `+ / - / +` against both homologs. Colinear with even one means it is not specific to this haplotype.
 4. **Reads at the exact transition:** `sv/bp_reads.tsv`, or `scripts/validate/transitions.py`. Take the boundary from step 3, not the reference block's edge.

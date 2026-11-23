@@ -12,6 +12,8 @@ agentssembler decide WORK D04 --by NAME --reason "..."
 agentssembler run WORK                 # continue
 ```
 
+**What to read.** Before starting: this file, [docs/TRAPS.md](docs/TRAPS.md), [docs/decisions/README.md](docs/decisions/README.md) and "The whole run" in [docs/PROCESS.md](docs/PROCESS.md). At each stop: the stage's report and the guide it names. The development record ([LESSONS](docs/LESSONS.md), [RECORD](docs/RECORD.md), [IMPROVING](docs/IMPROVING.md), [TESTING](docs/TESTING.md)) is not needed to run an assembly; read IMPROVING at D13 before proposing a trial.
+
 `agentssembler status WORK` shows where things stand. See [docs/PROCESS.md](docs/PROCESS.md) for each stage, [docs/decisions/](docs/decisions/README.md) for each fork, and [docs/LAYOUT.md](docs/LAYOUT.md) for every file in the work directory.
 
 **Directory numbers are not stage numbers.** Stage `06_evidence` writes `12_broken/` and `11_ont_chains/`; `06_chains/` belongs to stage `04_chains`; `01_genes/` (compleasm on the unitigs) belongs to `01_inputs`. [LAYOUT](docs/LAYOUT.md) has the table.

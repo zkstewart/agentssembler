@@ -10,7 +10,7 @@ The costly steps are mappings. Any of them can be made on another machine, such 
 |---|---|---|---|
 | `02_map_unitigs` | `02_ont_map/ont_vs_unitigs.paf.gz`, `03_unitig_align/unitigs_self.paf.gz`, `03_unitig_align/unitigs_vs_ref.paf.gz` (with a reference) | Unitig FASTA, corrected reads, reference | 2-6; up to 50 GB |
 | `04_chains` | `06_chains/chains_self.paf.gz`, `06_chains/ont_vs_chains.paf.gz`, `07_chains2/ont_vs_chains.paf.gz` | Chains made earlier in the same stage, so only by running the stage there | 1-3 |
-| `05_hic_chains` | `09_hic_map/pairs.tsv.gz`, `09_hic_map/HiC.bam`, `09_hic_map/pairs.rescued.tsv.gz`, `09_hic_map/alleles08.pairs.tsv` and `.blocks.tsv` | `08_final_chains/`, `07_chains2/repeat_chains.txt`, `03_unitig_align/unitigs_self.paf.gz`, unitig FASTA, Hi-C reads; and the tools bwa, samblaster, samtools and HapHiC's `filter_bam` | about 1.6 |
+| `05_hic_chains` | `09_hic_map/pairs.tsv.gz`, `09_hic_map/HiC.bam`, `09_hic_map/pairs.rescued.tsv.gz`, `09_hic_map/alleles08.pairs.tsv` and `.blocks.tsv` | `08_final_chains/`, `07_chains2/repeat_chains.txt`, `03_unitig_align/unitigs_self.paf.gz`, unitig FASTA, Hi-C reads; with `collapsed: true` also `07_chains2/ont_vs_chains.paf.gz`, `chains.fasta.fai` and `chains.agp` (the hub-core test); and the tools bwa, samblaster, samtools and HapHiC's `filter_bam` | about 1.6 |
 | `06_evidence` | `11_ont_chains/ont_vs_chains.paf.gz` | `12_broken/chains.fasta`, made earlier in the same stage, and corrected reads; so only by running the stage there, which needs most of the work directory | about 0.7 |
 
 Stage 02 depends only on the inputs, so it is the one worth moving, and it can be started before anything else. The others depend on results of the run itself, and the stage 06 mapping is short enough that moving it rarely pays.
@@ -27,7 +27,7 @@ The stage scripts read everything from `AS_*` variables, so a stage runs anywher
    WORK/00_inputs/reference.fasta        # only with a reference
    ```
 
-   For stage 05, copy `08_final_chains/`, `07_chains2/repeat_chains.txt` and `03_unitig_align/unitigs_self.paf.gz` there too, and add the Hi-C reads under the names in `AS_HIC_R1_LINK` and `AS_HIC_R2_LINK`. Bring back the whole of `09_hic_map/`: the rescued pairs and the allele table are made from `HiC.bam` in the same stage.
+   For stage 05, copy `08_final_chains/`, `07_chains2/repeat_chains.txt` and `03_unitig_align/unitigs_self.paf.gz` there too (with `collapsed: true`, also `07_chains2/ont_vs_chains.paf.gz`, `07_chains2/chains.fasta.fai` and `07_chains2/chains.agp`, or the stage stops at the hub-core test), and add the Hi-C reads under the names in `AS_HIC_R1_LINK` and `AS_HIC_R2_LINK`. Bring back the whole of `09_hic_map/`: the rescued pairs and the allele table are made from `HiC.bam` in the same stage.
 
 2. **Get the environment** from the real work directory:
 
@@ -53,7 +53,7 @@ The stage scripts read everything from `AS_*` variables, so a stage runs anywher
 
    For SLURM, replace the header with `#SBATCH -c 24 --mem=64G -t 12:00:00`. A job that is killed leaves `.part` files, never a finished-looking output. Submit it again and it resumes at the first missing mapping.
 
-4. **Check before copying back.** Each output must pass `gzip -t`. Record `md5sum` there, and compare after the copy.
+4. **Check before copying back.** Each output must pass `gzip -t`. Record `md5sum` there, and compare after the copy. Bring back each mapping's `.target` file with it (`pairs.tsv.gz.target`, `ont_vs_chains.paf.gz.target`, ...): it holds the checksum of the sequence mapped to, and the stage compares it with the work directory's copy. A mapping without one is accepted unchecked; one whose `.target` differs stops the stage (exit 4), which is the point.
 
 5. **Put the files in place** under the paths in the table, creating the directory if needed, then `agentssembler run WORK`. The stage logs `skip, exists` for each one, writes its report, and the run goes on.
 

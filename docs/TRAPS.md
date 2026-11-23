@@ -17,7 +17,7 @@ Each of these cost real time.
 | T11 | A raw FASTA can fill the disk and crash the machine, more so when the work disk is a file on another drive | Stage 13 streams. Set `guard_path` |
 | T12 | Corrected read IDs carry `:N` when a read was split | Strip it to match raw reads, and key spanning by ID and length so that two fragments do not count as one spanning read |
 | T13 | Pooled depth ratios are dominated by repeat arrays | Report medians per site |
-| T14 | A direction flag can leave a scaffold reversed against its homolog, which reads as a huge inversion | The `11_build` report flags it, before reads are mapped; so does validation. Use `edits/flip.txt` |
+| T14 | A direction flag can leave a scaffold reversed against its homolog, which reads as a huge inversion | The `10_arms_tails` report flags it at D16, before reads are mapped; `11_build` and validation check again. Use `edits/flip.txt` |
 | T15 | `chain_breaks.tsv`'s `cross_ratio` is 0 at satellites | Require two signals (D04) |
 | T16 | `build_chains.py` numbering changes with any change upstream | Chain names apply to one run only. Never copy an edit file between samples, or across a change upstream |
 | T17 | A step skips when its output exists, so a partial output counts as finished. A failed command's output is moved to `.failed`, but a kill or a crash of the machine leaves it in place | After any interruption that was not a failed command, check the newest outputs before resuming |

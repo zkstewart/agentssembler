@@ -52,7 +52,7 @@ The numbers are in [RECORD](RECORD.md) where a section is named; the others are 
 - **Fewer or more hops than 12:** 3 missed a real path on one genome, and 8 missed one on another once connectors were in the graph. 16 found the same as 12.
 - **Raw reads to place unplaced sequence:** one q20 link in total on 13Q010. The evidence there is Hi-C or nothing.
 - **Allele-aware Hi-C for unplaced chains and arms:** near-identical copies are near-identical in Hi-C reads too; the few reads with a margin spread over all chromosomes. RECORD: "Allele-aware Hi-C for hard unplaced chains", "Phasing arms".
-- **TTT as an early stage, before chains:** planned for after D01 on GammaCitrus, and not built. Its one gain came from one small tangle. The largest tangle (254 unitigs) was beyond it, and most other output confirmed the baseline or was bubble alleles that chains cannot express.
-- **TTT on a large tangle or one with dead ends:** no valid path, as every route needs banned connections, and the MILP grew by about 340 MB a minute.
+- **TTT as an early stage, before chains:** planned for after D01 on GammaCitrus, and not built. Its one gain came from one small tangle. The largest tangle (254 unitigs) was beyond it, and most other output confirmed the baseline or was bubble alleles that chains cannot express. RECORD: "TTT on graph tangles (GammaCitrus)".
+- **TTT on a large tangle or one with dead ends:** no valid path, as every route needs banned connections, and the MILP grew by about 340 MB a minute. RECORD: "TTT on graph tangles (GammaCitrus)".
 - **hifiasm's `rd:i` as TTT coverage:** it dropped real alleles to multiplicity 0. Use stage 03's corrected-read depth.
-- **A homolog synteny term in ordering:** a small bonus for junctions whose alleles are adjacent on a homolog had no effect over four rounds. Removed from the code.
+- **A homolog synteny term in ordering:** a small bonus for junctions whose alleles are adjacent on a homolog had no effect over four rounds. Removed from the code. RECORD: "A homolog synteny term in ordering: no effect".

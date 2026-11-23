@@ -37,7 +37,7 @@ An allopolyploid's subgenomes are not labelled. Chromosome names come from the r
 |---|---|---|
 | `min_within` | 0.13 x H, measured (below) | Hi-C pairs/Mb within a chain below which it carries no placement information. Such chains do not seed grouping, are ordered after the rest, and stay unplaced without a link or telomere. Set a number to fix it: `700` is the value the citrus builds used. Look at `10_groups/chain_stats.tsv` for a low-density class |
 | `link_bonus` | 20000 | Order score for honouring a link. Set above the Hi-C differences between orders, so a confirmed link is effectively a hard constraint. This follows from the evidence order, not from tuning |
-| `hic_allele_rescue` | false | Place chains Hi-C leaves unassigned by pairs with an allele-ambiguous end (MAPQ 0, every other hit on an allele partner): chromosome from those pairs, haplotype by allele exclusion, unique Hi-C, or arbitrary balance (`10_groups/groups.rescued.tsv`, calls labelled). For near-identical haplotypes. Decide at D04 from `09_hic_map/rescue_signal.txt`; acts in stages 06-08. On 292: +26 Mb placed, compleasm +2.5 and +3.3 points; cost, more inverted blocks and sequence on both haplotypes of chr2, to review in Juicebox. |
+| `hic_allele_rescue` | false | Place chains Hi-C leaves unassigned by pairs with an allele-ambiguous end (MAPQ 0, every other hit on an allele partner): chromosome from those pairs, haplotype by allele exclusion, unique Hi-C, or arbitrary balance (`10_groups/groups.rescued.tsv`, calls labelled). For near-identical haplotypes. Decide at D04 from `09_hic_map/rescue_signal.txt`; acts in stages 06-08. On 292: +26 Mb placed, compleasm single-copy +2.5 and +3.3 points (h1, h2; the rescue alone, before tails: [RECORD](RECORD.md#hi-c-allele-rescue-and-collapsed-hubs-292)); cost, more inverted blocks and sequence on both haplotypes of chr2, to review in Juicebox. |
 | `unloc_purge` | 0.2 | Unlocalized scaffolds (stage 15, `unloc/`): of two chains put on one haplotype that align over at least this fraction of the shorter, the shorter stays unplaced. Overlapping fragments of one haplotype otherwise duplicate genes. 292: no purge D 2.0%, 0.3 D 1.4% (h1), 0.2 D 0.9%; `0` turns it off |
 | `restore_connectors` | true | Restore dropped unitigs that are the graph path between chain ends (stage 06) |
 | `hops` | 12 | Longest bridge path. Connectors add hops without much sequence: 3 and 8 have each missed a real path, and 16 found the same as 12 |
@@ -94,6 +94,13 @@ A chain is low-information when its Hi-C reads rarely place uniquely, as in a sa
 - **The stage 06 report** gives H and the threshold, and raises an alarm when H is under 2,350 (half the lowest run so far).
 - **Within-chain density is not long-range density.** The share of pairs over 100 kb apart ran from 5% (irma) to 38% (WatsonsChoice), so this ruler is not right for the pair minimums and `link_bonus`. They stay fixed.
 
+## Validation and comparison
+
+| Setting | Meaning |
+|---|---|
+| `compleasm.min_complete` | Validation alarm when a haplotype, with its unlocalized scaffolds, is less complete than this (%). Default 95 |
+| `inputs.baseline_agp` | Optional: an earlier build's AGP, for the reference alarm table of stage 07 (`eval_groups.txt`) to compare against |
+
 ## Compute
 
 | Setting | Meaning |
@@ -101,5 +108,3 @@ A chain is low-information when its Hi-C reads rarely place uniquely, as in a sa
 | `compute.threads` | Threads per job. About 16 cores and 30 GB RAM were enough, except for the stage 02 mappings, which took up to 50 GB |
 | `compute.min_free_gb` | Mappings stop below this. Default 40 |
 | `compute.guard_path` | Path whose free space counts. **Under WSL use the host drive**, such as `/mnt/d`, because `df /` overstates it |
-| `compleasm.min_complete` | Validation alarm when a haplotype, with its unlocalized scaffolds, is less complete than this (%). Default 95 |
-| `inputs.baseline_agp` | Optional: an earlier build's AGP, for the reference alarm table of stage 07 (`eval_groups.txt`) to compare against |

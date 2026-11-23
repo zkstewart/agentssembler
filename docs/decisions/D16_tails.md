@@ -42,4 +42,6 @@ Record the check in the reason even when nothing is done, for example: `Tangle c
 
 ## Genes on tails
 
-`12_shared/tail_genes.tsv` (with genes on the unitigs) gives each tail's genes, and how many have no full set of placed copies elsewhere (`short`). A tail with short genes is worth testing; the genes do not pass it. On 292 the user adopted the five gene-carrying tails at D13 for completeness; two had strong raw-read support (134 and 104 reads at q20) and three little or none. A tail left unplaced keeps its genes in the assembly as unlocalized sequence when its chromosome is known (stage 15), so the gain from placing it is position, not genes.
+`12_shared/tail_genes.tsv` (with genes on the unitigs) gives each tail's genes, and how many have no full set of placed copies elsewhere (`short`). A tail with short genes is worth testing; the genes do not pass it. On 292 the user chose the five gene-carrying tails at D13 for completeness; two had strong raw-read support (134 and 104 reads at q20) and three little or none. A tail left unplaced keeps its genes in the assembly as unlocalized sequence when its chromosome is known (stage 15), so the gain from placing it is position, not genes.
+
+**Direction, at this stop:** the report flags a pre-build scaffold written in reverse against its homolog (`12_shared/homolog_direction.tsv`). List it in `edits/flip.txt` now: this is the last stop before stage 12 maps reads ([D12](D12_sv_calls.md)).
