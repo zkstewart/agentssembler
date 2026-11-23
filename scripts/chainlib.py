@@ -37,3 +37,22 @@ def gene_hits(table, P):
         c, x = lift(P, s[2], (int(s[3]) + int(s[4])) // 2)
         out.append((s[0], s[1], c, x))
     return out
+def read_windows(path):
+    '''unitig_depth.py windows file -> chain -> [(start, end, total, unique)], sorted'''
+    W = collections.defaultdict(list)
+    for l in open(path):
+        if l[0] == "#": continue
+        s = l.split("\t"); W[s[0]].append((int(s[1]), int(s[2]), float(s[3]), float(s[4])))
+    for v in W.values(): v.sort()
+    return W
+def core_runs(wins, lo, minRun):
+    '''Runs of adjacent windows whose unique-read depth (MAPQ >= 20 reads) is >= lo, at least minRun bp long:
+    the core of a collapsed hub, where both haplotypes' reads land and all of them are unique. -> [(start, end, median unique, median total)].
+    Total depth alone misses these: the hub's arms read 1x with reads that are MAPQ 0, which pulls the chain's median below the shared class.'''
+    runs, cur = [], None
+    for a, b, t, u in wins:
+        if u >= lo and cur and a == cur[1]: cur[1] = b; cur[2].append(u); cur[3].append(t)
+        elif u >= lo: cur = [a, b, [u], [t]]; runs.append(cur)
+        else: cur = None
+    med = lambda v: sorted(v)[len(v) // 2]
+    return [(a, b, med(us), med(ts)) for a, b, us, ts in runs if b - a >= minRun]

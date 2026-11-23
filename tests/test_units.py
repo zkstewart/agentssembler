@@ -275,9 +275,10 @@ class T(unittest.TestCase):
             open(f"{d}/a.agp", "w").write("c1_h2\t1\t100\t1\tW\tu\t1\t100\t+\nc1_h2\t101\t200\t2\tN\t100\tscaffold\tyes\tna\n")
             A = r.homolog_lengths(f"{d}/f.fai", f"{d}/a.agp")
             self.assertEqual(len(A), 1); self.assertIn("c1_h2", A[0]); self.assertIn("1 gap:", A[0])
-            open(f"{d}/t.tsv", "w").write("#h\nc1_h2\t9\tright\t14\tunplaced_a\t14\t1\t1\t2\t+\t60\nc1_h2\t9\tleft\t10\tunplaced_b\t2\t1\t1\t2\t+\t60\nc1_h2\t9\tleft\t4\tc1_h2\t4\t1\t1\t2\t+\t60\nc1_h2\t7\tleft\t4\tc1_h1\t4\t1\t1\t2\t+\t60\nc2_h1\t5\tleft\t3\t.\t0\t0\t.\t.\t.\t.\n")
+            open(f"{d}/t.tsv", "w").write("#h\nc1_h2\t9\tright\t14\tunplaced_a\t14\t1\t1\t2\t+\t60\nc1_h2\t9\tleft\t10\tunplaced_b\t2\t1\t1\t2\t+\t60\nc1_h2\t9\tleft\t4\tc1_h2\t4\t1\t1\t2\t+\t60\nc1_h2\t7\tleft\t4\tc1_h1\t4\t1\t1\t2\t+\t60\nc2_h1\t5\tleft\t3\t.\t0\t0\t.\t.\t.\t.\n"
+                                       "c2_h2\t8\tright\t4\tunplaced_c\t4\t1\t1\t2\t+\t0\t4\n")
             T = r.tail_alarms(f"{d}/t.tsv")
-            self.assertEqual(len(T), 2); self.assertIn("14 of 14", T[0]); self.assertIn("1 gap edges", T[1])
+            self.assertEqual(len(T), 3); self.assertIn("14 of 14", T[0]); self.assertIn("duplicates placed", T[1]); self.assertIn("c2_h2:8 right -> c", T[1]); self.assertIn("1 gap edges", T[2])
     def test_unplaced_components(self):
         # u1 placed on s1; u2 - u3 unplaced, joined to each other and to u1 in the graph; u4 unplaced, alone
         with tempfile.TemporaryDirectory() as d:
@@ -394,6 +395,66 @@ class T(unittest.TestCase):
             self.assertIn(got, (names, names[::-1]))
             run("hic_order.py", *args, f"{d}/o2", "--minPairs", "1")
             self.assertEqual(open(f"{d}/o1").read(), open(f"{d}/o2").read())
+    def test_hub_cores(self):
+        # A: 2x unique core at 100-200 kb inside a 1x chain, no unitig boundary near it (break inside); B: the same with a boundary
+        # 5 kb from the core's start (break snaps to it); C: an allele bubble, 1x with MAPQ 0 reads (no row); D: classed shared (no row)
+        with tempfile.TemporaryDirectory() as d:
+            with open(f"{d}/w.tsv", "w") as o:
+                o.write("#unitig\tstart\tend\ttotal\tunique\tsecondary\n")
+                for c in "ABCD":
+                    for i in range(30):
+                        core = c in "ABD" and 10 <= i < 20
+                        o.write(f"{c}\t{i * 10000}\t{(i + 1) * 10000}\t{160 if core or c == 'D' else 80}\t{160 if core else 40 if c == 'C' else 20}\t0\n")
+            open(f"{d}/c.agp", "w").write("A\t1\t150000\t1\tW\tu1\t1\t150000\t+\nA\t150001\t300000\t2\tW\tu2\t1\t150000\t+\n"
+                                       "B\t1\t95000\t1\tW\tu3\t1\t95000\t+\nB\t95001\t300000\t2\tW\tu4\t1\t205000\t+\n")
+            open(f"{d}/k.tsv", "w").write("#h\n" + "".join(f"{c}\t300000\t{m}\t0.3\t0.7\t0.00\t{k}\n" for c, m, k in (("A", 80, "specific"), ("B", 80, "specific"), ("C", 80, "specific"), ("D", 160, "shared"))))
+            o = run("review/hub_cores.py", f"{d}/w.tsv", f"{d}/c.agp", f"{d}/k.tsv", f"{d}/o.tsv", "--sharedLo", "129")
+            self.assertEqual(o.returncode, 0, o.stderr)
+            F = {l.split("\t")[0]: l.rstrip("\n").split("\t") for l in open(f"{d}/o.tsv") if l[0] != "#"}
+            self.assertEqual(sorted(F), ["A", "B"])
+            self.assertEqual(F["A"][4:7] + F["A"][10:], ["100000", "200000", "100", "100000", "200000", "inside"])
+            self.assertEqual(F["B"][10:], ["95000", "200000", "inside/unitig"])
+    def test_rescue_collapsed_redundant(self):
+        # a1 (g1) and a2 (g2) anchor chromosome c1. x has a 2x unique-read core: collapsed. y is covered in both groups by short
+        # allele blocks (each under --minConflict): redundant. z is placed. w links only to x: it still finds c1 through x.
+        with tempfile.TemporaryDirectory() as d:
+            L = {"a1": 2000000, "a2": 2000000, "x": 300000, "y": 120000, "z": 200000, "w": 150000}
+            open(f"{d}/g.tsv", "w").write("#chain\tlength\tgroup\n" + "".join(f"{c}\t{n}\t{'g1' if c == 'a1' else 'g2' if c == 'a2' else 'unassigned'}\n" for c, n in L.items()))
+            open(f"{d}/g.chroms.tsv", "w").write("#group\tchrom\ng1\tc1\ng2\tc1\n")
+            with gzip.open(f"{d}/r.tsv.gz", "wt") as o:
+                for c, n in (("x", 40), ("y", 30), ("z", 30), ("w", 30)):
+                    for i in range(n): o.write(f"{c}\t1\t{'x' if c == 'w' else 'a1' if i % 2 else 'a2'}\t1\n")
+            with gzip.open(f"{d}/u.tsv.gz", "wt") as o:
+                for i in range(30): o.write("z\t1\ta1\t1\n")
+            open(f"{d}/al.tsv", "w").write("#h\n")
+            open(f"{d}/rep.tsv", "w").write("#h\n" + "".join(f"{c}\t{n}\t0.0\n" for c, n in L.items()))
+            open(f"{d}/b.tsv", "w").write("#h\ny\t0\t40000\ta1\t5000\t45000\t0.0\t+\ny\t40000\t70000\ta1\t9000\t39000\t0.0\t+\ny\t0\t70000\ta2\t1000\t71000\t0.0\t+\n")
+            with open(f"{d}/w.tsv", "w") as o:
+                for c, n in L.items():
+                    for i in range(n // 10000): o.write(f"{c}\t{i * 10000}\t{(i + 1) * 10000}\t80\t{160 if c == 'x' and 10 <= i < 20 else 70}\t0\n")
+            o = run("rescue/rescue_groups.py", f"{d}/g", f"{d}/r.tsv.gz", f"{d}/u.tsv.gz", f"{d}/al.tsv", f"{d}/rep.tsv", "--windows", f"{d}/w.tsv", "--sharedLo", "129", "--blocks", f"{d}/b.tsv")
+            self.assertEqual(o.returncode, 0, o.stderr)
+            C = {l.split("\t")[0]: (l.split("\t")[3], l.split("\t")[4]) for l in open(f"{d}/g.rescued.tsv") if l[0] != "#"}
+            self.assertEqual(C["x"], ("unassigned", "collapsed")); self.assertEqual(C["y"], ("unassigned", "redundant"))
+            self.assertEqual(C["z"], ("g1", "hic")); self.assertIn(C["w"][0], ("g1", "g2"))
+            # without the options, the old calls
+            shutil.copy(f"{d}/g.hic.tsv", f"{d}/g.tsv")
+            o = run("rescue/rescue_groups.py", f"{d}/g", f"{d}/r.tsv.gz", f"{d}/u.tsv.gz", f"{d}/al.tsv", f"{d}/rep.tsv")
+            self.assertNotIn("collapsed", open(f"{d}/g.rescued.tsv").read())
+    def test_rescue_swaps(self):
+        # c_h1: Z - A | gap | Y - B; c_h2: Z2 - P - X - Q. A links only X; P, B and Q link both X and Y: swapping X and Y closes the gap.
+        with tempfile.TemporaryDirectory() as d:
+            open(f"{d}/j.tsv", "w").write("#h\nc_h1\t50\tZ+\tA+\tdirect\nc_h1\t100\tA+\tY+\thic\nc_h1\t200\tY+\tB+\tdirect\n"
+                                       "c_h2\t50\tZ2+\tP+\tdirect\nc_h2\t100\tP+\tX+\tdirect\nc_h2\t200\tX+\tQ+\tdirect\n")
+            links = "#h\nZ+\tA-\t0\tNA\t50000\nZ2+\tP-\t0\tNA\t50000\nA+\tX-\t0\tNA\t50000\nX+\tB-\t0\tNA\t50000\nP+\tY-\t0\tNA\t50000\nY+\tQ-\t0\tNA\t50000\nP+\tX-\t0\tNA\t50000\nX+\tQ-\t0\tNA\t50000\nY+\tB-\t0\tNA\t50000\n"
+            open(f"{d}/l.tsv", "w").write(links); open(f"{d}/b.tsv", "w").write("#h\n")
+            o = run("review/rescue_swaps.py", f"{d}/j.tsv", f"{d}/l.tsv", f"{d}/b.tsv", f"{d}/o.tsv")
+            self.assertEqual(o.returncode, 0, o.stderr)
+            F = [l.split("\t") for l in open(f"{d}/o.tsv") if l[0] != "#"]
+            self.assertEqual([(r[4], r[6], r[7]) for r in F], [("Y", "X", "c_h2")])
+            open(f"{d}/l.tsv", "w").write(links.replace("P+\tY-\t0\tNA\t50000\n", ""))   # Y cannot take X's place: no swap
+            run("review/rescue_swaps.py", f"{d}/j.tsv", f"{d}/l.tsv", f"{d}/b.tsv", f"{d}/o.tsv")
+            self.assertEqual([l for l in open(f"{d}/o.tsv") if l[0] != "#"], [])
     def test_stable_key(self):
         # a renumbered chain keeps its key; copies keep their suffix; a chain missing from the AGP falls back to its name
         sys.path.insert(0, f"{R}/scripts"); import chainlib

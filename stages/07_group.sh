@@ -13,7 +13,9 @@ if [ ! -s 10_groups/groups.tsv ]; then python3 "$S/hic_group.py" 12_broken/links
 # settings.hic_allele_rescue: chains left unassigned, placed by allele-ambiguous Hi-C; calls in 10_groups/groups.rescued.tsv (D04, D05).
 # When it is off, the same step runs on a copy (10_groups/rescue_preview/) so that D05 sees what turning it on would place:
 # that costs `reset 07_group`, since stages 05-06 made the pairs either way.
-RP=(12_broken/pairs.rescued.tsv.gz 12_broken/pairs.tsv.gz 10_groups/alleles.pairs.tsv 10_groups/chain_repeat.tsv); RT=""
+RP=(12_broken/pairs.rescued.tsv.gz 12_broken/pairs.tsv.gz 10_groups/alleles.pairs.tsv 10_groups/chain_repeat.tsv --blocks 10_groups/alleles.blocks.tsv); RT=""
+# collapsed chains (a 2x unique-read core) get no haplotype; with collapsed sharing off there is no shared class to send them to
+collapsed && RP+=(--windows 11_ont_chains/depth.windows.tsv --sharedLo "$AS_SHARED_LO")
 if hic_rescue; then
   [ -s 10_groups/groups.rescued.tsv ] || python3 "$S/rescue/rescue_groups.py" 10_groups/groups "${RP[@]}" | tee -a 10_groups/hic_group.log
   RT=10_groups/groups.rescued.tsv; GB=10_groups/groups.hic.tsv
@@ -33,4 +35,4 @@ if has_ref; then
   python3 "$S/eval_groups.py" 10_groups/groups.tsv 12_broken/chains.agp 03_unitig_align/unitigs_vs_ref.paf.gz "$B" > 10_groups/eval_groups.txt || true
 fi
 # Chains running through a collapsed fork cannot be seen until groups exist. A break costs a read mapping, so read this before spending time on order (D06).
-if collapsed && [ -s 10_groups/groups.chroms.tsv ]; then python3 "$S/review/chain_forks.py" 12_broken/chains.agp 00_inputs/unitigs.gfa 04_copynumber/copy_number.tsv 10_groups/groups.tsv 10_groups/groups.chroms.tsv --hap "$AS_HAP" > 10_groups/chain_forks.txt; fi
+if collapsed && [ -s 10_groups/groups.chroms.tsv ]; then python3 "$S/review/chain_forks.py" 12_broken/chains.agp 00_inputs/unitigs.gfa 04_copynumber/copy_number.tsv 10_groups/groups.tsv 10_groups/groups.chroms.tsv --hap "$AS_HAP" --windows 11_ont_chains/depth.windows.tsv > 10_groups/chain_forks.txt; fi

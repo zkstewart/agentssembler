@@ -26,7 +26,7 @@ if has_genes && [ -s $D/tails.tsv ] && [ ! -s $D/tail_genes.tsv ]; then python3 
 [ -s $D/pre/target.fasta ] || cat $D/pre/$AS_SAMPLE.fasta $D/pre/$AS_SAMPLE.unplaced.fasta > $D/pre/target.fasta
 # D16 tangle check: placed or tail chains running through a 2x fork whose other exit reaches an unplaced 1x chain (a lost haplotype route).
 if collapsed && [ ! -s $D/chain_forks.tsv ]; then
-  python3 "$S/review/chain_forks.py" 12_broken/chains.agp 00_inputs/unitigs.gfa 04_copynumber/copy_number.tsv 10_groups/final.tsv 10_groups/final.chroms.tsv --hap "$AS_HAP" --placement $D/pre/$AS_SAMPLE.placement.tsv --chainClass 11_ont_chains/chain_class.tsv --oneLo "$AS_ONE_LO" --oneHi "$AS_SHARED_LO" --tails $D/tails.tsv > $D/chain_forks.tsv.tmp && mv $D/chain_forks.tsv.tmp $D/chain_forks.tsv
+  python3 "$S/review/chain_forks.py" 12_broken/chains.agp 00_inputs/unitigs.gfa 04_copynumber/copy_number.tsv 10_groups/final.tsv 10_groups/final.chroms.tsv --hap "$AS_HAP" --windows 11_ont_chains/depth.windows.tsv --placement $D/pre/$AS_SAMPLE.placement.tsv --chainClass 11_ont_chains/chain_class.tsv --oneLo "$AS_ONE_LO" --oneHi "$AS_SHARED_LO" --tails $D/tails.tsv > $D/chain_forks.tsv.tmp && mv $D/chain_forks.tsv.tmp $D/chain_forks.tsv
 fi
 if [ -s $D/tails.tsv ] && [ "$(grep -vc '^#' $D/tails.tsv)" -gt 0 ]; then
   step $D/tail_checks.tsv python3 "$S/rawreads/tail_checks.py" --tails $D/tails.tsv --chains 12_broken/chains.fasta --target $D/pre/target.fasta --names $T/names.tsv --class 11_ont_chains/chain_class.tsv --report $D/tail_report.tsv --hapDepth "$AS_HAP" --ploidy "$AS_PLOIDY" --minimap2 "$AS_MINIMAP2" --threads "$AS_THREADS" --out $D/tail_checks.tsv

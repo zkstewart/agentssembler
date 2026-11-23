@@ -150,7 +150,22 @@ def r_group(w, c, s):
     forks = f"{w}/10_groups/chain_forks.txt"
     if os.path.exists(forks):
         n = sum(1 for l in open(forks) if l.startswith("HUB"))
-        if n: al.append(f"{n} HUB rows in 10_groups/chain_forks.txt: 2x unitigs in a chain whose other exit reaches a homolog's chain. Read them before going on: a break costs a read mapping (D04, D06).")
+        if n: al.append(f"{n} HUB rows in 10_groups/chain_forks.txt: 2x unitigs in a chain whose other exit reaches a homolog's chain. Read them before going on: a break costs a read mapping (D04, D06). "
+                        "hub_total and hub_unique are the chain's own depth over the hub: about 1x there is an allele bubble, not a collapse.")
+    G = {r[0]: r[2] for r in rows(f"{w}/10_groups/groups.tsv")}
+    HC = collections.defaultdict(list)
+    for r in rows(f"{w}/10_groups/hub_cores.tsv"): HC[r[0]].append(r)
+    if HC:
+        hc = sorted(HC.items(), key=lambda kv: -sum(int(r[6]) for r in kv[1]))
+        al.append(f"{len(hc)} chains classed single-copy hold a core of 2x unique reads (10_groups/hub_cores.tsv): " + ", ".join(f"{c} ({sum(int(r[6]) for r in v)} kb, {G.get(c, '?')})" for c, v in hc[:15])
+                  + (" ..." if len(hc) > 15 else "") + ". Each is a collapsed hub whose arms read 1x on MAPQ 0 reads; neither the shared class nor the rescue can see it. "
+                  "Unless a chain is already shared, break it at break_left/break_right, mark the core shared, and `reset 06_evidence --remap` in one round (D04, D06, D14).")
+    RS = [r for r in rows(f"{w}/10_groups/groups.rescued.tsv") if r[4] in ("collapsed", "redundant")]
+    if RS:
+        k = collections.defaultdict(list)
+        for r in RS: k[r[4]].append(r[0])
+        out.append("Rescue left unassigned (10_groups/groups.rescued.tsv): " + "; ".join(f"{x} {len(v)} ({', '.join(v[:10])}{' ...' if len(v) > 10 else ''})" for x, v in sorted(k.items()))
+                   + ". collapsed: a 2x unique-read core, both haplotypes, for D06 to break (10_groups/hub_cores.tsv). redundant: a near-copy of sequence every group already holds.")
     for f, lab in ((f"{w}/10_groups/rescue_preview.txt", "Rescue preview (hic_allele_rescue off; what it would place, in 10_groups/rescue_preview/)"), (f"{w}/10_groups/genes_placed.txt", "Genes in the groups")):
         if os.path.exists(f): out.append(f"{lab}: " + " ".join(open(f).read().split()))
     gp = f"{w}/10_groups/genes_placed.txt"
@@ -205,7 +220,14 @@ def r_arms(w, c, s):
     return out, al
 def r_build(w, c, s):
     p = f"{w}/13_scaffold/{c['sample']}.graph"; L = fai(p + ".fasta.fai"); J = collections.Counter(r[4] for r in rows(p + ".junctions.tsv") if len(r) > 4)
-    return [f"Scaffolds {len(L)}, {Mb(sum(L.values()))}. Junction types: {dict(J)}.", "Build log: 13_scaffold/build.log."], []
+    return [f"Scaffolds {len(L)}, {Mb(sum(L.values()))}. Junction types: {dict(J)}.", "Build log: 13_scaffold/build.log."], swap_alarms(f"{w}/13_scaffold/rescue_swaps.tsv")
+def swap_alarms(p):
+    """Hi-C gaps that swapping two chains between homologs would close (review/rescue_swaps.py)."""
+    S = list(rows(p))
+    if not S: return []
+    return [f"{len(S)} Hi-C gaps would close if two chains swapped homologs (13_scaffold/rescue_swaps.tsv): " + ", ".join(f"{r[0]}:{r[1]} {r[4]} ({r[5]}) <-> {r[6]} ({r[8]})" for r in S[:10])
+            + (" ..." if len(S) > 10 else "") + ". The graph links both pairs the other way. Neither the graph link nor a Hi-C allele call is proof where haplotypes are near-identical: "
+            "read the junction reads, then hand the choice to D13 (a swap is a group edit and `reset 08_bridges`)."]
 def fill_reports(w, c):
     return sorted(glob.glob(f"{w}/14_readfill/h*/fill.h*.report.tsv") + glob.glob(f"{w}/14_readfill/*.graph.report.tsv"))
 def homolog_lengths(fa_fai, agp, minBp=1000000, minFrac=0.05):
@@ -226,12 +248,14 @@ def homolog_lengths(fa_fai, agp, minBp=1000000, minFrac=0.05):
     return out
 def tail_alarms(p):
     """Gap edges where at least 2 reads, and at least half of them, continue into one unplaced sequence. Tails entering a scaffold are mostly homologs at divergent ends, or repeats: counted, not listed."""
-    out = []; other = set()
+    out = []; other = set(); dup = []
     if os.path.exists(p):
         for r in rows(p):
             if r[4] == "." or r[4] == r[0] or int(r[5]) < 2 or 2 * int(r[5]) < int(r[3]): continue
-            if r[4].startswith("unplaced"): out.append(f"{r[0]}:{r[1]} {r[2]} edge: {r[5]} of {r[3]} q20 read tails enter {r[4]} ({p.split('/')[-2]}/gap_tails.tsv). A candidate only: test the graph path, homolog and Hi-C (D11).")
+            if r[4].startswith("unplaced") and len(r) > 11 and 2 * int(r[11]) >= int(r[5]): dup.append(f"{r[0]}:{r[1]} {r[2]} -> {r[4][9:]}")
+            elif r[4].startswith("unplaced"): out.append(f"{r[0]}:{r[1]} {r[2]} edge: {r[5]} of {r[3]} q20 read tails enter {r[4]} ({p.split('/')[-2]}/gap_tails.tsv). A candidate only: test the graph path, homolog and Hi-C (D11).")
             else: other.add((r[0], r[1], r[2]))
+    if dup: out.append(f"{len(dup)} gap edges have read tails entering unplaced sequence that duplicates placed sequence (also_placed, {p.split('/')[-2]}/gap_tails.tsv): {', '.join(dup[:8])}{' ...' if len(dup) > 8 else ''}. Not candidates for the gap.")
     if other: out.append(f"{len(other)} gap edges have read tails mostly entering another scaffold ({p.split('/')[-2]}/gap_tails.tsv). Usually homologs at divergent ends, or repeats.")
     return out
 def component_alarms(p, minMb=1.0):
@@ -323,8 +347,17 @@ def r_validate(w, c, s):
                 if q[4] == "+": fw += int(q[10])
                 else: rv += int(q[10])
         if rv > fw: al.append(f"{os.path.basename(f)}: more inverted ({Mb(rv)}) than forward ({Mb(fw)}): check direction before calling anything an inversion; edits/flip.txt fixes direction (D12).")
+    K = collections.defaultdict(list)
+    for r in rows(f"{V}/depth.2x_chains.tsv"): K[(r[4], r[0])].append(float(r[3]))
+    HC = {r[0] for r in rows(f"{w}/10_groups/hub_cores.tsv")}
+    k2 = sorted(((c, sc, v) for (c, sc), v in K.items() if len(v) >= 2), key=lambda t: -len(t[2]))
+    if k2: al.append(f"{len(k2)} chains placed as haplotype-specific read about 2x over 100 kb or more (16_validate/depth.2x_chains.tsv): "
+                     + ", ".join(f"{c} on {sc} ({50 * len(v)} kb{', hub core' if c in HC else ''})" for c, sc, v in k2[:15]) + (" ..." if len(k2) > 15 else "")
+                     + ". Each holds both haplotypes collapsed: a hub to break and share (10_groups/hub_cores.tsv, D06, D14), or a shared chain placed once (D14). "
+                     f"Single windows ({sum(1 for v in K.values() if len(v) == 1)}) are counted, not listed.")
     m = f"{V}/sv/inv/merged.tsv"
     if os.path.exists(m): out.append(f"Inverted homolog blocks to test: {sum(1 for _ in open(m))} (sv/inv/merged.tsv, sv/bp_reads.tsv, sv/inversion_test.txt).")
+    al += swap_alarms(f"{w}/13_scaffold/rescue_swaps.tsv")
     F = "15_final_raw" if os.path.exists(f"{w}/15_final_raw/{c['sample']}.final.agp") else "15_final"
     al += homolog_lengths(f"{w}/{F}/{c['sample']}.final.fasta.fai", f"{w}/{F}/{c['sample']}.final.agp") + component_alarms(f"{V}/unplaced_components.txt")
     # Hand tables set aside by a reset. Coordinates and haplotype numbers can change in a re-run, so these are lists to re-check, never rows to copy back.

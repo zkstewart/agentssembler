@@ -3,10 +3,15 @@
 # If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''Depth of the final scaffolds in 50 kb windows, split by whether the window lies in sequence placed in both haplotypes, from each
 haplotype's masked mapping, plus the share of each chromosome that is shared. Coordinates are the pre-fill ones, as for the PAFs.
-Usage: depth_classes.py scaffolds.agp target.masked.tsv a.paf.gz [b.paf.gz ...] out.tsv'''
-import sys, gzip, collections, re
+With --chainsAgp (the chain AGP), also writes depth.2x_chains.tsv beside out.tsv: haplotype-specific windows (< 10% shared) above 1.5x the
+specific median, each given the chain that covers most of it. Two or more on one chain is the stage 15 alarm: a chain placed on one haplotype
+that holds both collapsed (a hub core, or a shared chain placed once), which the median depth that classed it could not show.
+Usage: depth_classes.py scaffolds.agp target.masked.tsv a.paf.gz [b.paf.gz ...] out.tsv [--chainsAgp chains.agp]'''
+import sys, gzip, collections, os, re
 import numpy as np
-agp, mask, *pafs, out = sys.argv[1:]; W = 50000
+argv = sys.argv[1:]; chainsAgp = None
+if "--chainsAgp" in argv: i = argv.index("--chainsAgp"); chainsAgp = argv[i + 1]; del argv[i:i + 2]
+agp, mask, *pafs, out = argv; W = 50000
 L = {}; N = collections.defaultdict(list)
 for l in open(agp):
     if l[0] == "#": continue
@@ -39,6 +44,24 @@ with open(out, "w") as o:
 def summ(name, v):
     v = np.array(v); print(f"{name}: {len(v)} windows, median {np.median(v):.1f}, q1 {np.quantile(v,.25):.1f}, q3 {np.quantile(v,.75):.1f}, <10x {np.mean(v<10):.4f}, <20x {np.mean(v<20):.4f}, >1.5x median {np.mean(v>1.5*np.median(v)):.4f}, CV {v.std()/v.mean():.3f}")
 summ("specific (<10% shared)", [r[2] for r in rows if r[4] < .1])
+if chainsAgp:
+    U = {}
+    for l in open(chainsAgp):
+        s = l.split("\t")
+        if l[0] != "#" and s[4] not in "NU": U[s[5]] = s[0]
+    C = collections.defaultdict(list)
+    for l in open(agp):
+        s = l.rstrip("\n").split("\t")
+        if l[0] != "#" and s[4] not in "NU": C[s[0]].append((int(s[1]) - 1, int(s[2]), U.get(s[5], s[5])))
+    sp = [r for r in rows if r[4] < .1]; m = float(np.median([r[2] for r in sp])) if sp else 0
+    with open(os.path.join(os.path.dirname(out) or ".", "depth.2x_chains.tsv"), "w") as o:
+        o.write(f"#scaffold\tstart\tdepth\tx_specific_median\tchain\n")
+        for c, a, d, q, f in sp:
+            if d <= 1.5 * m: continue
+            ov = collections.Counter()
+            for x, y, ch in C[c]:
+                if min(a + W, y) > max(a, x): ov[ch] += min(a + W, y) - max(a, x)
+            o.write(f"{c}\t{a}\t{d:.1f}\t{d / m:.2f}\t{ov.most_common(1)[0][0] if ov else '.'}\n")
 summ("shared (>90% shared)", [r[2] for r in rows if r[4] > .9])
 summ("mixed", [r[2] for r in rows if .1 <= r[4] <= .9])
 print("share of each scaffold placed in both haplotypes:")

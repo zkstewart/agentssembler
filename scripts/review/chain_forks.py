@@ -13,14 +13,17 @@ Before ordering (stage 07) many forks inside collapsed chains lead to ungrouped 
 homolog. With --placement and --chainClass (stage 10, after the pre-build) a row is flagged LOST, and listed first, when the hub is 2x, the
 chain is placed (any copy) or on a tail candidate (--tails), and the other exit reaches a chain that is neither placed nor on a tail, at about 1x (median depth --oneLo to --oneHi) and at
 least --minLost long: a haplotype's arm, lost because a chain ran through its fork. That is a D16 check (docs/decisions/D16_tails.md).
-Usage: chain_forks.py chains.agp unitigs.gfa copy_number.tsv groups.tsv groups.chroms.tsv --hap H
+With --windows (unitig_depth.py on the chains), hub_total and hub_unique are the chain's own read depth over the hub unitig, all reads and
+MAPQ >= 20. A true collapse reads about 2x in both; an allele bubble, whose unitig class depth is 2x because both alleles are near-identical,
+reads about 1x on the chain (292: 4 of 7 LOST rows), and hub_unique falls when the arms' copies are identical elsewhere.
+Usage: chain_forks.py chains.agp unitigs.gfa copy_number.tsv groups.tsv groups.chroms.tsv --hap H [--windows depth.windows.tsv]
        [--placement pre.placement.tsv --chainClass chain_class.tsv --oneLo L --oneHi H [--tails tails.tsv]] [--minLost 50000]'''
 import argparse, collections
 p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
 for x in "agp gfa cn groups chroms".split(): p.add_argument(x)
 p.add_argument("--hap", type=float, required=True); p.add_argument("--hops", type=int, default=3)
 p.add_argument("--placement"); p.add_argument("--chainClass"); p.add_argument("--oneLo", type=float); p.add_argument("--oneHi", type=float)
-p.add_argument("--minLost", type=int, default=50000); p.add_argument("--tails"); a = p.parse_args()
+p.add_argument("--minLost", type=int, default=50000); p.add_argument("--tails"); p.add_argument("--windows"); a = p.parse_args()
 if bool(a.placement) != bool(a.chainClass) or (a.placement and (a.oneLo is None or a.oneHi is None)):
     p.error("--placement, --chainClass, --oneLo and --oneHi go together")
 inv = {"+": "-", "-": "+"}
@@ -59,6 +62,17 @@ used = lambda c: placed(c) or c in TL
 def lost(c, t):
     if not a.placement or not used(c) or used(t) or t not in CD: return False
     n, d = CD[t]; return n >= a.minLost and a.oneLo <= d <= a.oneHi
+WD = {}
+if a.windows:
+    import os, sys
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from chainlib import read_windows
+    WD = read_windows(a.windows)
+def hubdepth(c, x, y):
+    w = [r for r in WD.get(c, ()) if r[0] < y and r[1] > x - 1]
+    if not w: return ".", "."
+    med = lambda v: sorted(v)[len(v) // 2]
+    return f"{med([r[2] for r in w]):.0f}", f"{med([r[3] for r in w]):.0f}"
 out = []
 for c, v in parts.items():
     if c in restored: continue
@@ -80,7 +94,7 @@ for c, v in parts.items():
                     twox = S.get(u, (0, 0))[1] >= 1.54 * a.hap
                     flag = "LOST" if twox and lost(c, t) else "HUB" if twox and kind == "homolog" else "."
                     tl, td = CD.get(t, (".", "."))
-                    out.append((flag, c, gc, x, y, u, S.get(u, (0, 0))[0], S.get(u, (0, 0))[1], q, t, gt, kind, brk, tl, td))
+                    out.append((flag, c, gc, x, y, u, S.get(u, (0, 0))[0], S.get(u, (0, 0))[1], q, t, gt, kind, brk, tl, td) + hubdepth(c, x, y))
 out.sort(key=lambda r: ({"LOST": 0, "HUB": 1}.get(r[0], 2), -r[13] if isinstance(r[13], int) else 0))
-print("#flag\tchain\tgroup\tstart\tend\tunitig\tprimary\tclass\tvia\tto_chain\tto_group\tkind\tbreak_at\tto_length\tto_depth")
+print("#flag\tchain\tgroup\tstart\tend\tunitig\tprimary\tclass\tvia\tto_chain\tto_group\tkind\tbreak_at\tto_length\tto_depth\thub_total\thub_unique")
 for r in out: print(*r, sep="\t")

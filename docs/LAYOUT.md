@@ -122,6 +122,7 @@ Only `pairs.tsv.gz` and `pairs.rescued.tsv.gz` are read later, by any stage or r
 |---|---|
 | `chain_breaks.tsv` | 05, read at D04 |
 | `alleles.pairs.tsv`, `alleles.blocks.tsv`, `chain_stats.tsv`, `chain_repeat.tsv`, `end_links.tsv`, `shared.candidates.txt` | 06 |
+| `hub_cores.tsv` **[C]**: chains classed single-copy with a 2x core of unique reads, and the breaks that free it | 06, read at D06 |
 | `groups.tsv`, `groups.chroms.tsv`, `groups.shared.tsv` **[C]**, `groups.dosage.tsv` **[C]** (above ploidy 2, and only if a shared chain is in fewer haplotypes than its chromosome has), `hic_group.log`, `shared.txt` **[C]**, `eval_groups.txt` **[ref]**, `chain_forks.txt` **[C]**; `groups.rescued.tsv` and `groups.hic.tsv` (grouping before the rescue) **[set: hic_allele_rescue]**, or `rescue_preview/` and `rescue_preview.txt` (what it would place) when off; `genes_placed.txt`, `genes_placed.tsv` **[opt: compleasm]** | 07, read at D05 |
 | `final.tsv`, `final.chroms.tsv`, `final.shared.tsv` **[C]**, `final.dosage.tsv` **[C]** | 08, the groups after `edits/group_edits.tsv` |
 
@@ -153,6 +154,7 @@ The working set for ordering. When **[C]**, shared chains appear here as one cop
 - `bridges/`: `choices.tsv`, `ids.txt`, `targets.fasta`, `reads.paf.gz`, `mm2.log`, `seqkit.log` (stage 08).
 - `names.tsv`, `repeat_chains.fasta` (stage 10).
 - `S.graph.agp`, `S.graph.fasta`, `S.graph.fasta.fai`, `S.graph.junctions.tsv`, `S.graph.placement.tsv`, `S.graph.unplaced.fasta`, `target.fasta` (scaffolds plus unplaced), `target.fasta.fai`, `build.log` (stage 11).
+- `rescue_swaps.tsv` (stage 11): Hi-C gaps that swapping two chains between homologs would close, read at D13.
 
 Scaffolds are named `chrN_hK`. Unplaced sequence is named `unplaced_<chain>` or `repeat_*`.
 
@@ -196,12 +198,12 @@ A fill writes six files from one prefix: `.agp`, `.fills.fasta`, `.report.tsv`, 
 - `tail_joins.tsv`, `tail_joins.log` **[edit: accepted_tails]**.
 - `maps/specific/` and `maps/scaffold/`, each with `crosstalk.tsv` and `chrN.png`; `maps/specific.log`, `maps/scaffold.log` **[opt: plot_python]**.
 - `reads/`: **[N]** `ont.paf.gz`; **[C]** `target.masked.tsv`, `mask.log`, `all.hK.paf.gz`, `ont.hK.paf.gz`.
-- `depth_flat.txt` **[N]**; `depth.windows.tsv`, `depth_classes.log` **[C]**.
+- `depth_flat.txt` **[N]**; `depth.windows.tsv`, `depth_classes.log`, `depth.2x_chains.tsv` (haplotype-specific windows above 1.5x, with their chain) **[C]**.
 - `sv/inv/<scaffold>_vs_<scaffold>.paf` (each haplotype against the first), `sv/inv/merged.tsv`, `sv/inversion_test.txt` and `sv/bp_reads.tsv` (when there are inverted blocks), `sv/final_vs_ref.paf` **[ref]**.
 - `sv/sv_calls.tsv`, `curation_targets.tsv`: **yours to fill.**
 - `juicebox/`: `out_JBAT.hic`, `out_JBAT.assembly`, `out_JBAT.sizes`, `out_JBAT.components.tsv`, `juicer_tools.log`, `done.ok` **[opt: juicer_tools]**.
 - `compleasm/`: `hK/` and `unplaced/` (compleasm's own output, with `summary.txt`), `hK.log`, `unplaced.log`, `complement.txt` **[opt: compleasm]**; `hK_unloc/` and `hK_unloc.log`: haplotype K's scaffolds plus its unlocalized sequences **[opt: compleasm, ploidy 2]**.
-- `unloc/` **[ploidy 2]**: `SAMPLE.unloc.fasta` (`<scaffold>_unloc_NN`: unplaced chains with a known chromosome and no position), `SAMPLE.unloc.tsv` (chain, haplotype, phase evidence, depth), `SAMPLE.unplaced_rest.fasta`, `SAMPLE.unloc.skipped.tsv`, `unloc.txt`. Part of the assembly handed over, with the scaffolds; leaving it out is the user's call ([D13](decisions/D13_user_decisions.md)).
+- `unloc/` **[ploidy 2]**: `SAMPLE.unloc.fasta` (`<scaffold>_unloc_NN`: unplaced chains with a known chromosome and no position), `SAMPLE.unloc.tsv` (chain, haplotype, phase evidence, depth), `SAMPLE.unplaced_rest.fasta`, `SAMPLE.unloc.skipped.tsv`, `SAMPLE.unloc.conflicts.tsv` (allele pairs that could not all be split, once each), `unloc.txt`. Part of the assembly handed over, with the scaffolds; leaving it out is the user's call ([D13](decisions/D13_user_decisions.md)).
 
 ## Re-running
 

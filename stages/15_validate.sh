@@ -27,7 +27,7 @@ if collapsed; then
     map_paf $V/reads/all.$h.paf.gz -x "$AS_READ_PRESET" -t "$AS_THREADS" --secondary=no $V/reads/target.$h.fasta "$AS_READS_LINK"
     [ -s $V/reads/ont.$h.paf.gz ] || zcat $V/reads/all.$h.paf.gz | awk -F'\t' -v o="$other" '$6 !~ o' | gzip -1 > $V/reads/ont.$h.paf.gz; PAFS+=($V/reads/ont.$h.paf.gz); done
   rm -f $V/reads/target.h*.fasta*
-  python3 "$S/validate/depth_classes.py" $AGP $V/reads/target.masked.tsv "${PAFS[@]}" $V/depth.windows.tsv > $V/depth_classes.log 2>&1
+  python3 "$S/validate/depth_classes.py" $AGP $V/reads/target.masked.tsv "${PAFS[@]}" $V/depth.windows.tsv --chainsAgp 12_broken/chains.agp > $V/depth_classes.log 2>&1
 else
   map_paf $V/reads/ont.paf.gz -x "$AS_READ_PRESET" -t "$AS_THREADS" --secondary=no $V/reads/all.fasta "$AS_READS_LINK"; PAFS+=($V/reads/ont.paf.gz)
   "$AS_SAMTOOLS" faidx $V/reads/all.fasta
