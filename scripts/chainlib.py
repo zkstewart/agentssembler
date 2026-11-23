@@ -104,3 +104,22 @@ def interior_cover(paf, iv, q20=False):
             cov[c] += hi - lo
             if int(s[11]) >= 20: q[c] += hi - lo
     return (cov, q) if q20 else cov
+def utg_resolver(agp):
+    '''A function that turns "utg:<unitig>[.gNN][+|-]" into the name of the chain holding that unitig in this AGP, keeping any copy
+    suffix; an end sign is the end the unitig's own end faces, so it survives a chain written the other way round. Other names pass
+    unchanged. Chain numbers change with any change upstream (TRAPS T16); a unitig name does not, so an edit written this way can be
+    carried across a reset. Stops on a unitig in no chain or in more than one.'''
+    where = collections.defaultdict(list)
+    for l in open(agp):
+        if l[0] == "#": continue
+        s = l.rstrip("\n").split("\t")
+        if s[4] not in "NU": where[s[5]].append((s[0], s[8]))
+    def res(tok):
+        m = re.fullmatch(r"utg:(.+?)((?:\.g\d+)?)([+-]?)", tok)
+        if not m: return tok
+        u, suf, end = m.groups(); w = where.get(u, [])
+        if len({c for c, _ in w}) != 1:
+            raise SystemExit(f"{tok}: unitig {u} is in {len({c for c, _ in w})} chains of {agp}" + (f" ({', '.join(sorted({c for c, _ in w}))})" if w else ""))
+        c, st = w[0]
+        return c + suf + (end if not end or st == "+" else FLIP[end])
+    return res

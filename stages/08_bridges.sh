@@ -4,7 +4,7 @@
 # Apply group edits, write shared copies when collapsed, find graph bridges (up to `hops` steps) and rank them. Stops for D07.
 source "$AS_REPO/stages/lib.sh"
 D=12_shared; mkdir -p "$D" 13_scaffold/bridges
-if has_rows edits/group_edits.tsv; then python3 "$S/apply_group_edits.py" 10_groups/groups edits/group_edits.tsv 10_groups/final; else for x in tsv chroms.tsv; do cp 10_groups/groups.$x 10_groups/final.$x; done; for x in shared dosage; do [ -s 10_groups/groups.$x.tsv ] && cp 10_groups/groups.$x.tsv 10_groups/final.$x.tsv || true; done; fi
+if has_rows edits/group_edits.tsv; then python3 "$S/apply_group_edits.py" 10_groups/groups edits/group_edits.tsv 10_groups/final 12_broken/chains.agp; else for x in tsv chroms.tsv; do cp 10_groups/groups.$x 10_groups/final.$x; done; for x in shared dosage; do [ -s 10_groups/groups.$x.tsv ] && cp 10_groups/groups.$x.tsv 10_groups/final.$x.tsv || true; done; fi
 if collapsed; then
   [ -s $D/groups.tsv ] || python3 "$S/make_shared_copies.py" 10_groups/final 12_broken/chains.agp 12_broken/chains.fasta.fai 12_broken/pairs.tsv.gz 10_groups/end_links.tsv 10_groups/chain_stats.tsv 16_validate/telomeres.chains.tsv $D > $D/copies.log 2>&1
 else

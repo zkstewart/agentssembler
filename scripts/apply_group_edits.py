@@ -14,12 +14,16 @@ edits.tsv columns: chain, action, value, reason. Actions:
   pair <cN>         the group holding this chain, after all group edits, becomes a haplotype of chromosome cN. Use it when
                     edits move a haplotype between groups, since group-to-chromosome pairing is otherwise copied unchanged.
                     Here with:<chain> means that chain's chromosome after the edits. Applied after every other row.
+A chain can be named utg:<unitig>, the chain holding that unitig in chains.agp, anywhere a chain name goes (TRAPS T16).
 In place of gNN or cN, with:<chain> means that chain's group or chromosome in the input grouping (except for pair, above). Prefer it:
 labels are numbered by size, so any change upstream can renumber them, and an old label would then silently point at another chromosome.
-Usage: apply_group_edits.py in_prefix edits.tsv out_prefix   (reads and writes prefix.tsv, prefix.shared.tsv, prefix.chroms.tsv)
+Usage: apply_group_edits.py in_prefix edits.tsv out_prefix [chains.agp]   (reads and writes prefix.tsv, prefix.shared.tsv, prefix.chroms.tsv)
 '''
 import sys, os, shutil
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from chainlib import utg_resolver
 pre, ed, out = sys.argv[1:4]
+U = utg_resolver(sys.argv[4]) if len(sys.argv) > 4 else (lambda t: t)
 G = [l.rstrip("\n").split("\t") for l in open(pre + ".tsv")]
 hdrG = [r for r in G if r[0].startswith("#")]; G = [r for r in G if not r[0].startswith("#")]
 S = []; hdrS = ["#chain\tlength\tchrom\tlinks\tgroups\tscore_ratio"]
@@ -34,13 +38,13 @@ if os.path.exists(pre + ".dosage.tsv"):
     D = {l.split("\t")[0]: l.rstrip("\n").split("\t") for l in open(pre + ".dosage.tsv") if l[0] != "#" and l.strip()}
 def resolve(val, act, c):
     if not val.startswith("with:"): return val
-    m = val[5:]; g = base.get(m)
+    m = U(val[5:]); g = base.get(m)
     if g is None or not g.startswith("g"): sys.exit(f"edit for {c}: {m} is not in a group")
     return g if act == "group" else chrom[g]
 pairs = []
 for l in open(ed):
     if l[0] == "#" or not l.strip(): continue
-    c, act, val, *why = l.rstrip("\n").split("\t")
+    c, act, val, *why = l.rstrip("\n").split("\t"); c = U(c)
     if not why or not why[0].strip(): sys.exit(f"edit for {c} has no reason")
     if c not in L: sys.exit(f"unknown chain {c}")
     if act == "pair": pairs.append((c, val)); continue
@@ -83,7 +87,7 @@ else:
         g = fin.get(c)
         if g is None or not g.startswith("g"): sys.exit(f"pair for {c}: the chain is not in a group after the edits")
         if val.startswith("with:"):
-            m = val[5:]; gm = fin.get(m)
+            m = U(val[5:]); gm = fin.get(m)
             if gm is None or gm not in chrom: sys.exit(f"pair for {c}: {m} is not in a paired group after the edits")
             val = chrom[gm]
         print(f"pair: {g} (holding {c}) {chrom.get(g, '-')} -> {val}", file=sys.stderr)

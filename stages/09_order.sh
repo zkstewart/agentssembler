@@ -5,7 +5,7 @@
 source "$AS_REPO/stages/lib.sh"
 D=12_shared
 step $D/order_links.base.tsv python3 "$S/make_order_links.py" $D/groups.tsv $D/end_links.tsv $D/graph.bridges.tsv $D/order_links.base.tsv
-{ cat $D/order_links.base.tsv; if has_rows edits/order_links.tsv; then grep -v '^#' edits/order_links.tsv | cut -f1-3; fi; } > $D/order_links.tsv
+{ cat $D/order_links.base.tsv; if has_rows edits/order_links.tsv; then python3 "$S/resolve_utg.py" 12_broken/chains.agp edits/order_links.tsv --keep 3; fi; } > $D/order_links.tsv
 mkdir -p $D/by_chrom; CH=10_groups/final.chroms.tsv
 PAIRS=$D/pairs.tsv.gz; [ -s $D/pairs.rescue_order.tsv.gz ] && PAIRS+=",$D/pairs.rescue_order.tsv.gz"   # rescued pairs order, never validate
 if [ ! -s $D/order.raw.tsv ]; then

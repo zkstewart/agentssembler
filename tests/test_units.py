@@ -463,6 +463,21 @@ class T(unittest.TestCase):
                 r = run("build_chains.py", "--keep", f"{d}/keep", "--gfa", f"{d}/gfa", "--fai", f"{d}/fai", "--out", f"{d}/c"); self.assertEqual(r.returncode, 0, r.stderr)
                 names = {l.split("\t")[0] for l in open(f"{d}/c.agp") if l[0] != "#"}
                 self.assertIn(want, names); self.assertFalse(any(x.startswith(("chain8", "chain9")) for x in names))
+    def test_utg_names(self):
+        # an edit names a chain by a unitig it holds: the name survives renumbering, and an end follows the unitig's own strand
+        sys.path.insert(0, f"{R}/scripts"); from chainlib import utg_resolver
+        with tempfile.TemporaryDirectory() as d:
+            open(f"{d}/c.agp", "w").write("chain0001\t1\t10\t1\tW\tuA\t1\t10\t+\nchain8003\t1\t10\t1\tW\tuB\t1\t10\t-\nchain0002\t1\t10\t1\tW\tuC\t1\t10\t+\nchain0002\t11\t20\t2\tW\tuA\t1\t10\t+\n")
+            res = utg_resolver(f"{d}/c.agp")
+            self.assertEqual([res(x) for x in ("utg:uB", "utg:uB+", "utg:uB.g03-", "utg:uC+", "chain0001+")], ["chain8003", "chain8003-", "chain8003.g03+", "chain0002+", "chain0001+"])
+            for bad in ("utg:uA", "utg:uZ"): self.assertRaises(SystemExit, res, bad)                # in two chains; in none
+            open(f"{d}/g.tsv", "w").write("#chain\tlength\tgroup\nchain0001\t10\tg01\nchain8003\t10\tunassigned\nchain0002\t20\tg02\n")
+            open(f"{d}/g.chroms.tsv", "w").write("g01\tc0\ng02\tc0\n")
+            open(f"{d}/e", "w").write("utg:uB\tgroup\twith:utg:uC\tconnector between chain0002's arms\n")
+            r = run("apply_group_edits.py", f"{d}/g", f"{d}/e", f"{d}/f", f"{d}/c.agp"); self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertIn("chain8003\t10\tg02", open(f"{d}/f.tsv").read())
+            open(f"{d}/l", "w").write("#a\tb\tkind\treason\nutg:uB+\tchain0002-\thand\tread evidence\n")
+            r = run("resolve_utg.py", f"{d}/c.agp", f"{d}/l", "--keep", "3"); self.assertEqual(r.stdout, "chain8003-\tchain0002-\thand\n")
     def test_decay_norm(self):
         sys.path.insert(0, f"{R}/scripts"); import hic_order as ho
         # one chain ending just inside the lower half of a populated bin (the review's case): the old midpoint opportunity there was 0,
