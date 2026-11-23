@@ -26,7 +26,7 @@ if collapsed; then
     "$AS_SAMTOOLS" faidx $R/$h/in.fasta
     SETS+=("$R/$h/in.agp,$R/$h/in.fasta.fai,$A/raw_vs_target.$h.paf.gz,$R/$h/ont.paf.gz")
   done
-  for h in $(haps_of $AGP); do [ -s $A/raw.$h.paf.gz ] || { other=$(haps_of $AGP | grep -vx "$h" | sed 's/^/_/;s/$/$/' | paste -sd'|'); zcat $A/raw_vs_target.$h.paf.gz | awk -F'\t' -v o="$other" '$6 !~ o' | gzip -1 > $A/raw.$h.paf.gz; }; done
+  for h in $(haps_of $AGP); do [ -s $A/raw.$h.paf.gz ] || { other=$(other_haps "$h" $(haps_of $AGP)); zcat $A/raw_vs_target.$h.paf.gz | awk -F'\t' -v o="$other" '$6 !~ o' | gzip -1 > $A/raw.$h.paf.gz; }; done
 else
   map_stream $A/raw_vs_target.paf.gz $T/target.fasta "$tab"
   SETS+=("$AGP,$T/$AS_SAMPLE.graph.fasta.fai,$A/raw_vs_target.paf.gz,$R/ont_vs_target.paf.gz")
@@ -59,7 +59,7 @@ if collapsed; then
   for h in $HAPS; do
     "$AS_SAMTOOLS" faidx $A/fill/target.$h.fasta
     map_paf $A/fill/raw.$h.paf.gz -x "$AS_RAW_PRESET" -t "$AS_THREADS" --secondary=no $A/fill/target.$h.fasta $A/neargap.fasta
-    other=$(echo $HAPS | tr ' ' '\n' | grep -vx "$h" | sed 's/^/_/;s/$/$/' | paste -sd'|')
+    other=$(other_haps "$h" $HAPS)
     d=$A/fill/$h; mkdir -p $d; awk -F'\t' -v h=_$h '$1~/^#/||$1 ~ h"$"' $F/$AS_SAMPLE.final.agp > $d/in.agp
     grep '^>' $A/fill/in.fasta | sed 's/^>//' | awk '{print $1}' | grep -Ev "$other" > $d/names.txt
     "$AS_SEQKIT" grep -f $d/names.txt $A/fill/in.fasta -w 0 > $d/in.fasta 2>/dev/null; "$AS_SAMTOOLS" faidx $d/in.fasta

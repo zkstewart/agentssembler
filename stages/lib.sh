@@ -73,4 +73,7 @@ raw_records() {
   esac
 }
 # per-haplotype list, from the scaffold names in an AGP
+# other_haps H HAPS...: a regex for scaffold names of every haplotype but H (_h2$|_h3$). With no other haplotype (ploidy 1) it is ^$,
+# which matches no name: an empty pattern would match every name and drop them all.
+other_haps() { local h=$1 o; shift; o=$(printf '%s\n' "$@" | { grep -vx "$h" || true; } | sed 's/^/_/;s/$/$/' | paste -sd'|'); echo "${o:-^\$}"; }
 haps_of() { awk -F'\t' '$1!~/^#/{n=split($1,a,"_"); if(a[n]~/^h[0-9]+$/)print a[n]}' "$1" | sort -uV; }

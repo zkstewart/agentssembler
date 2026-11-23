@@ -17,7 +17,7 @@ if collapsed; then
    (
     d=$R/$h; mkdir -p $d
     awk -F'\t' -v h=_$h '$1~/^#/||$1 ~ h"$"' $AGP > $d/in.agp
-    other=$(echo $HAPS | tr ' ' '\n' | grep -vx "$h" | sed 's/^/_/;s/$/$/' | paste -sd'|')
+    other=$(other_haps "$h" $HAPS)
     grep '^>' $T/target.fasta | sed 's/^>//' | awk '{print $1}' | grep -Ev "$other" > $d/names.txt
     "$AS_SEQKIT" grep -f $d/names.txt $T/target.fasta -w 0 > $d/in.fasta 2>/dev/null; "$AS_SAMTOOLS" faidx $d/in.fasta
     zcat $R/ont_vs_target.$h.paf.gz | awk -F'\t' -v o="$other" '$6 !~ o' | gzip -1 > $d/ont.paf.gz

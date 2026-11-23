@@ -23,7 +23,7 @@ python3 "$S/review/unplaced_components.py" 13_scaffold/$AS_SAMPLE.graph.placemen
 cat $FA $UN > $V/reads/all.fasta; PAFS=()
 if collapsed; then
   python3 "$S/mask_shared.py" $AGP $V/reads/all.fasta $V/reads/target > $V/reads/mask.log 2>&1; HAPS=$(haps_of $AGP)
-  for h in $HAPS; do other=$(echo $HAPS | tr ' ' '\n' | grep -vx "$h" | sed 's/^/_/;s/$/$/' | paste -sd'|')
+  for h in $HAPS; do other=$(other_haps "$h" $HAPS)
     map_paf $V/reads/all.$h.paf.gz -x "$AS_READ_PRESET" -t "$AS_THREADS" --secondary=no $V/reads/target.$h.fasta "$AS_READS_LINK"
     [ -s $V/reads/ont.$h.paf.gz ] || zcat $V/reads/all.$h.paf.gz | awk -F'\t' -v o="$other" '$6 !~ o' | gzip -1 > $V/reads/ont.$h.paf.gz; PAFS+=($V/reads/ont.$h.paf.gz); done
   rm -f $V/reads/target.h*.fasta*

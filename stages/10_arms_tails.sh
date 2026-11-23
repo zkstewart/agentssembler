@@ -5,7 +5,11 @@
 source "$AS_REPO/stages/lib.sh"
 D=12_shared; T=13_scaffold; mkdir -p $T $D/pre
 O=$D/order.tsv; GRP=$D/groups.tsv; [ -s $D/groups.edited.tsv ] && GRP=$D/groups.edited.tsv
-if has_rows edits/names.tsv; then cp edits/names.tsv $T/names.tsv; elif [ ! -s $T/names.tsv ]; then
+# Hand names must end in _h<k> and be unique: stages 12-15 find each scaffold's haplotype and its homologs by that suffix
+if has_rows edits/names.tsv; then
+  awk -F'\t' '$1!~/^#/ && NF{ if ($2 !~ /_h[0-9]+$/) { print "ERROR: edits/names.tsv: " $2 " does not end in _h<k> (a haplotype number)"; e=1 } if (n[$2]++) { print "ERROR: edits/names.tsv: " $2 " is used twice"; e=1 } } END{exit e}' edits/names.tsv >&2
+  cp edits/names.tsv $T/names.tsv
+elif [ ! -s $T/names.tsv ]; then
   A=(--groups "$GRP" --chroms 10_groups/final.chroms.tsv --out $T/names.tsv --order "$O")
   has_ref && A+=(--agp 12_broken/chains.agp --paf 03_unitig_align/unitigs_vs_ref.paf.gz)
   python3 "$S/auto_names.py" "${A[@]}"
