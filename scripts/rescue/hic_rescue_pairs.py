@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
 # If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
-'''Hi-C pairs with an allele-ambiguous end (settings.hic_allele_rescue). Reads SAM on stdin: stage 05's HiC.bam, primary,
+'''Stage 05: Hi-C pairs with an allele-ambiguous end (settings.hic_allele_rescue). Reads SAM on stdin: stage 05's HiC.bam, primary,
 deduplicated, mates adjacent. An end is unique (u: MAPQ >= --minQ) or allele-ambiguous (a: MAPQ 0, and every alternative hit in XA on a
 chain that is an allele partner of the primary chain in alleles.pairs.tsv). Both ends need NM < --maxNM, as filter_bam; decoy hits are
 dropped. Pairs with two unique ends are stage 05's pairs.tsv.gz and are not written again. Where most Hi-C reads have MAPQ 0 because

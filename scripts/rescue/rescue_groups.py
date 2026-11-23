@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
 # If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
-'''Place chains that grouping left unassigned, by allele-rescued Hi-C (settings.hic_allele_rescue). Runs after hic_group.py.
+'''Stage 07: place chains that grouping left unassigned, by allele-rescued Hi-C (settings.hic_allele_rescue). Runs after hic_group.py.
 Chromosome: links from rescued pairs (hic_rescue_pairs.py) to chains already in each chromosome's groups, per Mb of those chains; the
 best chromosome needs >= --minLinks links and >= --ratio times the next, as hic_group.py's step 3. Rounds repeat with the chains placed
 so far, so a block of chains can follow its anchored end inward.

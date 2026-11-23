@@ -11,6 +11,10 @@ class T(unittest.TestCase):
         for f in SCRIPTS:
             t = ast.parse(open(f).read())
             if not f.endswith("chainlib.py"): self.assertTrue(ast.get_docstring(t), f)
+    def test_scripts_doc_current(self):
+        # docs/SCRIPTS.md is generated: a hand edit, or a script folder the generator does not read, is lost at the next run
+        o = subprocess.run([sys.executable, f"{R}/tools/gen_scripts_doc.py", "--check"], capture_output=True, text=True)
+        self.assertEqual(o.returncode, 0, o.stderr)
     def test_no_hard_coding(self):
         pat = re.compile(r"/home/|research/genomes|13Q010|WatsonsChoice|00_inputs|16_validate/|\bBusk\b")
         for f in SCRIPTS + glob.glob(f"{R}/stages/*.sh"):
