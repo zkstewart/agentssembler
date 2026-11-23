@@ -30,7 +30,7 @@ step 11_ont_chains/depth.windows.tsv python3 "$S/unitig_depth.py" 11_ont_chains/
 step 10_groups/alleles.pairs.tsv python3 "$S/allele_table.py" 12_broken/chains.agp 03_unitig_align/unitigs_self.paf.gz 10_groups/alleles
 step 10_groups/chain_stats.tsv python3 "$S/chain_stats.py" 12_broken/pairs.tsv.gz 12_broken/chains.fasta.fai 10_groups/alleles.pairs.tsv - 10_groups/chain_stats.tsv
 step 10_groups/chain_repeat.tsv python3 "$S/chain_repeat.py" 12_broken/chains.fasta 10_groups/chain_repeat.tsv 20000
-[ -s 16_validate/telomeres.chains.tsv ] || python3 "$S/telomeres.py" 12_broken/chains.fasta --motif "$AS_MOTIF" > 16_validate/telomeres.chains.tsv
+[ -s 16_validate/telomeres.chains.tsv ] || python3 "$S/telomeres.py" 12_broken/chains.fasta --motif "$AS_MOTIF" --window "${AS_TEL_WINDOW:-20000}" --minCopies "${AS_TEL_MIN:-50}" > 16_validate/telomeres.chains.tsv
 step 10_groups/end_links.tsv python3 "$S/chain_end_links.py" 12_broken/chains.agp 00_inputs/unitigs.gfa 11_ont_chains/ont_vs_chains.paf.gz 12_broken/chains.fasta.fai 10_groups/end_links.tsv
 step 11_ont_chains/chain_class.tsv python3 "$S/chain_class.py" 11_ont_chains/depth.windows.tsv 12_broken/chains.fasta.fai 10_groups/chain_repeat.tsv 11_ont_chains/chain_class.tsv --oneLo "$AS_ONE_LO" --sharedLo "$AS_SHARED_LO" --sharedHi "$AS_SHARED_HI" --sharedOut 10_groups/shared.candidates.txt
 # Collapsed hubs by unique-read depth, independent of groups (D06): a 2x core inside a chain whose median reads 1x

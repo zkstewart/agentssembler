@@ -7,7 +7,7 @@ from .stages import STAGES, BY_ID, GUIDES
 from . import report, compare
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DEFAULTS = dict(telomere_motif="CCCTAAA", link_bonus=20000, hops=12, restore_connectors=True, read_preset="lr:hq", raw_preset="lr:hq", hic_allele_rescue=False)
+DEFAULTS = dict(telomere_motif="CCCTAAA", telomere_window=20000, telomere_min_copies=50, link_bonus=20000, hops=12, restore_connectors=True, read_preset="lr:hq", raw_preset="lr:hq", hic_allele_rescue=False)
 TOOLS = dict(minimap2="minimap2", samtools="samtools", seqkit="seqkit", bwa="bwa", samblaster="samblaster", filter_bam="filter_bam", juicer_tools="", compleasm="", plot_python="")
 
 def now(): return datetime.datetime.now().isoformat(timespec="seconds")
@@ -116,7 +116,7 @@ def stage_env(w):
         AS_UNITIGS=abspath(i["unitigs_fasta"]), AS_GFA=abspath(i["unitigs_gfa"]), AS_READS=abspath(i["corrected_reads"]), AS_HIC_R1=abspath(i["hic_r1"]), AS_HIC_R2=abspath(i["hic_r2"]),
         AS_REFERENCE=abspath(i.get("reference")), AS_BASELINE_AGP=abspath(i.get("baseline_agp")), AS_RAW_READS=":".join(abspath(b) for b in raw_reads(c)),
         AS_THREADS=str(comp.get("threads", 16)), AS_MIN_FREE_GB=str(comp.get("min_free_gb", 40)), AS_GUARD_PATH=str(comp.get("guard_path", w)),
-        AS_MOTIF=str(s["telomere_motif"]), AS_LINK_BONUS=str(s["link_bonus"]), AS_HOPS=str(s["hops"]), AS_CONNECTORS=str(s["restore_connectors"]).lower(),
+        AS_MOTIF=str(s["telomere_motif"]), AS_TEL_WINDOW=str(s["telomere_window"]), AS_TEL_MIN=str(s["telomere_min_copies"]), AS_LINK_BONUS=str(s["link_bonus"]), AS_HOPS=str(s["hops"]), AS_CONNECTORS=str(s["restore_connectors"]).lower(),
         AS_READ_PRESET=str(s["read_preset"]), AS_RAW_PRESET=str(s["raw_preset"]), AS_HIC_RESCUE=str(s["hic_allele_rescue"]).lower(),
         AS_READS_LINK=input_link(w, i["corrected_reads"], "ont_corrected_reads", dict(fasta=".fasta", fastq=".fastq"), "ont_corrected_reads.fasta"),
         AS_HIC_R1_LINK=input_link(w, i["hic_r1"], "hic_R1", dict(fasta=".fa", fastq=".fq"), "hic_R1.fq.gz"),

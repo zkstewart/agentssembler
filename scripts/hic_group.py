@@ -41,7 +41,7 @@ import argparse, math, collections
 p=argparse.ArgumentParser(description=__doc__,formatter_class=argparse.RawDescriptionHelpFormatter)
 p.add_argument("links"); p.add_argument("alleles"); p.add_argument("fai"); p.add_argument("out")
 p.add_argument("--chroms",type=int,required=True); p.add_argument("--ploidy",type=int,required=True); p.add_argument("--shared"); p.add_argument("--hapFirst",action="store_true"); p.add_argument("--seedLen",type=int,default=1000000)
-p.add_argument("--minConflict",type=int,default=50000); p.add_argument("--minConflictFrac",type=float,default=0.1)
+p.add_argument("--maxConflictDe",type=float,help="ignore allele pairs whose median divergence (alleles.pairs.tsv median_de) is above this: in a genome with old duplications, paralogs align like alleles and would forbid true merges. Off by default; the citrus genomes did not need it"); p.add_argument("--minConflict",type=int,default=50000); p.add_argument("--minConflictFrac",type=float,default=0.1)
 p.add_argument("--stats"); p.add_argument("--minWithin",type=float,default=700)
 p.add_argument("--repeat",help="chain_repeat.tsv: conflicts involving a chain above --maxRepeat are ignored, because satellite arrays align to each other without being alleles")
 p.add_argument("--maxRepeat",type=float,default=0.5)
@@ -66,6 +66,7 @@ for l in open(a.alleles):
     if l[0]=="#": continue
     s=l.split("\t"); x,y,bx,by=s[0],s[1],int(s[2]),int(s[3])
     if x in sat or y in sat: continue
+    if a.maxConflictDe is not None and len(s)>4 and s[4].strip()!="nan" and float(s[4])>a.maxConflictDe: continue
     if min(bx,by)>=a.minConflict and min(bx,by)>=a.minConflictFrac*min(L[x],L[y]): conf[x].add(y); conf[y].add(x)   # fraction of the shorter
 lowinfo=set()
 if a.stats:

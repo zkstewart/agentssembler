@@ -13,6 +13,7 @@ Everything goes in the config (`config/sample.example.yaml`), except the values 
 | `hap_first` | Defaults to true at ploidy 2, and false above it. Can be set true at any ploidy ([D05](decisions/D05_group_count.md)), but only ploidy 2 has been run |
 | `length_scale` | Left out, it is measured after stage 04 (below). Set a number to fix it: `1` gives the windows the citrus genomes were built with |
 | `telomere_motif` | `CCCTAAA` is the plant default; `CCCTAA` is the vertebrate type. Confirm for other taxa |
+| `telomere_window`, `telomere_min_copies` | 20000 and 50: an end is telomeric with at least this many copies of the motif in its last this many bp. Set for the citrus genomes' arrays (several kb). A taxon with short or degenerate arrays needs fewer copies; check `16_validate/telomeres.chains.tsv` for ends just under the bar before changing them |
 
 ## What to enter for a polyploid or an inbred sample
 
