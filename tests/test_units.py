@@ -293,6 +293,17 @@ class T(unittest.TestCase):
                                        "c2_h2\t8\tright\t4\tunplaced_c\t4\t1\t1\t2\t+\t0\t4\n")
             T = r.tail_alarms(f"{d}/t.tsv")
             self.assertEqual(len(T), 3); self.assertIn("14 of 14", T[0]); self.assertIn("duplicates placed", T[1]); self.assertIn("c2_h2:8 right -> c", T[1]); self.assertIn("1 gap edges", T[2])
+    def test_hic_report_hub_alarm(self):
+        # stage 05 report with one breakable and one inside hub core, and no other stage 05 files
+        sys.path.insert(0, R)
+        from agentssembler import report as r
+        with tempfile.TemporaryDirectory() as d:
+            os.makedirs(f"{d}/10_groups")
+            open(f"{d}/10_groups/hub_cores.d04.tsv", "w").write("#chain\n"
+                "cA\t500000\tspecific\t\t100000\t300000\t200\t150\t150\t0.2\t120000\t310000\tunitig/unitig\t0.90\tyes\n"
+                "cB\t500000\tspecific\t\t100000\t300000\t200\t150\t150\t0.2\t.\t.\tinside/inside\t1.00\tno\n")
+            o, a = r.r_hic(d, None, {})
+            self.assertEqual(len(a), 1); self.assertIn("cA at 120000/310000", a[0]); self.assertTrue(any("not breakable here: 1" in x for x in o))
     def test_unplaced_components(self):
         # u1 placed on s1; u2 - u3 unplaced, joined to each other and to u1 in the graph; u4 unplaced, alone
         with tempfile.TemporaryDirectory() as d:

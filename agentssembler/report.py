@@ -93,13 +93,13 @@ def r_hic(w, c, s):
     out = [f"Candidate positions in {p}: {len(V)}. A break needs two signals: different Hi-C partners each side and weak reads across the join."]
     out += [f"Both signals (trans >= 200 on both sides, partner_cos < 0.8, under 10 reads at MAPQ>=20): {len(both)}."] + both
     out += [f"Different partners alone (partner_cos < 0.6, enough trans), usually overruled by reads: {len(hic)}."] + hic
-    H = list(rows(f"{w}/10_groups/hub_cores.d04.tsv")); yes = [r for r in H if r[-1] == "yes"]
+    al = []; H = list(rows(f"{w}/10_groups/hub_cores.d04.tsv")); yes = [r for r in H if r[-1] == "yes"]
     if yes: al.append(f"{len(yes)} breakable collapsed hubs (10_groups/hub_cores.d04.tsv): " + ", ".join(f"{r[0]} at {r[10]}/{r[11]}" for r in yes[:12]) + (" ..." if len(yes) > 12 else "")
                       + ". A 2x core of unique reads inside a chain whose arms read 1x. Breaking now, with the chimera breaks, saves a `reset 06_evidence --remap` at D06; "
                       "check each edge against 07_chains2/depth.windows.tsv, then mark the core shared at D14.")
     if len(H) > len(yes): out.append(f"Hub cores not breakable here: {len(H) - len(yes)} (inside one unitig, or the freed piece would carry 1x arms); stage 06 lists them again for D06 and D14.")
     out.append("This table only lists. Weak reads with little Hi-C on one side are mostly near-identical sequence, not chimeras.")
-    al = []; rs = f"{w}/09_hic_map/rescue_signal.txt"
+    rs = f"{w}/09_hic_map/rescue_signal.txt"
     if os.path.exists(rs):
         L_ = open(rs).read().splitlines(); out += ["Hi-C allele rescue signal (09_hic_map/rescue_signal.txt, D04):"] + [x for x in L_ if not x.startswith("ALARM")]
         on = isinstance(s, dict) and s.get("hic_allele_rescue")
