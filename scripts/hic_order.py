@@ -37,19 +37,24 @@ Output columns: group, rank, chain, orientation, length, links to group, orienta
 end_link (whether the junction with the previous chain has a link). The LLRs are the best alternative's
 loss in log-likelihood: small values mean Hi-C does not settle that chain's orientation or position.
 
-Usage: hic_order.py groups.tsv pairs.tsv.gz[,more.tsv.gz] chains.fai out.tsv [--endLinks links.tsv]
+Usage: hic_order.py groups.tsv pairs.tsv.gz[,more.tsv.gz] chains.fai out.tsv [--endLinks links.tsv] [--decayIn decay.tsv]
+       hic_order.py groups.tsv pairs.tsv.gz[,more] chains.fai - --decayOut decay.tsv
 '''
 import gzip, math, argparse, collections, sys, zlib
 import numpy as np
 
-def decay_model(pairs_within, bg=1e-3, lengths=None):
+EDGES = np.logspace(2, 9, 141)
+def decay_hist(pairs_within):
+    """Counts of within-chain pair distances in the decay model's log bins."""
+    d = np.asarray(pairs_within, dtype=float); d = d[d > 0]
+    return np.histogram(d, bins=EDGES)[0]
+def decay_model(pairs_within, bg=1e-3, lengths=None, hist=None):
     """log P(contact | distance), up to a constant, from pairs within chains. With lengths (the chains the pairs came from), each bin is
     divided by the bp of chain at which that distance can be seen, sum(max(L - d, 0)) averaged over the bin: near the chain lengths few
     positions are that far apart, so raw counts fall away and understate long-range contact. The average is exact per chain (0 for
     L <= a, L - (a + b) / 2 for L >= b, (L - a)^2 / 2(b - a) between), so a bin the longest chain ends in is never divided by ~0."""
-    d = np.asarray(pairs_within, dtype=float); d = d[d > 0]
-    edges = np.logspace(2, 9, 141)
-    h, _ = np.histogram(d, bins=edges)
+    edges = EDGES
+    h = decay_hist(pairs_within) if hist is None else np.asarray(hist)
     w = np.diff(edges); dens = (h + 0.5) / w / max(h.sum(), 1)
     if lengths is not None:
         Ls = np.asarray(lengths, dtype=float)[:, None]; lo, hi = edges[None, :-1], edges[None, 1:]
@@ -86,6 +91,9 @@ def main():
     p.add_argument("--minPairs", type=int, default=10)
     p.add_argument("--maxPairs", type=int, default=3000, help="subsample per chain pair (scaled back in the score)")
     p.add_argument("--decayNorm", action="store_true", help="divide the distance histogram by the bp at which each distance can be seen")
+    p.add_argument("--decayOut", help="write the within-chain distance histogram (and the chains it came from) here and stop: the decay "
+                   "model is the same for every group, so stage 09 builds it once instead of once per chromosome job")
+    p.add_argument("--decayIn", help="read the histogram --decayOut wrote, instead of collecting within-chain pairs")
     a = p.parse_args()
     L = { l.split("\t")[0]: int(l.split("\t")[1]) for l in open(a.fai) }
     gr = collections.defaultdict(list); of = {}
@@ -93,14 +101,28 @@ def main():
         if l[0] == "#": continue
         c, n, g = l.rstrip().split("\t")
         if g != "unassigned": gr[g].append(c); of[c] = g
-    within = []; wchains = set(); P = collections.defaultdict(list)
+    within = []; wchains = set(); P = collections.defaultdict(list); H = None
+    if a.decayIn:
+        for l in open(a.decayIn):
+            k, *v = l.rstrip("\n").split("\t")
+            if k == "hist": H = [int(x) for x in v]
+            elif k == "chain": wchains.add(v[0])
     for l in (l for f in a.pairs.split(",") for l in gzip.open(f, "rt")):
-        x, u, y, v = l.split("\t"); u = int(u); v = int(v)
-        if x == y: within.append(abs(u - v)); wchains.add(x); continue
+        x, u, y, v = l.split("\t")
+        if x == y:
+            if H is None: within.append(abs(int(u) - int(v))); wchains.add(x)
+            continue
+        if a.decayOut: continue
         if x in of and y in of and of[x] == of[y]:
+            u = int(u); v = int(v)
             if x < y: P[(x, y)].append((u, v))
             else: P[(y, x)].append((v, u))
-    logp = decay_model(within, lengths=[L[c] for c in wchains] if a.decayNorm else None)
+    if a.decayOut:
+        with open(a.decayOut, "w") as o:
+            o.write("hist\t" + "\t".join(str(int(x)) for x in decay_hist(within)) + "\n")
+            for c in sorted(wchains): o.write(f"chain\t{c}\n")
+        return
+    logp = decay_model(within, lengths=[L[c] for c in wchains] if a.decayNorm else None, hist=H)
     rng = np.random.default_rng(1)
     A = {}; W = {}
     for k, v in P.items():

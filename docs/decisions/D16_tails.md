@@ -4,7 +4,7 @@ A tail is a graph path leaving one flank and stopping before the other. It goes 
 
 **First, the tangle check** ([TANGLES](../TANGLES.md)). Do it before choosing any tail, because what it finds replaces tails:
 
-1. **Lost-route forks** (collapsed samples): read the `LOST` rows of `12_shared/chain_forks.tsv`. Break where the lost chain is the allele of a reused arm (`over` in `12_shared/arm_usage.tsv`), or leads on to more unplaced 1x or telomeric chains. Leave a bubble arm that rejoins the same chain. A break goes in `edits/chain_breaks.txt` at `break_at`, then `reset 06_evidence --remap`.
+1. **Lost-route forks** (collapsed samples): read the `LOST` rows of `12_shared/chain_forks.tsv`. Break where the lost chain is the allele of a reused arm (`over` in `12_shared/arm_usage.tsv`), or leads on to more unplaced 1x or telomeric chains. Leave a bubble arm that rejoins the same chain. `BUBBLE` rows (the chain reads under 2x over the hub) need nothing. A break goes in `edits/chain_breaks.txt` at `break_at`, then `reset 06_evidence --remap`.
 2. **Small tangles:** a group end with no telomere, whose tails stop inside a small tangle short of unplaced telomeric chains. Use TTT ([TANGLES](../TANGLES.md)), then reset from the earliest stage its edits touch.
 
 Record the check in the reason even when nothing is done, for example: `Tangle check: 3 LOST rows, 1 broken (chain0073 -> chain0081, reused arm); TTT on chr5 (17 unitigs), both ends now telomeric; 2 left as bubbles.` After a reset you return here on a new pre-build, and choose tails then.
@@ -38,7 +38,7 @@ Record the check in the reason even when nothing is done, for example: `Tangle c
 
 **Beyond tails:** placing them changes every coordinate downstream, so decide before mapping in `12_fill`.
 
-**Rescue swaps** (`12_shared/rescue_swaps.tsv`, with `hic_allele_rescue`): Hi-C gaps in the pre-build that would close if two chains swapped homologs, because the graph links the pair the other way from the rescue's Hi-C call. Neither side is proof in near-identical haplotypes, so the choice goes to the user at D13. If the user has already decided on a swap, make it now, with a group edit and `reset 08_bridges`. After `12_fill` it costs the read mappings as well.
+**Rescue swaps** (`12_shared/rescue_swaps.tsv`, with `hic_allele_rescue`): Hi-C gaps in the pre-build that would close if two chains swapped homologs, because the graph links the pair the other way from the rescue's Hi-C call. Neither side is proof in near-identical haplotypes, so the choice is the user's. **Ask the user now, at D16, not at D13**: before the build a swap costs a group edit and `reset 08_bridges` (stages 08-10, minutes); after it, the same swap also reruns stages 11-15 (fill, raw reads and validation, about 4 h on 292). For each row give: which links are direct graph overlaps and which pass through a connector, the junction reads on each side, and the rescue's call and ratio. On 292 the chr3_h1 swap was deferred to D13, and the user then made it, at the cost of a second build. Record the answer, quoted, in D16; if the user defers, carry the row to D13.
 
 ## Genes on tails
 

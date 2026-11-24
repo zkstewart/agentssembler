@@ -15,7 +15,12 @@ chain is placed (any copy) or on a tail candidate (--tails), and the other exit 
 least --minLost long: a haplotype's arm, lost because a chain ran through its fork. That is a D16 check (docs/decisions/D16_tails.md).
 With --windows (unitig_depth.py on the chains), hub_total and hub_unique are the chain's own read depth over the hub unitig, all reads and
 MAPQ >= 20. A true collapse reads about 2x in both; an allele bubble, whose unitig class depth is 2x because both alleles are near-identical,
-reads about 1x on the chain (292: 4 of 7 LOST rows), and hub_unique falls when the arms' copies are identical elsewhere.
+reads about 1x on the chain (292: 4 of 7 LOST rows), and hub_unique falls when the arms' copies are identical elsewhere. So a row that would be
+HUB or LOST is flagged BUBBLE instead when hub_total is under the 2x line (1.54 x --hap): the chain's own reads show it carries one allele, not
+both haplotypes. On 292 (84x haploid), before any hub break: the four true collapses (chain0090, 0101, 0102, 0119) read 138-161x and stay
+HUB, the 22 other rows 25-104x and become BUBBLE; at the rebuild's stage 10, 28 of 29 rows are BUBBLE, the one left (chain0122, 155x) a true
+collapse. Without --windows, or
+with no windows over the hub, the flag stands.
 Usage: chain_forks.py chains.agp unitigs.gfa copy_number.tsv groups.tsv groups.chroms.tsv --hap H [--windows depth.windows.tsv]
        [--placement pre.placement.tsv --chainClass chain_class.tsv --oneLo L --oneHi H [--tails tails.tsv]] [--minLost 50000]'''
 import argparse, collections
@@ -93,8 +98,9 @@ for c, v in parts.items():
                     kind = ("homolog" if gc != gt and C[gc] == C[gt] else "same_group" if gc == gt else "other") if grouped(gc) and grouped(gt) else "ungrouped"
                     twox = S.get(u, (0, 0))[1] >= 1.54 * a.hap
                     flag = "LOST" if twox and lost(c, t) else "HUB" if twox and kind == "homolog" else "."
-                    tl, td = CD.get(t, (".", "."))
-                    out.append((flag, c, gc, x, y, u, S.get(u, (0, 0))[0], S.get(u, (0, 0))[1], q, t, gt, kind, brk, tl, td) + hubdepth(c, x, y))
-out.sort(key=lambda r: ({"LOST": 0, "HUB": 1}.get(r[0], 2), -r[13] if isinstance(r[13], int) else 0))
+                    tl, td = CD.get(t, (".", ".")); hd = hubdepth(c, x, y)
+                    if flag != "." and hd[0] != "." and float(hd[0]) < 1.54 * a.hap: flag = "BUBBLE"
+                    out.append((flag, c, gc, x, y, u, S.get(u, (0, 0))[0], S.get(u, (0, 0))[1], q, t, gt, kind, brk, tl, td) + hd)
+out.sort(key=lambda r: ({"LOST": 0, "HUB": 1, "BUBBLE": 2}.get(r[0], 3), -r[13] if isinstance(r[13], int) else 0))
 print("#flag\tchain\tgroup\tstart\tend\tunitig\tprimary\tclass\tvia\tto_chain\tto_group\tkind\tbreak_at\tto_length\tto_depth\thub_total\thub_unique")
 for r in out: print(*r, sep="\t")

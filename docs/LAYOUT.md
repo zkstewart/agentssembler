@@ -146,7 +146,7 @@ The working set for ordering. When **[C]**, shared chains appear here as one cop
 | `groups.tsv`, `chains.agp`, `chains.fasta.fai`, `pairs.tsv.gz`, `end_links.tsv`, `chain_stats.tsv`, `telomeres.tsv`, `copies.log` **[C]** | 08 |
 | `pairs.rescue_order.tsv.gz` and `projected.log` **[set: hic_allele_rescue]**: rescued pairs projected onto one group, read by ordering only; `pairs.tsv.gz` keeps unique pairs, which validation uses | 08 |
 | `graph.bridges.tsv`, `graph.tips.tsv` (read at D07), `base.bridges.tsv` **[C]** | 08 |
-| `order_links.base.tsv`, `order_links.tsv`, `by_chrom/cN.groups.tsv`, `by_chrom/cN.order.tsv`, `by_chrom/cN.log`, `order.raw.tsv`, `order.tsv`, `groups.edited.tsv` **[edit: order_edits]**, `eval_order.txt` **[ref]**, `unhonoured.txt` | 09 |
+| `order_links.base.tsv`, `order_links.tsv`, `by_chrom/decay.tsv` (Hi-C decay model, built once for all chromosomes), `by_chrom/cN.groups.tsv`, `by_chrom/cN.order.tsv`, `by_chrom/cN.log`, `order.raw.tsv`, `order.tsv`, `groups.edited.tsv` **[edit: order_edits]**, `eval_order.txt` **[ref]**, `unhonoured.txt` | 09 |
 | `choices.tsv`, `arm_report.tsv` `arm_depth.tsv` `arm_usage.tsv` **[C]**, `build_args.txt` | 10 |
 | `pre/S.agp`, `pre/S.fasta`, `pre/S.junctions.tsv`, `pre/S.placement.tsv`, `pre/S.unplaced.fasta`, `pre/target.fasta` | 10, a trial build to find tails |
 | `tails.tsv`, `tail_report.tsv`, `tail_checks.tsv` (when there are candidates), `tail_genes.tsv` and `tail_genes.txt` **[opt: compleasm]** | 10, read at D16 |

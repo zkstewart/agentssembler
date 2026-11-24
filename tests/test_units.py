@@ -77,6 +77,11 @@ class T(unittest.TestCase):
             # two breaks: cb is all of u2, cc is u3 with its trimmed 4 bp back; c:15 lands on cb:9, c:25 on cc:9
             self.assertEqual([(x[0], x[5], x[6], x[7]) for x in rows if x[0] != "d"], [("c", "u1", "1", "10"), ("cb", "u2", "1", "14"), ("cc", "u3", "1", "14")])
             self.assertEqual(pairs, [["c", "5", "cb", "9"], ["cc", "9", "d", "3"]])
+            # --pairsOnly lifts the same pairs from the unitig lengths alone, writing no AGP or FASTA
+            open(f"{d}/u.fa.fai", "w").write("".join(f"{u}\t14\n" for u in U))
+            r = run("break_chain.py", f"{d}/b", f"{d}/in.agp", f"{d}/p.gz", f"{d}/o3", f"{d}/u.fa", "--pairsOnly"); self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertEqual([l.rstrip("\n").split("\t") for l in gzip.open(f"{d}/o3/pairs.tsv.gz", "rt")], pairs)
+            self.assertEqual(sorted(os.listdir(f"{d}/o3")), ["pairs.tsv.gz"])
             open(f"{d}/b", "w").write("c 15\n")
             self.assertNotEqual(run("break_chain.py", f"{d}/b", f"{d}/in.agp", f"{d}/p.gz", f"{d}/o2", f"{d}/u.fa").returncode, 0)
     def test_weak_placed_copy_names(self):
@@ -370,6 +375,11 @@ class T(unittest.TestCase):
             p("tails.tsv", "#end\tgroup\tpath\tlabel\tpairs\tbp\nZ+\tg01\tY-\tonly\t1\t100000\n")
             r = run("review/chain_forks.py", *base, "--placement", f"{d}/pl.tsv", "--chainClass", f"{d}/cls.tsv", "--oneLo", "19", "--oneHi", "46", "--tails", f"{d}/tails.tsv")
             self.assertEqual(r.stdout.splitlines()[1].split("\t")[0], ".", "a chain on a tail is in use, not lost")
+            # with the chain's own depth over the hub: under 2x (1.54 x 30) is an allele bubble, BUBBLE; 2x keeps LOST
+            for depth, flag in (("31", "BUBBLE"), ("60", "LOST")):
+                p("w.tsv", f"#unitig\tstart\tend\ttotal\tunique\tsecondary\nX\t1000\t2000\t{depth}\t{depth}\t0\n")
+                r = run("review/chain_forks.py", *base, "--placement", f"{d}/pl.tsv", "--chainClass", f"{d}/cls.tsv", "--oneLo", "19", "--oneHi", "46", "--windows", f"{d}/w.tsv")
+                self.assertEqual(r.returncode, 0, r.stderr); self.assertEqual(r.stdout.splitlines()[1].split("\t")[0], flag, depth)
     def test_gene_evidence(self):
         # genes lifted from unitigs to chains: a short gene with a copy on an unassigned chain, made whole by a rescued chain; tail genes
         with tempfile.TemporaryDirectory() as d:
@@ -493,6 +503,35 @@ class T(unittest.TestCase):
         self.assertLessEqual(lp(np.array([1e8]))[0], lp(np.array([1e6]))[0])
         self.assertTrue(np.all(np.isfinite(ho.decay_model([500, 600, 700])(np.array([1e3, 1e6])))))   # sparse: no bin with 50 pairs
         self.assertEqual(ho.decay_model([])(np.array([1e3]))[0], 0.0)
+        x = np.array([1e3, 1e5, 1e7]); self.assertTrue(np.array_equal(ho.decay_model(d)(x), ho.decay_model([], hist=ho.decay_hist(d))(x)))
+    def test_hic_order_decay_file(self):
+        # the decay model written once (--decayOut) and read per chromosome (--decayIn) gives the same order as building it in the job
+        import random; random.seed(3)
+        with tempfile.TemporaryDirectory() as d:
+            L = {"a": 400000, "b": 300000, "c": 200000}
+            open(f"{d}/fai", "w").write("".join(f"{c}\t{n}\n" for c, n in L.items()))
+            open(f"{d}/g", "w").write("".join(f"{c}\t{n}\tg1\n" for c, n in L.items()))
+            off = {"a": 0, "b": 400000, "c": 700000}; rows = []
+            for _ in range(20000):
+                p = random.randrange(900000); q = min(899999, max(0, p + int(random.expovariate(1 / 30000)) * random.choice((-1, 1))))
+                cx = max(c for c in L if off[c] <= p); cy = max(c for c in L if off[c] <= q)
+                rows.append(f"{cx}\t{p - off[cx] + 1}\t{cy}\t{q - off[cy] + 1}\n")
+            with gzip.open(f"{d}/p.gz", "wt") as o: o.writelines(rows)
+            r = run("hic_order.py", f"{d}/g", f"{d}/p.gz", f"{d}/fai", "-", "--decayOut", f"{d}/decay"); self.assertEqual(r.returncode, 0, r.stderr)
+            for args, out in (([], "o1"), (["--decayIn", f"{d}/decay"], "o2")):
+                r = run("hic_order.py", f"{d}/g", f"{d}/p.gz", f"{d}/fai", f"{d}/{out}", "--minLen", "1000", *args); self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertEqual(open(f"{d}/o1").read(), open(f"{d}/o2").read())
+            self.assertEqual([l.split("\t")[2] for l in open(f"{d}/o1") if l[0] != "#"], ["a", "b", "c"])
+    def test_unhonoured_filter(self):
+        # a same-group link below make_order_links.py's bar (< 5 kb overlap, < 3 reads) is not counted as unhonoured
+        with tempfile.TemporaryDirectory() as d:
+            p = lambda n, x: open(f"{d}/{n}", "w").write(x)
+            p("o", "#g\trank\tchain\to\tlen\ng1\t1\tx\t+\t10\ng1\t2\ty\t+\t10\ng1\t3\tz\t+\t10\n")
+            p("b", "#a\tb\tsame_group\tpath\n"); p("t", ""); p("ch", "g1\tc1\n")
+            for ov, n in (("1000", "count 0"), ("6000", "count 2")):
+                p("e", f"#a\tb\treads\tq\tov\nx+\tz-\t0\tNA\t{ov}\n")
+                r = run("review/unhonoured.py", f"{d}/o", f"{d}/e", f"{d}/b", f"{d}/t", f"{d}/ch"); self.assertEqual(r.returncode, 0, r.stderr)
+                self.assertIn(n, r.stdout)
     def test_first_undecided(self):
         sys.path.insert(0, f"{R}/scripts"); from chainlib import first_undecided
         dec = lambda o0, o1: o0 >= 10 + o1 and o0 >= 2 * max(o1, 1)

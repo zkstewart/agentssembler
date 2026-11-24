@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
 # If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
-'''Order tests needing no reference. (1) Same-group graph links and bridges an order does not honour. (2) Shared-chain order and
+'''Order tests needing no reference. (1) Same-group graph links and bridges an order does not honour, filtered as make_order_links.py
+filters what hic_order.py rewards (>= 5 kb overlap or >= 3 reads; bridges marked same_group). (2) Shared-chain order and
 orientation compared between the two homologs of a chromosome. (3) Telomere ends facing inward, and telomere ends per group.
 Usage: unhonoured.py order.tsv end_links.tsv graph.bridges.tsv telomeres.tsv chroms.tsv'''
 import sys, collections
@@ -20,10 +21,12 @@ for g, r in O.items():
 part = collections.defaultdict(dict)
 for l in open(el):
     if l[0] != "#":
-        s = l.rstrip("\n").split("\t"); part[s[0]][s[1]] = "direct"; part[s[1]][s[0]] = "direct"
+        s = l.rstrip("\n").split("\t")
+        if int(s[4]) >= 5000 or int(s[2]) >= 3: part[s[0]][s[1]] = "direct"; part[s[1]][s[0]] = "direct"
 for l in open(br):
     if l[0] != "#":
-        s = l.rstrip("\n").split("\t"); part[s[0]].setdefault(s[1], "bridge"); part[s[1]].setdefault(s[0], "bridge")
+        s = l.rstrip("\n").split("\t")
+        if s[2] == "yes": part[s[0]].setdefault(s[1], "bridge"); part[s[1]].setdefault(s[0], "bridge")
 rank = {c: i for g, r in O.items() for i, (c, _, _) in enumerate(r)}
 print("== ends with same-group graph partners, none of them adjacent in the order")
 n = 0

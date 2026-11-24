@@ -9,11 +9,14 @@ step $D/order_links.base.tsv python3 "$S/make_order_links.py" $D/groups.tsv $D/e
 mkdir -p $D/by_chrom; CH=10_groups/final.chroms.tsv
 PAIRS=$D/pairs.tsv.gz; [ -s $D/pairs.rescue_order.tsv.gz ] && PAIRS+=",$D/pairs.rescue_order.tsv.gz"   # rescued pairs order, never validate
 if [ ! -s $D/order.raw.tsv ]; then
+  # the decay model comes from pairs within chains, the same for every chromosome: build it once
+  step $D/by_chrom/decay.tsv python3 "$S/hic_order.py" $D/groups.tsv "$PAIRS" $D/chains.fasta.fai - --decayOut $D/by_chrom/decay.tsv
   pids=()
   for c in $(cut -f2 $CH | sort -u); do
     if [ -s $D/by_chrom/$c.order.tsv ]; then continue; fi
+    while [ "$(jobs -rp | wc -l)" -ge "$AS_THREADS" ]; do wait -n || true; done   # at most AS_THREADS jobs; each pid's status is checked below
     awk -v c="$c" 'NR==FNR{if($2==c)k[$1]=1;next} /^#/{print;next} ($3 in k)' $CH $D/groups.tsv > $D/by_chrom/$c.groups.tsv
-    python3 "$S/hic_order.py" $D/by_chrom/$c.groups.tsv "$PAIRS" $D/chains.fasta.fai $D/by_chrom/$c.order.tsv --endLinks $D/order_links.tsv --linkBonus "$AS_LINK_BONUS" --telomeres $D/telomeres.tsv --stats $D/chain_stats.tsv --minWithin "$AS_MIN_WITHIN" > $D/by_chrom/$c.log 2>&1 &
+    python3 "$S/hic_order.py" $D/by_chrom/$c.groups.tsv "$PAIRS" $D/chains.fasta.fai $D/by_chrom/$c.order.tsv --endLinks $D/order_links.tsv --linkBonus "$AS_LINK_BONUS" --telomeres $D/telomeres.tsv --stats $D/chain_stats.tsv --minWithin "$AS_MIN_WITHIN" --decayIn $D/by_chrom/decay.tsv > $D/by_chrom/$c.log 2>&1 &
     pids+=($!)
   done
   for p in "${pids[@]:-}"; do [ -n "$p" ] && wait "$p"; done

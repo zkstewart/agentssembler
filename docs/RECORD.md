@@ -202,7 +202,9 @@ Most rescued haplotype calls were `arbitrary` or `allele_of_arbitrary`: Hi-C nam
 - three were true collapses (chain0102, chain0119, chain0090): a continuous block at about 2x in which every read is unique, beside 1x arms whose reads are MAPQ 0;
 - the rest read about 1x on the chain itself: allele bubbles, with both alleles present as separate chains.
 
-Breaking the three, then two more that the next round exposed (chain0101, chain0115), cost two `reset 06_evidence --remap` rounds. Run on stage 04's mapping, before D04, `review/hub_cores.py` finds every one of these hubs in one pass. It reproduces the hand-made breaks for chain0101, chain0102, chain0104 (chr5), chain0119 and chain0012 at the same positions.
+Breaking the three, then two more that the next round exposed (chain0101, chain0115), cost two `reset 06_evidence --remap` rounds.
+
+`chain_forks.py` now makes this split itself: a HUB or LOST row whose chain reads under 2x over the hub (`hub_total` below 1.54 x haploid) is flagged `BUBBLE`. Re-run on the rescue trial's stage 07, before any break, it keeps chain0090, chain0101, chain0102 and chain0119 as HUB (138-161x on the chain) and flags the other 22 rows BUBBLE (25-104x). At the final rebuild's stage 10 it leaves one LOST row of 29, chain0122 at 155x, the collapsed chr3-end hub. Run on stage 04's mapping, before D04, `review/hub_cores.py` finds every one of these hubs in one pass. It reproduces the hand-made breaks for chain0101, chain0102, chain0104 (chr5), chain0119 and chain0012 at the same positions.
 
 Breaks must fall at unitig boundaries (`break_chain.py`). A break is useful only if the piece it frees is mostly 2x: without that test, chain0159 and chain0119 would have carried a 1x arm into the shared piece. At stage 06 of the rebuild, seven remaining cores lie inside single unitigs, where hifiasm collapsed both haplotypes. They cannot be broken with the current tools. Each such chain goes on one haplotype or is shared, a D14 choice.
 

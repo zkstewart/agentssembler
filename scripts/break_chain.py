@@ -6,11 +6,12 @@ Apply chain breaks without remapping. Each line of the breaks file: chain positi
 the left part). The left part keeps its name and coordinates; the right part is <chain>b and gets back
 the graph overlap trimmed from its first unitig. A chain may have several lines: positions are all on the
 unbroken chain, and the parts from left to right are <chain>, <chain>b, <chain>c, ... Writes a new AGP and
-FASTA, and lifts Hi-C pairs and links.
-Usage: break_chain.py breaks.txt in.agp in.pairs.tsv.gz outdir unitigs.fasta
+FASTA, and lifts Hi-C pairs and links. --pairsOnly lifts the pairs alone (outdir/pairs.tsv.gz), for a second pairs file through the
+same breaks: no AGP, FASTA or links, and unitig lengths come from unitigs.fasta.fai.
+Usage: break_chain.py breaks.txt in.agp in.pairs.tsv.gz outdir unitigs.fasta [--pairsOnly]
 '''
 import sys, gzip, collections, os
-brk, agp, pairs, outdir, unitigs = sys.argv[1:6]
+brk, agp, pairs, outdir, unitigs = sys.argv[1:6]; PO = "--pairsOnly" in sys.argv[6:]
 B = collections.defaultdict(set)
 for l in open(brk):
     if l[0] == "#" or not l.strip(): continue
@@ -20,10 +21,13 @@ SUF = "bcdefghijklmnopqrstuvwxyz"
 for c, ps in B.items():
     if len(ps) > len(SUF): sys.exit(f"{c}: more than {len(SUF)} breaks")
 U = {}; n = None
-for l in open(unitigs):
-    if l[0] == ">": n = l[1:].split()[0]; U[n] = []
-    else: U[n].append(l.strip())
-for k in U: U[k] = "".join(U[k])
+if PO: UL = {l.split("\t")[0]: int(l.split("\t")[1]) for l in open(unitigs + ".fai")}
+else:
+    for l in open(unitigs):
+        if l[0] == ">": n = l[1:].split()[0]; U[n] = []
+        else: U[n].append(l.strip())
+    for k in U: U[k] = "".join(U[k])
+    UL = {k: len(v) for k, v in U.items()}
 rc = str.maketrans("ACGTacgtNn", "TGCAtgcaNn")
 A = collections.defaultdict(list); order = []
 for l in open(agp):
@@ -43,7 +47,7 @@ for c in order:
         part = [s for s in rows if a < int(s[2]) <= b]
         if k == 0: new[c] = part; continue
         name = c + SUF[k - 1]
-        f = part[0][:]; ulen = len(U[f[5]])
+        f = part[0][:]; ulen = UL[f[5]]
         if f[8] == "+": restored = int(f[6]) - 1; f[6] = "1"
         else: restored = ulen - int(f[7]); f[7] = str(ulen)
         out = []; pos = 0
@@ -54,11 +58,12 @@ for c in order:
         print(f"{c}: {name} from {a + 1}, {pos} bp (restored {restored} bp of {f[5]})")
     print(f"{c}: left {cuts[1]} bp")
 os.makedirs(outdir, exist_ok=True)
-with open(f"{outdir}/chains.agp", "w") as o:
+if not PO:
+  with open(f"{outdir}/chains.agp", "w") as o:
     o.write("##agp-version 2.1\n")
     for c, rows in new.items():
         for s in rows: o.write("\t".join(s) + "\n")
-with open(f"{outdir}/chains.fasta", "w") as o:
+  with open(f"{outdir}/chains.fasta", "w") as o:
     for c, rows in new.items():
         q = []
         for s in rows:
@@ -77,6 +82,7 @@ with gzip.open(pairs, "rt") as fh, gzip.open(f"{outdir}/pairs.tsv.gz", "wt", com
         o.write("\t".join([x, str(u), y, str(v)] + rest) + "\n")
         dep[x] += 1; dep[y] += 1
         if x != y: links[tuple(sorted((x, y)))] += 1
-with open(f"{outdir}/links.tsv", "w") as o:
+if not PO:
+  with open(f"{outdir}/links.tsv", "w") as o:
     for (x, y), m in links.items(): o.write(f"{x}\t{y}\t{m}\n")
     for c, m in dep.items(): o.write(f"{c}\t.\t{m}\n")

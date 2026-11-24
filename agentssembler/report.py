@@ -159,9 +159,10 @@ def r_group(w, c, s):
         if arb: al.append(f"{len(arb)} shared chains whose haplotypes nothing separates: {', '.join(arb[:12])}{' ...' if len(arb) > 12 else ''}. Each is a guess. Test with graph position and interior depth, then name the haplotypes with a shared_in edit or unassign the chain (D14).")
     forks = f"{w}/10_groups/chain_forks.txt"
     if os.path.exists(forks):
-        n = sum(1 for l in open(forks) if l.startswith("HUB"))
-        if n: al.append(f"{n} HUB rows in 10_groups/chain_forks.txt: 2x unitigs in a chain whose other exit reaches a homolog's chain. Read them before going on: a break costs a read mapping (D04, D06). "
-                        "hub_total and hub_unique are the chain's own depth over the hub: about 1x there is an allele bubble, not a collapse.")
+        n = sum(1 for l in open(forks) if l.startswith("HUB")); b = sum(1 for l in open(forks) if l.startswith("BUBBLE"))
+        if b: out.append(f"{b} BUBBLE rows in 10_groups/chain_forks.txt: 2x-class hubs that read under 2x on the chain itself (hub_total), so allele bubbles, not collapses. No action.")
+        if n: al.append(f"{n} HUB rows in 10_groups/chain_forks.txt: 2x unitigs in a chain whose other exit reaches a homolog's chain, reading 2x on the chain itself (or with no depth to say). "
+                        "Read them before going on: a break costs a read mapping (D04, D06).")
     G = {r[0]: r[2] for r in rows(f"{w}/10_groups/groups.tsv")}
     HC = collections.defaultdict(list)
     for r in rows(f"{w}/10_groups/hub_cores.tsv"): HC[r[0]].append(r)
@@ -227,7 +228,9 @@ def r_arms(w, c, s):
     A = list(rows(f"{w}/12_shared/arm_report.tsv"))
     if A: out.append("Arm labels: " + str(dict(collections.Counter(r[3] for r in A if len(r) > 3))))
     al = direction_alarms(w, "12_shared/homolog_direction.tsv")
-    al += swap_alarms(f"{w}/12_shared/rescue_swaps.tsv")
+    al += swap_alarms(f"{w}/12_shared/rescue_swaps.tsv", pre=True)
+    FB = sum(1 for r in rows(f"{w}/12_shared/chain_forks.tsv") if r[0] == "BUBBLE")
+    if FB: out.append(f"{FB} BUBBLE rows in 12_shared/chain_forks.tsv: forks that would be HUB or LOST, but the chain reads under 2x over the hub (allele bubbles). No action.")
     F = [r for r in rows(f"{w}/12_shared/chain_forks.tsv") if r[0] == "LOST"]
     if F:
         pairs = sorted({(r[1], r[9], int(r[13])) for r in F}, key=lambda x: -x[2])
@@ -244,13 +247,16 @@ def direction_alarms(w, p):
     inv = [r for r in rows(f"{w}/{p}") if r[4] == "inverted" and not {r[0], r[1]} & fl]
     return [f"{r[0]} is written in reverse against {r[1]} ({Mb(int(r[3]))} inverted, {Mb(int(r[2]))} forward; {p}). A direction flag, not biology: "
             "list one of the two in edits/flip.txt now, before 12_fill, which applies it. Found after stage 12, it costs `reset 12_fill` (D12)." for r in inv]
-def swap_alarms(p):
-    """Hi-C gaps that swapping two chains between homologs would close (review/rescue_swaps.py)."""
+def swap_alarms(p, pre=False):
+    """Hi-C gaps that swapping two chains between homologs would close (review/rescue_swaps.py). pre: the stage 10 pre-build, before any
+    scaffold is built, when a swap costs only stages 08-10; ask the user then rather than at D13."""
     S = list(rows(p))
     if not S: return []
+    when = ("Ask the user now (D16): before the build a swap is a group edit and `reset 08_bridges` (stages 08-10); after it, the same swap also reruns stages 11-15." if pre
+            else "Hand the choice to D13, unless the user already answered at D16 (a swap is a group edit and `reset 08_bridges`).")
     return [f"{len(S)} Hi-C gaps would close if two chains swapped homologs ({'/'.join(p.split('/')[-2:])}): " + ", ".join(f"{r[0]}:{r[1]} {r[4]} ({r[5]}) <-> {r[6]} ({r[8]})" for r in S[:10])
             + (" ..." if len(S) > 10 else "") + ". The graph links both pairs the other way. Neither the graph link nor a Hi-C allele call is proof where haplotypes are near-identical: "
-            "read the junction reads, then hand the choice to D13 (a swap is a group edit and `reset 08_bridges`)."]
+            "read the junction reads. " + when]
 def fill_reports(w, c):
     return sorted(glob.glob(f"{w}/14_readfill/h*/fill.h*.report.tsv") + glob.glob(f"{w}/14_readfill/*.graph.report.tsv"))
 def homolog_lengths(fa_fai, agp, minBp=1000000, minFrac=0.05):

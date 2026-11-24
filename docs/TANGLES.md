@@ -22,7 +22,8 @@ The evidence comes from one genome, GammaCitrus (diploid, 9 chromosomes). Its nu
 - the hub unitig is 2x;
 - the chain is placed, or lies on a tail candidate;
 - the other exit reaches a chain that is neither placed nor on a tail;
-- that chain is about 1x and at least 50 kb long.
+- that chain is about 1x and at least 50 kb long;
+- the chain itself reads 2x over the hub (`hub_total`), when its depth is known. A row that reads under 2x there is an allele bubble, flagged `BUBBLE` instead.
 
 Rows are sorted by the length of that chain. `break_at` is the D04 break that separates the hub from the chain's arm on the fork side.
 
