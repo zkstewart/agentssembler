@@ -1,7 +1,7 @@
 # This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
 # If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
-"""Side-by-side metrics of two finished work directories, for choosing between builds at D13 (for example a TTT build,
-docs/TANGLES.md): validation report lines, unplaced sequence, reused arms, depth by class, and length, gaps and telomeres per
+"""Side-by-side metrics of two finished work directories, for choosing between builds at D13 (for example a trial the user
+agreed to, in a second work directory): validation report lines, unplaced sequence, reused arms, depth by class, and length, gaps and telomeres per
 scaffold. Scaffold names must match for the per-scaffold rows to line up."""
 import os, re, collections
 

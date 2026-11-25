@@ -43,7 +43,7 @@ to your organism.
 
 This config file will allow you to specify the data inputs including:
 - A hifiasm unitig graph (`*.p_utg.gfa`) as well as the extracted FASTA from that file.
-- Long corrected nanopore reads (FASTA format as output by `dorado correct` or equivalent).
+- Long corrected nanopore reads (FASTA as output by `dorado correct` or equivalent, or FASTQ; gzipped or not).
 - Hi-C reads (FASTQ with/without `gz` compression; trimmed or untrimmed).
 - (Optional) raw nanopore data (BAM, CRAM or SAM; or FASTQ or FASTA, gzipped or not).
 - (Optional) a related reference genome (single haplotype FASTA format).

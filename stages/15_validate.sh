@@ -57,7 +57,8 @@ if [ -s $V/sv/inv/merged.tsv ]; then
   SP=$(IFS=,; echo "${PAFS[*]}")
   python3 "$S/bp_reads.py" $AGP "$SP" $B > $V/sv/bp_reads.tsv 2>&1 || true
 fi
-if has_ref; then "$AS_MINIMAP2" -x asm20 -K 100M -t "$AS_THREADS" --secondary=no 00_inputs/reference.fasta $FA 2>/dev/null > $V/sv/final_vs_ref.paf || echo "reference alignment failed; only an alarm, so continuing"; fi
+# settings.reference_dotplot: the whole assembly against the reference, for a dot plot by hand; no script reads it
+if has_ref && [ "${AS_REF_DOTPLOT:-true}" = "true" ]; then "$AS_MINIMAP2" -x asm20 -K 100M -t "$AS_THREADS" --secondary=no 00_inputs/reference.fasta $FA 2>/dev/null > $V/sv/final_vs_ref.paf || echo "reference alignment failed; only an alarm, so continuing"; fi
 step $V/join_reads.tsv python3 "$S/validate/join_reads.py" $AGP $V/join_reads.tsv "${PAFS[@]}"
 if [ -s $D/tails.tsv ] && has_rows edits/accepted_tails.tsv; then python3 "$S/rawreads/tail_joins.py" --tails edits/accepted_tails.tsv --chainsAgp $D/chains.agp --agp $AGP --names 13_scaffold/names.tsv --paf "${PAFS[@]}" --out $V/tail_joins.tsv > $V/tail_joins.log 2>&1 || true; fi
 if [ -n "${AS_JUICER_TOOLS:-}" ] && [ ! -e $V/juicebox/done.ok ]; then

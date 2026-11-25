@@ -28,6 +28,8 @@ settings:
   # read_preset: lr:hq  # minimap2 preset for corrected_reads; map-hifi for HiFi reads in FASTA
   # raw_preset: lr:hq   # minimap2 preset for raw_reads
   # hic_allele_rescue: false  # decide at D04 from 09_hic_map/rescue_signal.txt: place chains Hi-C cannot (near-identical haplotypes)
+  # raw_phase_early: false   # with raw reads: raw-read arm phase at stage 10, before D15 (a raw mapping, ~2.5 h on 292)
+  # reference_dotplot: true  # with a reference: final_vs_ref.paf at stage 15 for a dot plot
   # unloc_purge: 0.2    # unlocalized scaffolds (stage 15): drop the shorter of two same-haplotype chains overlapping by this fraction
 
 # Full paths, or names on PATH. juicer_tools, compleasm and plot_python are optional; steps using them are skipped when unset.

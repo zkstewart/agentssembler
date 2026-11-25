@@ -37,6 +37,21 @@ if has_genes && [ -s $D/tails.tsv ] && [ ! -s $D/tail_genes.tsv ]; then python3 
 if collapsed && [ ! -s $D/chain_forks.tsv ]; then
   python3 "$S/review/chain_forks.py" 12_broken/chains.agp 00_inputs/unitigs.gfa 04_copynumber/copy_number.tsv 10_groups/final.tsv 10_groups/final.chroms.tsv --hap "$AS_HAP" --windows 11_ont_chains/depth.windows.tsv --placement $D/pre/$AS_SAMPLE.placement.tsv --chainClass 11_ont_chains/chain_class.tsv --oneLo "$AS_ONE_LO" --oneHi "$AS_SHARED_LO" --tails $D/tails.tsv > $D/chain_forks.tsv.tmp && mv $D/chain_forks.tsv.tmp $D/chain_forks.tsv
 fi
+# settings.raw_phase_early: do raw reads phase the arbitrary arms (D15)? The stage 13 test, run on the pre-build so that D15 can use it:
+# raw reads >= 5 kb mapped to each haplotype's pre-build (shared sequence masked), then deleted. Costs a raw mapping (about 2.5 h on 292).
+if collapsed && has_raw && [ "${AS_RAW_PHASE_EARLY:-false}" = "true" ] && [ ! -s $D/phase_reads.pre.tsv ] \
+   && awk -F'\t' '$5=="bridge" && $11 ~ /^arbitrary/{f=1} END{exit !f}' $D/pre/$AS_SAMPLE.junctions.tsv; then
+  python3 "$S/mask_shared.py" $D/pre/$AS_SAMPLE.agp $D/pre/target.fasta $D/pre/rawmask
+  PP=(); SF=()
+  for h in $(haps_of $D/pre/$AS_SAMPLE.agp); do map_stream $D/pre/raw.$h.paf.gz $D/pre/rawmask.$h.fasta -; PP+=($D/pre/raw.$h.paf.gz); SF+=(_$h); done
+  python3 "$S/review/phase_reads.py" $D/pre/$AS_SAMPLE.agp 12_shared/chains.agp $D/pre/$AS_SAMPLE.junctions.tsv 12_shared/groups.tsv $D/phase_reads.pre.tsv.tmp --paf "${PP[@]}" --suffix "${SF[@]}"
+  mv $D/phase_reads.pre.tsv.tmp $D/phase_reads.pre.tsv; rm -f $D/pre/raw.h*.paf.gz* $D/pre/rawmask.*
+fi
+# Genes on chains left unplaced and off every tail, with the lost routes leading to them (D16): what leaving them out costs
+if has_genes && [ ! -s $D/unplaced_genes.tsv ]; then
+  python3 "$S/review/tail_genes.py" --genes "$GENES" --agp 12_broken/chains.agp --placement $D/pre/$AS_SAMPLE.placement.tsv --ploidy "$AS_PLOIDY" --unplacedOut $D/unplaced_genes.tsv \
+    $([ -s $D/tails.tsv ] && echo "--tails $D/tails.tsv") $([ -s $D/chain_forks.tsv ] && echo "--forks $D/chain_forks.tsv") > $D/unplaced_genes.txt
+fi
 if [ -s $D/tails.tsv ] && [ "$(grep -vc '^#' $D/tails.tsv)" -gt 0 ]; then
   step $D/tail_checks.tsv python3 "$S/rawreads/tail_checks.py" --tails $D/tails.tsv --chains 12_broken/chains.fasta --target $D/pre/target.fasta --names $T/names.tsv --class 11_ont_chains/chain_class.tsv --report $D/tail_report.tsv --hapDepth "$AS_HAP" --ploidy "$AS_PLOIDY" --minimap2 "$AS_MINIMAP2" --threads "$AS_THREADS" --out $D/tail_checks.tsv
 fi

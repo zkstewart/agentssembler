@@ -7,7 +7,8 @@ A_tail + path + B_head (graph overlaps merged) for every candidate, map local re
 candidates, and count reads through each candidate's two joins (>= --minSide bp on both sides of the join).
 The candidate with the most reads through its weaker join wins; a junction with no read through both joins of
 any path is still reported, and the longest path is used only if --tieLongest.
-The reads may be FASTA or FASTQ, gzipped or not; the local reads are written to outdir/reads.fasta.
+The reads may be FASTA or FASTQ, gzipped or not; the local reads are written to outdir/reads.fasta. With no bridge, or no read near
+one, nothing is extracted or mapped, and every path scores 0 reads.
 Usage: choose_bridges.py bridges.tsv end_links.tsv chains.fasta ont_vs_chains.paf.gz reads outdir [--preset lr:hq] [--minimap2 minimap2] [--seqkit seqkit]
 '''
 import sys, os, gzip, collections, subprocess, argparse, shlex
@@ -62,23 +63,24 @@ with gzip.open(a.paf, "rt") as fh:
             u, v = int(s[7]), int(s[8])
             if any(u < e and v > b for b, e in ends[s[5]]): ids.add(s[0])
 print(len(ids), "local reads,", len(targets), "candidate paths,", len(J), "junctions", flush=True)
-with open(f"{a.out}/ids.txt", "w") as o: o.write("\n".join(sorted(ids)) + "\n")
+with open(f"{a.out}/ids.txt", "w") as o: o.write("".join(f"{x}\n" for x in sorted(ids)))
 with open(f"{a.out}/targets.fasta", "w") as o:
     for k, v in targets.items(): o.write(f">{k.replace('|','_')}\n{v}\n")
+HEAD = "#end_a\tend_b\tchosen\tpath\tleft_reads\tright_reads\tfull_reads\tpath_bp\talternatives\n"
 nm = {k.replace("|", "_"): k for k in targets}
-if not os.path.exists(f"{a.out}/reads.fasta"):
-    subprocess.check_call(f"set -o pipefail; {shlex.quote(a.seqkit)} grep -f {a.out}/ids.txt {a.reads} 2> {a.out}/seqkit.log | {shlex.quote(a.seqkit)} fq2fa -w 0 -o {a.out}/reads.fasta.part 2>> {a.out}/seqkit.log && mv {a.out}/reads.fasta.part {a.out}/reads.fasta", shell=True, executable="/bin/bash")   # FASTA whatever the input
-subprocess.check_call(f"{shlex.quote(a.minimap2)} -x {shlex.quote(a.preset)} -c --secondary=no -t {a.threads} {a.out}/targets.fasta {a.out}/reads.fasta 2> {a.out}/mm2.log | gzip -1 > {a.out}/reads.paf.gz", shell=True)
 C = collections.defaultdict(lambda: [0, 0, 0])
-with gzip.open(f"{a.out}/reads.paf.gz", "rt") as fh:
-    for l in fh:
-        s = l.split("\t", 12)
-        if "tp:A:P" not in s[12]: continue
-        t = nm[s[5]]; u, v = int(s[7]), int(s[8]); j1, j2, _ = joins[t]
-        lf = u <= j1 - a.minSide and v >= j1 + a.minSide; rt = u <= j2 - a.minSide and v >= j2 + a.minSide
-        C[t][0] += lf; C[t][1] += rt; C[t][2] += lf and rt
+# no bridges, or no read near any: skip read extraction and mapping on empty input (every path then has 0 reads, as mapping would give)
+if targets and ids and not os.path.exists(f"{a.out}/reads.fasta"):
+    subprocess.check_call(f"set -o pipefail; {shlex.quote(a.seqkit)} grep -f {a.out}/ids.txt {a.reads} 2> {a.out}/seqkit.log | {shlex.quote(a.seqkit)} fq2fa -w 0 -o {a.out}/reads.fasta.part 2>> {a.out}/seqkit.log && mv {a.out}/reads.fasta.part {a.out}/reads.fasta", shell=True, executable="/bin/bash")   # FASTA whatever the input
+if targets and ids: subprocess.check_call(f"{shlex.quote(a.minimap2)} -x {shlex.quote(a.preset)} -c --secondary=no -t {a.threads} {a.out}/targets.fasta {a.out}/reads.fasta 2> {a.out}/mm2.log | gzip -1 > {a.out}/reads.paf.gz", shell=True)
+for l in (gzip.open(f"{a.out}/reads.paf.gz", "rt") if targets and ids else ()):
+    s = l.split("\t", 12)
+    if "tp:A:P" not in s[12]: continue
+    t = nm[s[5]]; u, v = int(s[7]), int(s[8]); j1, j2, _ = joins[t]
+    lf = u <= j1 - a.minSide and v >= j1 + a.minSide; rt = u <= j2 - a.minSide and v >= j2 + a.minSide
+    C[t][0] += lf; C[t][1] += rt; C[t][2] += lf and rt
 with open(f"{a.out}/choices.tsv", "w") as o:
-    o.write("#end_a\tend_b\tchosen\tpath\tleft_reads\tright_reads\tfull_reads\tpath_bp\talternatives\n")
+    o.write(HEAD)
     for (x, y), paths in J.items():
         rows = []
         for i, pth in enumerate(paths):

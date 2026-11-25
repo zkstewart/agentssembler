@@ -149,7 +149,7 @@ The working set for ordering. When **[C]**, shared chains appear here as one cop
 | `order_links.base.tsv`, `order_links.tsv`, `by_chrom/decay.tsv` (Hi-C decay model, built once for all chromosomes), `by_chrom/cN.groups.tsv`, `by_chrom/cN.order.tsv`, `by_chrom/cN.log`, `order.raw.tsv`, `order.tsv`, `groups.edited.tsv` **[edit: order_edits]**, `eval_order.txt` **[ref]**, `unhonoured.txt` | 09 |
 | `choices.tsv`, `arm_report.tsv` `arm_depth.tsv` `arm_usage.tsv` **[C]**, `build_args.txt` | 10 |
 | `pre/S.agp`, `pre/S.fasta`, `pre/S.junctions.tsv`, `pre/S.placement.tsv`, `pre/S.unplaced.fasta`, `pre/target.fasta` | 10, a trial build to find tails |
-| `tails.tsv`, `tail_report.tsv`, `tail_checks.tsv` (when there are candidates), `tail_genes.tsv` and `tail_genes.txt` **[opt: compleasm]** | 10, read at D16 |
+| `tails.tsv`, `tail_report.tsv`, `tail_checks.tsv` (when there are candidates), `phase_reads.pre.tsv` **[C, setting raw_phase_early]**, `tail_genes.tsv` and `tail_genes.txt`, `unplaced_genes.tsv` and `unplaced_genes.txt` (genes on chains left unplaced) **[opt: compleasm]** | 10, read at D16 |
 | `chain_forks.tsv` **[C]**: forks with `LOST` rows first, for D16's tangle check | 10 |
 | `rescue_swaps.tsv`: Hi-C gaps of the pre-build that swapping two chains between homologs would close; a swap is a group edit and `reset 08_bridges` | 10, read at D16 |
 | `homolog_direction.tsv`: the pre-build's scaffolds against their first homolog, bp forward and reversed; an `inverted` one goes in `edits/flip.txt`, which stage 12 applies | 10, read at D16 |
@@ -205,7 +205,7 @@ A fill writes six files from one prefix: `.agp`, `.fills.fasta`, `.report.tsv`, 
 - `maps/specific/` and `maps/scaffold/`, each with `crosstalk.tsv` and `chrN.png`; `maps/specific.log`, `maps/scaffold.log` **[opt: plot_python]**.
 - `reads/`: **[N]** `ont.paf.gz`; **[C]** `target.masked.tsv`, `mask.log`, `all.hK.paf.gz`, `ont.hK.paf.gz`.
 - `depth_flat.txt` **[N]**; `depth.windows.tsv`, `depth_classes.log`, `depth.2x_chains.tsv` (haplotype-specific windows above 1.5x, with their chain) **[C]**.
-- `sv/inv/<scaffold>_vs_<scaffold>.paf` (each haplotype against the first), `sv/inv/merged.tsv`, `sv/inversion_test.txt` and `sv/bp_reads.tsv` (when there are inverted blocks), `sv/final_vs_ref.paf` **[ref]**.
+- `sv/final_vs_ref.paf` **[ref, setting reference_dotplot]**, `sv/inv/<scaffold>_vs_<scaffold>.paf` (each haplotype against the first), `sv/inv/merged.tsv`, `sv/inversion_test.txt` and `sv/bp_reads.tsv` (when there are inverted blocks), `sv/final_vs_ref.paf` **[ref]**.
 - `sv/sv_calls.tsv`, `curation_targets.tsv`: **yours to fill.**
 - `juicebox/`: `out_JBAT.hic`, `out_JBAT.assembly`, `out_JBAT.sizes`, `out_JBAT.components.tsv`, `juicer_tools.log`, `done.ok` **[opt: juicer_tools]**.
 - `compleasm/`: `hK/` and `unplaced/` (compleasm's own output, with `summary.txt`), `hK.log`, `unplaced.log`, `complement.txt` **[opt: compleasm]**; `hK_unloc/` and `hK_unloc.log`: haplotype K's scaffolds plus its unlocalized sequences **[opt: compleasm, ploidy 2]**.

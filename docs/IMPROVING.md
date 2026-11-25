@@ -28,6 +28,24 @@ Reads under 5 kb are never mapped (WatsonsChoice: 13.3 of 42.7 Gb, and on 13Q010
 
 The process uses the processed `p_utg` graph. hifiasm's `r_utg` graph keeps bubbles that `p_utg` pops, so gap ends may connect there. It costs one minimap2 run of chain ends against `r_utg` and a graph walk. Any path found needs read support like any other.
 
+## Waiting for a regression build
+
+**Agreed or built, but each changes results, so it needs a full build compared with the current code on the same sample.** The next new assembly will be that test, together with the `shared-pairs` branch. Run both builds from the same edits, compare with `agentssembler compare`, `utilities/agp_compare.py` and `utilities/hic_crosstalk.py compare`, and explain each difference at its site before adopting.
+
+| Change | Where | What to compare |
+|---|---|---|
+| **`shared-pairs` branch**: rescued pairs shared by two alleles go to one group by a stable hash, not always to the first | `make_shared_copies.py`, `project_rescued.py` (branch only) | Orders of shared and rescued chains; Hi-C gaps; `hic_score` |
+| **Allele blocks clamped to a trimmed overlap**: today a block running into one is dropped | `allele_table.py` | Allele pairs, conflicts in grouping, groups |
+| **Ordering search**: the cost of `climb()`, how the link bonus scales, and when low-information chains join the backbone | `hic_order.py` | Orders (D09), orientation LLRs, time per chromosome |
+| **Read filling**: sturdier cut points, trimming with several components, faster all-vs-all, excision in collapsed builds | `readfill.py` | Gaps filled, fill audits (D11, D18), validation |
+| **Raw-read `--minIdentity` for stage 13 fills** | `readfill.py` via stage 13 | Fills gained against wrong fills (D18 audit) |
+| **Allele conflict as a fraction of the shorter chain** (built, on main since 97fbaa1; both chains had to pass before) | `hic_group.py` | Groups. On the 292 rebuild's inputs, 3 of 490 chains move before the rescue: chain0107 joins g10 (the side the D13 swap took it from), chain0194 and chain0228 become unassigned. The review-v2 trial ran with it; `hic_order` orders on the rebuild's inputs are unchanged |
+| **`hic_group.py` agglomeration below O(N^2)** | `hic_group.py` | Groups identical; time on a genome with many more chains |
+| **One unmasked raw-read pass to pick reads near gaps** | stage 13 | `neargap` reads, fills and audits identical; time |
+| **`raw_phase_early` on by default** (built, off; on two 292 builds it matched stage 13 on 16 of 16 arms, including both conflicts; see RECORD) | stage 10 | Whether an early conflict changes a D15 choice on a new genome, and the time (about 2.7 h on 292, repeated on every reset to stage 10) |
+
+Decided not to do (owner, 2026-11-24): projecting the stage 02 read mapping onto chains instead of mapping again ("not worth the risk of bugs or behaviour non-identical to a real mapping run"). Splitting chains inside a unitig, POA consensus for fills, MILP ordering and three-way swaps stay deferred until a genome needs them.
+
 ## Open questions
 
 - **Are a gap locus's own reads rare, or do they go to a cleaner sibling copy?** See "Why reads stop at gaps" in [RECORD](RECORD.md).

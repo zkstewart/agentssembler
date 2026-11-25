@@ -226,6 +226,27 @@ Breaks must fall at unitig boundaries (`break_chain.py`). A break is useful only
 
 Both are fixed. Whether they explain the chr2 order disagreement is not yet tested.
 
+### Phase scan with self-calibrated thresholds (292)
+
+Stage 15's `validate/phase_scan.py` flagged a bin when it had at least 30 homolog pairs and more than half as many as its own far pairs. On the final 292 rebuild that flagged 527 of 6,262 bins, while `utilities/hic_crosstalk.py` found no switch. The scan now uses the crosstalk tool's rule: the single most-contacted homolog, two baselines (the median homolog/own and homolog/all over tested bins) and a 4-fold margin over both. On the same pairs it flags 1 bin of 5,645: chr3_h2 15.8-15.9 Mb, at the gap that is already a curation target (8 unique spanners, `check_failed`).
+
+### Genes on unplaced chains (292)
+
+`review/tail_genes.py --unplacedOut` (stage 10, `12_shared/unplaced_genes.tsv`) counts genes on every chain the pre-build leaves unplaced and off any tail. On the final 292 rebuild: 54 of 99 such chains carry genes, 178 of them short of a full placed set; the largest are chain0095 (11) and chain0144 (10). The only LOST target, chain0266, carries 1. Most of these genes stay in the assembly as unlocalized sequence.
+
+### Raw-read arm phasing before D15 (292)
+
+`settings.raw_phase_early` maps raw reads to each haplotype of the stage 10 pre-build (shared sequence masked) and runs `review/phase_reads.py` there. Tested 2026-11-25 on two 292 builds, with the stage 10 block alone on copies of their pre-builds. Each mapping took about 2 × 82 min with 16 threads.
+
+- **Final rebuild:** 7 arbitrary arm junctions. Calls, read counts and classes are identical to its stage 13 run (5 confirmed, 1 thin, 1 no_reads). Only the chr4_h1 arm sits 75 kb further along in the final build.
+- **First build:** its pre-build was regenerated with `build_scaffolds.py`, and the AGP, junctions and placement match the originals byte for byte. 9 junctions, and every row is identical to its stage 13 run, including the two chr4_h1 conflicts (0 cis against 3 and 8 trans reads), which therefore were knowable before D15. That build's D18 noted them and left them; the Hi-C rescue in later builds removed those arms.
+
+So the early run is a faithful preview of stage 13's arm phasing: 16 of 16 arms the same. It cannot replace stage 13's mapping, which maps to the final scaffolds.
+
+Distance from haplotype-specific sequence does not predict the outcome: a conflict arm 157 kb away had 8 trans reads, while a thin arm 166 kb away had 1. So the pre-mapping evidence supports no rule more selective than the existing gate, "an arbitrary bridge junction exists".
+
+The stage also re-runs on every reset to stage 10 or earlier, and 292 had several.
+
 ### Read correction (WatsonsChoice, 13Q010, Busk)
 
 Raw SUP reads against corrected reads, at reads of 5 kb or more:

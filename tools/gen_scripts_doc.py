@@ -12,7 +12,9 @@ for _, title, pat in SEC:
     for f in sorted(glob.glob(os.path.join(R, pat))):
         d = ast.get_docstring(ast.parse(open(f).read())) or ""
         one = " ".join(d.split("Usage:")[0].split())
-        out.append(f"| `{os.path.relpath(f, R)}` | {one.replace('|', '/')[:220] + ('...' if len(one) > 220 else '') or '(see source)'} |")
+        one = one.replace('|', '/')
+        if len(one) > 220: one = one[:220].rsplit(" ", 1)[0].rstrip(",;:") + " ..."   # cut at a word, not inside one
+        out.append(f"| `{os.path.relpath(f, R)}` | {one or '(see source)'} |")
     out.append("")
 text = "\n".join(out); P = os.path.join(R, "docs", "SCRIPTS.md")
 if "--check" in sys.argv[1:]:

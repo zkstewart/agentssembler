@@ -72,6 +72,19 @@ raw_records() {
     fasta) _raw_pick "$f" "$ids" | "$AS_SEQKIT" fx2tab -i -Q | awk -F'\t' 'BEGIN{OFS="\t"} {print $1,$2,"NA"}' ;;
   esac
 }
+# Raw reads (stages 10 and 13). Reads >= 5 kb are streamed to minimap2: a raw FASTA is never written.
+stream() { # stream TAB|- : FASTA of reads >= 5 kb to stdout
+  local tab="$1" b RAWS; IFS=: read -r -a RAWS <<< "$AS_RAW_READS"; for b in "${RAWS[@]}"; do raw_records "$b"; done | awk -F'\t' -v tab="$tab" 'BEGIN{OFS="\t"; if(tab!="-") cmd="gzip -1 > " tab}
+    {l=length($2); if(tab!="-") print $1,l,$3 | cmd; if(l>=5000) print ">"$1"\n"$2}'
+}
+map_stream() { # OUT target tab
+  local o="$1" t="$2" tab="$3"; [ -s "$o" ] && { check_target "$o" "$t"; log "skip, exists: $o"; return 0; }
+  guard; log "stream map: $o"
+  stream "$tab" | "$AS_MINIMAP2" -x "$AS_RAW_PRESET" -t "$AS_THREADS" --secondary=no "$t" - 2> "$o.log" | gzip -1 > "$o.part" &
+  local p=$! f
+  while kill -0 $p 2>/dev/null; do f=$(df -B1G "$AS_GUARD_PATH" | awk 'NR==2{print $4}'); if [ "$f" -lt "$AS_MIN_FREE_GB" ]; then kill $p; pkill -P $$ || true; echo "ERROR: disk guard" >&2; exit 3; fi; sleep 30; done
+  wait $p; gzip -t "$o.part"; mv "$o.part" "$o"; target_sum "$t" > "$o.target"
+}
 # per-haplotype list, from the scaffold names in an AGP
 # other_haps H HAPS...: a regex for scaffold names of every haplotype but H (_h2$|_h3$). With no other haplotype (ploidy 1) it is ^$,
 # which matches no name: an empty pattern would match every name and drop them all.
