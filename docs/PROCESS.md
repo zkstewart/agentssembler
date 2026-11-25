@@ -2,7 +2,7 @@
 
 ## The whole run
 
-1. **Before starting,** check the inputs: `p_utg` FASTA and GFA from the same hifiasm run, corrected reads, Hi-C, and raw reads if you have them. Know the chromosome number and ploidy, and ask the user if unsure. For a polyploid or an inbred sample, what to enter is not always the textbook figure ([SETTINGS](SETTINGS.md)). Tell the user which read sets must stay on disk until the end: stages 02, 04, 06, 08, 12, 13 and 15 use reads. Set `compute.guard_path` to the drive that fills first.
+1. **Before starting,** check the inputs: `p_utg` FASTA and GFA from the same hifiasm run, corrected reads, Hi-C, and raw reads if you have them. Know the chromosome number and ploidy, and ask the user if unsure. For a polyploid or an inbred sample, what to enter is not always the textbook figure ([SETTINGS](SETTINGS.md)). Tell the user that every input must stay on disk until the end: `agentssembler run` checks all the inputs in `config.yaml` before it starts any stage. Corrected reads are used by stages 02, 04, 06, 08, 12 and 15, Hi-C reads by stage 05, and raw reads by stage 13. Set `compute.guard_path` to the drive that fills first.
 2. **Run and decide, in a loop.** `agentssembler run WORK` stops at each decision. Read the report and guide, inspect the evidence, put any change in an `edits/` file with its reason, record the decision, and run again. A report's alarm is a prompt to look, not a verdict.
 3. **Go back when evidence says to.** `agentssembler reset WORK STAGE` undoes that stage and everything after it, keeping what it replaces in `WORK/archive/<timestamp>/`. Do not copy a directory to a `_v2` name instead ([LAYOUT.md](LAYOUT.md), "Re-running"). It is often cheaper than it looks: mappings stay unless `--remap`. Busk went back from validation to fork breaks at stage 06, and that took h1's missing genes from 19 to 7.
 4. **Hand over at D13.** Give the user the final AGP and FASTA, unplaced sequence, Juicebox files, SV table, curation targets, every open choice with your recommendation, and the limits of the result. Propose here anything outside the process that might help this assembly, with its evidence; the user decides whether to trial it. Stop there: adoption and risk are theirs.
@@ -29,7 +29,7 @@ flowchart TD
   D01 --> E[04 chains] --> D03{{D03}} --> F[05 Hi-C to chains] --> D04{{D04}}
   D04 --> G[06 evidence] --> H[07 group] --> D05{{D05 D06 D14}}
   D05 --> I[08 bridges] --> D07{{D07}} --> J[09 order] --> D09{{D09 D10}}
-  D09 --> K[10 arms and tails] --> D16{{D15 D16 D17}} --> L[11 build] --> M[12 fill] --> D11{{D11}}
+  D09 --> K[10 arms and tails] --> D16{{D17 D15 D16}} --> L[11 build] --> M[12 fill] --> D11{{D11}}
   D11 --> N[13 raw reads] --> D18{{D18}} --> O[14 apply joins] --> P[15 validate] --> D12{{D12 D13}}
 ```
 
@@ -82,7 +82,7 @@ Applies group edits. If collapsed, writes one copy of each shared chain per hapl
 
 Orders each chromosome's groups in parallel. Hi-C sets the base score. The search climbs from a greedy order, then restarts from random orders until 3 in a row fail to improve (at most 40); time grows steeply with chains per group, so the patience rule keeps a group of 50 chains to minutes. Graph and read links, and telomeres, carry a bonus large enough to act as near-hard constraints, which follows from the evidence order. The reference check is an alarm, and `unhonoured.py` tests order without a reference.
 
-## 10_arms_tails, then D15, D16, D17
+## 10_arms_tails, then D17, D15, D16
 
 Sets names, chooses arms at bridges (jointly if collapsed), builds once, then lists one-sided tails and tests them. Names are conventions: `<chrom>_h<k>`, with arbitrary haplotype numbers, and `flip` writes a scaffold in the reference's direction only. To set names yourself, copy `13_scaffold/names.tsv` to `edits/names.tsv`, change it, and `reset WORK 10_arms_tails`. **Nothing here changes layout except accepted tails.**
 

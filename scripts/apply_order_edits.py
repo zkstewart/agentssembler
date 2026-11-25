@@ -3,16 +3,19 @@
 # If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 '''Apply a hand-edit table to a chain order and groups file. Actions: unplace (out of the order), append or prepend (added to a
 group's end and assigned to it). Every row must carry a reason. Ranks are renumbered; added rows have no Hi-C statistics.
+An unplaced chain is also written as unassigned in groups_out, so the stages that read it (arms, tails) treat it as free, not as a group
+member missing from the order. Blank lines are skipped.
 Usage: apply_order_edits.py edits.tsv order.tsv groups.tsv order_out.tsv groups_out.tsv'''
 import sys, collections
 ed, od, gr, oo, go = sys.argv[1:6]
 drop = set(); add = collections.defaultdict(list); to = {}; L = {}
 hdr = None; G = []
 for l in open(gr):
+    if not l.strip(): continue
     if l[0] == "#": hdr = l; continue
     s = l.rstrip("\n").split("\t"); L[s[0]] = s[1]; G.append(s)
 for l in open(ed):
-    if l[0] == "#": continue
+    if l[0] == "#" or not l.strip(): continue
     s = l.rstrip("\n").split("\t")
     if not s[5].strip(): raise SystemExit(f"no reason for {s[0]}")
     if s[0] not in L: raise SystemExit(f"unknown chain {s[0]}")
@@ -21,6 +24,7 @@ for l in open(ed):
     else: raise SystemExit(f"unknown action {s[1]}")
 R = collections.defaultdict(list); head = ""
 for l in open(od):
+    if not l.strip(): continue
     if l[0] == "#": head = l; continue
     s = l.rstrip("\n").split("\t")
     if s[2] not in drop: R[s[0]].append(s)
@@ -38,5 +42,6 @@ with open(go, "w") as o:
     if hdr: o.write(hdr)
     for s in G:
         if s[0] in to: s[2] = to[s[0]]
+        elif s[0] in drop: s[2] = "unassigned"
         o.write("\t".join(s) + "\n")
 print(len(drop), "unplaced,", len(to), "added")

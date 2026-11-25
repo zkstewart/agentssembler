@@ -399,6 +399,48 @@ class T(unittest.TestCase):
             r = run("review/tail_genes.py", "--genes", f"{d}/genes", "--agp", f"{d}/agp", "--placement", f"{d}/pl", "--tails", f"{d}/tails", "--ploidy", "2", "--out", f"{d}/tg")
             self.assertEqual(r.returncode, 0, r.stderr)
             self.assertEqual(open(f"{d}/tg").read().splitlines()[1].split("\t")[4:], ["1", "1"], "tail cC carries G1, short of a placed copy")
+            # unplaced chains off every tail: cC with no tail is listed, with the LOST fork that leads to it; on a tail it is not
+            p("forks", "#flag\tchain\tgroup\tstart\tend\tunitig\tprimary\tclass\tvia\tto_chain\nLOST\tcA\tg01\t1\t10\tu1\t1\t2\tx\tcC\n")
+            r = run("review/tail_genes.py", "--genes", f"{d}/genes", "--agp", f"{d}/agp", "--placement", f"{d}/pl", "--ploidy", "2", "--unplacedOut", f"{d}/ug", "--forks", f"{d}/forks")
+            self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertEqual(open(f"{d}/ug").read().splitlines()[1:], ["cC\t500\tunplaced:no_group\t1\t1\tcA"])
+            r = run("review/tail_genes.py", "--genes", f"{d}/genes", "--agp", f"{d}/agp", "--placement", f"{d}/pl", "--ploidy", "2", "--unplacedOut", f"{d}/ug", "--tails", f"{d}/tails")
+            self.assertEqual(open(f"{d}/ug").read().splitlines()[1:], [])
+    def test_apply_order_edits_unplace(self):
+        # an unplaced chain leaves the order and becomes unassigned in the groups; blank lines are skipped
+        with tempfile.TemporaryDirectory() as d:
+            p = lambda n, x: open(f"{d}/{n}", "w").write(x)
+            p("e", "#chain\taction\tgroup\tx\torientation\treason\n\ny\tunplace\t.\t.\t.\tsatellite, no unique pairs\n")
+            p("o", "#group\trank\tchain\to\tlen\tlinks\tollr\tpllr\tend_link\ng1\t1\tx\t+\t10\t5\t1\t1\t.\ng1\t2\ty\t+\t10\t5\t1\t1\t.\ng1\t3\tz\t+\t10\t5\t1\t1\t.\n")
+            p("g", "#chain\tlength\tgroup\nx\t10\tg1\ny\t10\tg1\nz\t10\tg1\n")
+            r = run("apply_order_edits.py", f"{d}/e", f"{d}/o", f"{d}/g", f"{d}/oo", f"{d}/go"); self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertEqual([l.split("\t")[2] for l in open(f"{d}/oo") if l[0] != "#"], ["x", "z"])
+            self.assertIn("y\t10\tunassigned", open(f"{d}/go").read())
+    def test_choose_bridges_none(self):
+        # no bridges: no read extraction or mapping (the tools do not exist here), a header-only choices table, no blank id line
+        with tempfile.TemporaryDirectory() as d:
+            for n in ("b", "e"): open(f"{d}/{n}", "w").write("#header\n")
+            open(f"{d}/c.fa", "w").write(">c1\nACGT\n")
+            with gzip.open(f"{d}/p.gz", "wt") as o: o.write("")
+            r = run("choose_bridges.py", f"{d}/b", f"{d}/e", f"{d}/c.fa", f"{d}/p.gz", f"{d}/missing.fa", f"{d}/o", "--minimap2", "/nonexistent", "--seqkit", "/nonexistent")
+            self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertEqual(open(f"{d}/o/choices.tsv").read().count("\n"), 1); self.assertEqual(open(f"{d}/o/ids.txt").read(), "")
+    def test_phase_scan_calibrated(self):
+        # 20 bins on each of two homologs: a background of own far pairs and a little homolog crosstalk; bin 5 of a_h1 sends many pairs to
+        # a_h2 (a phase switch). Bin 15 has lost its own far pairs but has no more homolog pairs than the rest: not flagged (the share test).
+        import random; random.seed(4); B = 100000; rows = []
+        for h, o in (("a_h1", "a_h2"), ("a_h2", "a_h1")):
+            for b in range(20):
+                if not (h == "a_h1" and b == 15):
+                    rows += [f"{h}\t{b * B + 10}\t{h}\t{((b + 10) % 20) * B + 10}\n"] * 100   # own pairs 1 Mb apart
+                rows += [f"{h}\t{b * B + 20}\t{h}\t{b * B + 30}\n"] * 200
+                rows += [f"{h}\t{b * B + 40}\t{o}\t{b * B + 40}\n"] * (300 if (h == "a_h1" and b == 5) else 5)
+        with tempfile.TemporaryDirectory() as d:
+            with gzip.open(f"{d}/p.gz", "wt") as fh: fh.writelines(rows)
+            open(f"{d}/agp", "w").write("a_h1\t1\t2000000\t1\tW\tu1\t1\t2000000\t+\na_h2\t1\t2000000\t1\tW\tu2\t1\t2000000\t+\n")
+            r = run("validate/phase_scan.py", f"{d}/p.gz", f"{d}/agp", "--far", "500000"); self.assertEqual(r.returncode, 0, r.stderr)
+            runs = [l.split() for l in r.stdout.splitlines()[2:]]
+            self.assertIn(["a_h1", "0.5", "0.6"], [x[:3] for x in runs]); self.assertNotIn("1.5", [x[1] for x in runs if x[0] == "a_h1"])
     def test_rescue_signal(self):
         # chain X: allele of Y, no unique pairs, many ambiguous ends: Hi-C-blind; Y has unique pairs
         with tempfile.TemporaryDirectory() as d:

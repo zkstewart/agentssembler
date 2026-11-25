@@ -225,10 +225,18 @@ def r_arms(w, c, s):
     tg = list(rows(f"{w}/12_shared/tail_genes.tsv"))
     if tg: out.append("Genes on tails (12_shared/tail_genes.tsv; short = no full set of copies placed elsewhere): " + ", ".join(f"{r[0]} {r[4]} ({r[5]} short)" for r in tg if int(r[4])) + ". "
                       "A tail that fails the tests keeps its genes as unlocalized sequence (stage 15).")
+    UG = [r for r in rows(f"{w}/12_shared/unplaced_genes.tsv") if int(r[4])]
+    if UG: out.append(f"Unplaced chains, off every tail, carrying genes short of a full set placed (12_shared/unplaced_genes.tsv): {len(UG)} chains, {sum(int(r[4]) for r in UG)} genes; most: "
+                      + ", ".join(f"{r[0]} {r[4]}{' via LOST from ' + r[5] if r[5] != '.' else ''}" for r in UG[:8]) + ". The cost of leaving them out, for the D16 tangle check; most stay unlocalized sequence (stage 15).")
+    PH = list(rows(f"{w}/12_shared/phase_reads.pre.tsv", "scaffold"))
+    if PH:
+        K = collections.Counter(r[-1] for r in PH); out.append("Arbitrary arms in the pre-build, by raw reads (12_shared/phase_reads.pre.tsv, settings.raw_phase_early): " + ", ".join(f"{k} {v}" for k, v in K.most_common()) + ".")
     A = list(rows(f"{w}/12_shared/arm_report.tsv"))
     if A: out.append("Arm labels: " + str(dict(collections.Counter(r[3] for r in A if len(r) > 3))))
     al = direction_alarms(w, "12_shared/homolog_direction.tsv")
     al += swap_alarms(f"{w}/12_shared/rescue_swaps.tsv", pre=True)
+    al += [f"{r[0]}:{r[1]}: arm phase conflict by raw reads, reads to specific sequence here {int(r[8]) + int(r[9])}, on the homolog {r[11]} (12_shared/phase_reads.pre.tsv). "
+           "Look before D15: the arm's choice may be the other haplotype's." for r in PH if r[-1] == "conflict"]
     FB = sum(1 for r in rows(f"{w}/12_shared/chain_forks.tsv") if r[0] == "BUBBLE")
     if FB: out.append(f"{FB} BUBBLE rows in 12_shared/chain_forks.tsv: forks that would be HUB or LOST, but the chain reads under 2x over the hub (allele bubbles). No action.")
     F = [r for r in rows(f"{w}/12_shared/chain_forks.tsv") if r[0] == "LOST"]
