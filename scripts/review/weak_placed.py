@@ -17,7 +17,7 @@ for f in (el, ch):
 g = {}; L = {}
 for l in open(gr):
     if l[0] != "#":
-        s = l.rstrip("\n").split("\t"); L[s[0]] = int(s[1]); g[s[0]] = s[2]
+        s = l.rstrip("\n").split("\t"); L[B(s[0])] = int(s[1]); g[s[0]] = s[2]   # 12_shared/groups.edited.tsv names copies x.gNN
 rows = collections.defaultdict(list)
 for l in open(od):
     if l[0] != "#":

@@ -94,6 +94,10 @@ class T(unittest.TestCase):
             r = run("review/weak_placed.py", f"{d}/o", f"{d}/e", f"{d}/c", f"{d}/g", f"{d}/p.gz"); self.assertEqual(r.returncode, 0, r.stderr)
             rows = [l.split("\t") for l in r.stdout.splitlines() if l[0] != "#"]
             self.assertEqual([(x[0], x[4]) for x in rows], [("z", "2")])
+            # the edited groups file names the copies too (x.g1, x.g2)
+            open(f"{d}/g", "w").write("x.g1\t2000000\tg1\nx.g2\t2000000\tg2\ny\t2000000\tg1\nz\t2000000\tg1\n")
+            r = run("review/weak_placed.py", f"{d}/o", f"{d}/e", f"{d}/c", f"{d}/g", f"{d}/p.gz"); self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertEqual([l.split("\t")[0] for l in r.stdout.splitlines() if l[0] != "#"], ["z"])
     def test_agp_to_fasta(self):
         with tempfile.TemporaryDirectory() as d:
             open(f"{d}/u.fa", "w").write(">a\nAACC\n>b\nGGTT\n")
@@ -672,6 +676,100 @@ class T(unittest.TestCase):
             self.assertEqual(call("x+\ta2-\t0\tNA\t9000\n"), ("g2", "graph"))
             self.assertEqual(call("x+\ta2-\t0\tNA\t9000\nx-\ta1+\t0\tNA\t9000\n")[1], "arbitrary")
             self.assertEqual(call("x+\ta2-\t1\tNA\t900\n")[1], "arbitrary")                     # too weak a link
+    def test_allele_table_dovetails(self):
+        # chains A, B, C, D of one unitig each (100 kb). A's end = B's start, identical: a dovetail, set aside. A and C share an identical
+        # start on the same strand: parallel alleles (a homozygous start), kept. A's start = D's start on opposite strands: a dovetail.
+        # A and B also align at 1% in the middle: an allele block, kept. A near-full copy (C and D, 90 kb) stays an allele too.
+        with tempfile.TemporaryDirectory() as d:
+            open(f"{d}/c.agp", "w").write("".join(f"{c}\t1\t100000\t1\tW\tu{c}\t1\t100000\t+\n" for c in "ABCD"))
+            def paf(q, qs, qe, sd, t, ts, te, de): return f"u{q}\t100000\t{qs}\t{qe}\t{sd}\tu{t}\t100000\t{ts}\t{te}\t{qe-qs}\t{qe-qs}\t60\tde:f:{de}\n"
+            with gzip.open(f"{d}/s.paf.gz", "wt") as o:
+                o.write(paf("A", 70000, 100000, "+", "B", 0, 30000, 0.0) + paf("A", 0, 30000, "+", "C", 0, 30000, 0.0)
+                        + paf("A", 0, 25000, "-", "D", 0, 25000, 0.0) + paf("A", 35000, 60000, "+", "B", 35000, 60000, 0.01)
+                        + paf("C", 5000, 95000, "+", "D", 5000, 95000, 0.0))
+            r = run("allele_table.py", f"{d}/c.agp", f"{d}/s.paf.gz", f"{d}/al"); self.assertEqual(r.returncode, 0, r.stderr)
+            rows = lambda f: [l.split("\t") for l in open(f) if l[0] != "#"]
+            self.assertEqual(sorted((s[0], s[3], s[1]) for s in rows(f"{d}/al.dovetails.tsv")), [("A", "B", "70000"), ("A", "D", "0")])
+            self.assertEqual(sorted((s[0], s[3], s[1]) for s in rows(f"{d}/al.blocks.tsv")), [("A", "B", "35000"), ("A", "C", "0"), ("C", "D", "5000")])
+            P = {(s[0], s[1]): int(s[2]) for s in rows(f"{d}/al.pairs.tsv")}
+            self.assertEqual(P[("A", "B")], 25000); self.assertNotIn(("A", "D"), P)
+    def test_rescue_dovetail_link(self):
+        # x's end overlaps a2's end identically (a dovetail, not an allele): it is a graph link to g2, so x goes with a2 (call graph)
+        with tempfile.TemporaryDirectory() as d:
+            open(f"{d}/g.chroms.tsv", "w").write("#group\tchrom\ng1\tc1\ng2\tc1\n"); open(f"{d}/al.tsv", "w").write("#h\n")
+            open(f"{d}/rep.tsv", "w").write("#h\na1\t2000000\t0.0\na2\t2000000\t0.0\nx\t300000\t0.0\n")
+            with gzip.open(f"{d}/r.tsv.gz", "wt") as o: o.write("".join(f"x\t1\t{'a1' if i % 2 else 'a2'}\t1\n" for i in range(40)))
+            with gzip.open(f"{d}/u.tsv.gz", "wt") as o: o.write("")
+            open(f"{d}/g.tsv", "w").write("#chain\tlength\tgroup\na1\t2000000\tg1\na2\t2000000\tg2\nx\t300000\tunassigned\n")
+            open(f"{d}/dv.tsv", "w").write("#h\na2\t1940000\t2000000\tx\t0\t60000\t0.0\t+\n")
+            r = run("rescue/rescue_groups.py", f"{d}/g", f"{d}/r.tsv.gz", f"{d}/u.tsv.gz", f"{d}/al.tsv", f"{d}/rep.tsv", "--dovetails", f"{d}/dv.tsv")
+            self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertEqual({l.split("\t")[0]: tuple(l.split("\t")[3:5]) for l in open(f"{d}/g.rescued.tsv") if l[0] != "#"}["x"], ("g2", "graph"))
+            # x's other end overlaps a1 as well: it sits where the haplotypes meet, so it stays unassigned (call fork)
+            open(f"{d}/g.tsv", "w").write("#chain\tlength\tgroup\na1\t2000000\tg1\na2\t2000000\tg2\nx\t300000\tunassigned\n")
+            open(f"{d}/dv.tsv", "a").write("x\t250000\t300000\ta1\t0\t50000\t0.0\t+\n")
+            r = run("rescue/rescue_groups.py", f"{d}/g", f"{d}/r.tsv.gz", f"{d}/u.tsv.gz", f"{d}/al.tsv", f"{d}/rep.tsv", "--dovetails", f"{d}/dv.tsv")
+            self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertEqual({l.split("\t")[0]: tuple(l.split("\t")[3:5]) for l in open(f"{d}/g.rescued.tsv") if l[0] != "#"}["x"], ("unassigned", "fork"))
+    def test_rescue_dovetail_fork_later(self):
+        # x (longer, so called first) runs into a2's end: graph, g2. z, shorter, is placed in g1 by unique Hi-C later in the round, and its end
+        # runs into x's start. x now links to both groups: it sits where the haplotypes meet, so it ends unassigned (fork)
+        with tempfile.TemporaryDirectory() as d:
+            open(f"{d}/g.chroms.tsv", "w").write("#group\tchrom\ng1\tc1\ng2\tc1\n"); open(f"{d}/al.tsv", "w").write("#h\n")
+            open(f"{d}/rep.tsv", "w").write("#h\na1\t2000000\t0.0\na2\t2000000\t0.0\nx\t300000\t0.0\nz\t200000\t0.0\n")
+            with gzip.open(f"{d}/r.tsv.gz", "wt") as o:
+                o.write("".join(f"{c}\t1\t{'a1' if i % 2 else 'a2'}\t1\n" for c in ("x", "z") for i in range(40)))
+            with gzip.open(f"{d}/u.tsv.gz", "wt") as o: o.write("".join("z\t1\ta1\t1\n" for i in range(30)))
+            open(f"{d}/g.tsv", "w").write("#chain\tlength\tgroup\na1\t2000000\tg1\na2\t2000000\tg2\nx\t300000\tunassigned\nz\t200000\tunassigned\n")
+            open(f"{d}/dv.tsv", "w").write("#h\na2\t1940000\t2000000\tx\t250000\t300000\t0.0\t-\nz\t150000\t200000\tx\t0\t50000\t0.0\t+\n")
+            r = run("rescue/rescue_groups.py", f"{d}/g", f"{d}/r.tsv.gz", f"{d}/u.tsv.gz", f"{d}/al.tsv", f"{d}/rep.tsv", "--dovetails", f"{d}/dv.tsv")
+            self.assertEqual(r.returncode, 0, r.stderr)
+            C = {l.split("\t")[0]: tuple(l.split("\t")[3:5]) for l in open(f"{d}/g.rescued.tsv") if l[0] != "#"}
+            self.assertEqual(C["z"], ("g1", "hic")); self.assertEqual(C["x"], ("unassigned", "fork"))
+    def test_rescue_bubble_arm(self):
+        # y (g1) runs into x's start (y's end dovetails x, g1). b's start dovetails into the same start of x, and b's end is identical to
+        # y's interior: b is y's other-haplotype arm, so g2 (call bubble_arm), not g1 by the graph link
+        with tempfile.TemporaryDirectory() as d:
+            open(f"{d}/g.chroms.tsv", "w").write("#group\tchrom\ng1\tc1\ng2\tc1\n"); open(f"{d}/al.tsv", "w").write("#h\n")
+            open(f"{d}/rep.tsv", "w").write("#h\ny\t2000000\t0.0\nx\t500000\t0.0\nz\t2000000\t0.0\nb\t180000\t0.0\n")
+            with gzip.open(f"{d}/r.tsv.gz", "wt") as o: o.write("".join(f"b\t1\t{'y' if i % 2 else 'z'}\t1\n" for i in range(40)))
+            with gzip.open(f"{d}/u.tsv.gz", "wt") as o: o.write("")
+            open(f"{d}/g.tsv", "w").write("#chain\tlength\tgroup\ny\t2000000\tg1\nx\t500000\tg1\nz\t2000000\tg2\nb\t180000\tunassigned\n")
+            open(f"{d}/dv.tsv", "w").write("#h\ny\t1960000\t2000000\tx\t0\t40000\t0.0\t+\nb\t0\t50000\tx\t0\t50000\t0.0\t-\n")
+            open(f"{d}/bl.tsv", "w").write("#h\ny\t1830000\t1862000\tb\t148000\t180000\t0.0\t+\n")
+            r = run("rescue/rescue_groups.py", f"{d}/g", f"{d}/r.tsv.gz", f"{d}/u.tsv.gz", f"{d}/al.tsv", f"{d}/rep.tsv", "--dovetails", f"{d}/dv.tsv", "--blocks", f"{d}/bl.tsv")
+            self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertEqual({l.split("\t")[0]: tuple(l.split("\t")[3:5]) for l in open(f"{d}/g.rescued.tsv") if l[0] != "#"}["b"], ("g2", "bubble_arm"))
+    def test_rescue_copy(self):
+        # c is identical (de 0) over its whole length to part of a1, an allele by the table. Together they read 0.75x: one haplotype's
+        # sequence twice, so c is left unassigned (call copy). At 1.8x together it is a homozygous stretch, and the allele call stands
+        with tempfile.TemporaryDirectory() as d:
+            open(f"{d}/g.chroms.tsv", "w").write("#group\tchrom\ng1\tc1\ng2\tc1\n")
+            open(f"{d}/al.tsv", "w").write("#h\na1\tc\t150000\t150000\t0.0\t1\n")
+            open(f"{d}/rep.tsv", "w").write("#h\na1\t2000000\t0.0\na2\t2000000\t0.0\nc\t150000\t0.0\n")
+            with gzip.open(f"{d}/r.tsv.gz", "wt") as o: o.write("".join(f"c\t1\t{'a1' if i % 2 else 'a2'}\t1\n" for i in range(40)))
+            with gzip.open(f"{d}/u.tsv.gz", "wt") as o: o.write("")
+            open(f"{d}/bl.tsv", "w").write("#h\na1\t500000\t650000\tc\t0\t150000\t0.0\t+\n"); open(f"{d}/dv.tsv", "w").write("#h\n")
+            for depth, want in ((20, ("unassigned", "copy")), (50, ("g2", "allele"))):
+                open(f"{d}/g.tsv", "w").write("#chain\tlength\tgroup\na1\t2000000\tg1\na2\t2000000\tg2\nc\t150000\tunassigned\n")
+                open(f"{d}/w.tsv", "w").write("#h\n" + "".join(f"a1\t{x}\t{x + 10000}\t{depth + 10}\nc\t{x - 500000}\t{x - 490000}\t{depth - 5}\n" for x in range(500000, 650000, 10000)))
+                r = run("rescue/rescue_groups.py", f"{d}/g", f"{d}/r.tsv.gz", f"{d}/u.tsv.gz", f"{d}/al.tsv", f"{d}/rep.tsv", "--dovetails", f"{d}/dv.tsv",
+                        "--blocks", f"{d}/bl.tsv", "--depthWindows", f"{d}/w.tsv", "--hap", "60")
+                self.assertEqual(r.returncode, 0, r.stderr)
+                self.assertEqual({l.split("\t")[0]: tuple(l.split("\t")[3:5]) for l in open(f"{d}/g.rescued.tsv") if l[0] != "#"}["c"], want)
+    def test_rescue_dovetails_redundant(self):
+        # y is a2's end plus b2's start (dovetails into both, g2) and 60% an allele of a1 (g1): all its sequence is placed, so redundant
+        with tempfile.TemporaryDirectory() as d:
+            open(f"{d}/g.chroms.tsv", "w").write("#group\tchrom\ng1\tc1\ng2\tc1\n"); open(f"{d}/al.tsv", "w").write("#h\n")
+            open(f"{d}/rep.tsv", "w").write("#h\na1\t2000000\t0.0\na2\t2000000\t0.0\nb2\t2000000\t0.0\ny\t100000\t0.0\n")
+            with gzip.open(f"{d}/r.tsv.gz", "wt") as o: o.write("".join(f"y\t1\t{'a1' if i % 2 else 'a2'}\t1\n" for i in range(40)))
+            with gzip.open(f"{d}/u.tsv.gz", "wt") as o: o.write("")
+            open(f"{d}/g.tsv", "w").write("#chain\tlength\tgroup\na1\t2000000\tg1\na2\t2000000\tg2\nb2\t2000000\tg2\ny\t100000\tunassigned\n")
+            open(f"{d}/dv.tsv", "w").write("#h\na2\t1940000\t2000000\ty\t0\t60000\t0.0\t+\ny\t40000\t100000\tb2\t0\t60000\t0.0\t+\n")
+            open(f"{d}/bl.tsv", "w").write("#h\na1\t500000\t560000\ty\t20000\t80000\t0.02\t+\n")
+            r = run("rescue/rescue_groups.py", f"{d}/g", f"{d}/r.tsv.gz", f"{d}/u.tsv.gz", f"{d}/al.tsv", f"{d}/rep.tsv", "--dovetails", f"{d}/dv.tsv", "--blocks", f"{d}/bl.tsv")
+            self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertEqual({l.split("\t")[0]: tuple(l.split("\t")[3:5]) for l in open(f"{d}/g.rescued.tsv") if l[0] != "#"}["y"], ("unassigned", "redundant"))
     def test_rescue_swaps(self):
         # c_h1: Z - A | gap | Y - B; c_h2: Z2 - P - X - Q. A links only X; P, B and Q link both X and Y: swapping X and Y closes the gap.
         with tempfile.TemporaryDirectory() as d:

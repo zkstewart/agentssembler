@@ -21,15 +21,34 @@ Two more calls leave a chain unassigned, tested before the haplotype, once its c
              chromosome: a near-copy of sequence both haplotypes already hold. The allele rule counts only alleles of >= --minConflict bp, so a short
              chain whose copies are each under that passed it (292: chain0288, 83 kb, covered 0.79 and 0.65 by blocks of 30-83 kb, dropped
              between a chain and its telomeric tip). Tested when the chain's chromosome is found, and again after the last round.
+--dovetails (allele_table.py's dovetails.tsv): near-identical end overlaps where one chain runs on into the other. They are graph
+links, added to --endLinks' for the graph call, never alleles. As with any link, a hub reaches both haplotypes, so a link to every
+group decides nothing (a homozygous stretch: one chain's start overlaps chains of both haplotypes). With --dovetails, a chain whose
+call would be arbitrary or allele_of_arbitrary while it links to every group of its chromosome is left unassigned (call fork): it sits
+where the haplotypes meet, with nothing to say which it continues. Graph calls are tested again after the last round, since a shorter chain placed later can be the link to the
+other group. Without the dovetails, the allele rule had excluded such chains by
+mistake (allele_in_every_group or redundant), so this keeps them out on the right grounds. Its chromosome call stands for later rounds.
+Dovetails still count towards redundant: a chain made of one group chain's end and the next one's start (a 160 kb chain identical to the two
+flanks of a junction, in a trial) holds nothing that group lacks, and placing it as an allele duplicates both overlaps.
+Two more, with --dovetails:
+  bubble_arm  a dovetail into an end of chain x that a chain y of x's group already continues, where the candidate is also identical
+              (de <= --copyDe) to part of y: the candidate is y's other-haplotype arm, rejoining the path y takes. It goes to the other
+              group(s) of the chromosome. A dovetail into an end already taken in that group never votes for that group.
+  copy        with --depthWindows and --hap: blocks at de <= --copyDe with one placed chain cover >= --copyFrac of the candidate, and the
+              two read under --copyDepth x hap together over the shared stretch (median 10 kb window depth): one haplotype's sequence
+              twice, not an allele. Left unassigned. Summed near 2x it is a homozygous stretch, and the allele call stands (in a trial,
+              three such pairs summed 1.55-1.85x and one duplicate 0.79x).
 Shared and high-repeat chains are left alone. Rewrites prefix.tsv (the original is kept as prefix.hic.tsv) and writes prefix.rescued.tsv.
 Usage: rescue_groups.py groups_prefix rescued_pairs.tsv.gz unique_pairs.tsv.gz alleles.pairs.tsv chain_repeat.tsv
-       [--hubCores hub_cores.tsv] [--blocks alleles.blocks.tsv] [--endLinks end_links.tsv]'''
+       [--hubCores hub_cores.tsv] [--blocks alleles.blocks.tsv] [--endLinks end_links.tsv] [--dovetails alleles.dovetails.tsv]'''
 import argparse, collections, gzip, os, shutil, sys
 p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
 for x in "prefix rescued unique alleles repeat".split(): p.add_argument(x)
 p.add_argument("--minLinks", type=int, default=10); p.add_argument("--ratio", type=float, default=2.0); p.add_argument("--rounds", type=int, default=5)
 p.add_argument("--minConflict", type=int, default=50000); p.add_argument("--minConflictFrac", type=float, default=0.1); p.add_argument("--maxRepeat", type=float, default=0.5)
-p.add_argument("--hubCores"); p.add_argument("--blocks"); p.add_argument("--endLinks"); p.add_argument("--redundant", type=float, default=0.5)
+p.add_argument("--hubCores"); p.add_argument("--blocks"); p.add_argument("--endLinks"); p.add_argument("--dovetails"); p.add_argument("--redundant", type=float, default=0.5)
+p.add_argument("--depthWindows"); p.add_argument("--hap", type=float); p.add_argument("--copyDe", type=float, default=0.002)
+p.add_argument("--copyFrac", type=float, default=0.8); p.add_argument("--copyDepth", type=float, default=1.25)
 a = p.parse_args()
 rows = [l.rstrip("\n").split("\t") for l in open(a.prefix + ".tsv")]
 hdr = [r for r in rows if r[0].startswith("#")]; rows = [r for r in rows if not r[0].startswith("#")]
@@ -71,13 +90,63 @@ if a.endLinks:
         if x != y and (int(s[4]) >= 5000 or int(s[2]) >= 3):
             if x in cand: GL[x].add(y)
             if y in cand: GL[y].add(x)
+if a.dovetails:
+    for l in open(a.dovetails):
+        if l[0] == "#": continue
+        s = l.split("\t"); x, y = s[0], s[3]
+        if x != y:
+            if x in cand: GL[x].add(y)
+            if y in cand: GL[y].add(x)
 BL = collections.defaultdict(list)                           # chain -> [(start, end, other chain)], allele blocks of any length
-if a.blocks:
-    for l in open(a.blocks):
+for f in (a.blocks, a.dovetails):   # a dovetail is no allele, but it is sequence a group already holds: it counts towards redundant
+    if not f: continue
+    for l in open(f):
         if l[0] == "#": continue
         s = l.split("\t")
         if s[0] in cand: BL[s[0]].append((int(s[1]), int(s[2]), s[3]))
         if s[3] in cand: BL[s[3]].append((int(s[4]), int(s[5]), s[0]))
+IB = collections.defaultdict(list)                           # chain -> [(start, end, other, other_start, other_end)], blocks at de <= copyDe
+TAKE = collections.defaultdict(set)                         # (chain, end h/t) -> chains that dovetail into that end
+for f in (a.blocks, a.dovetails):
+    if not f: continue
+    for l in open(f):
+        if l[0] == "#": continue
+        s = l.split("\t"); x, y = s[0], s[3]; xs, xe, ys, ye = int(s[1]), int(s[2]), int(s[4]), int(s[5])
+        if x == y or float(s[6]) > a.copyDe: continue
+        IB[x].append((xs, xe, y, ys, ye)); IB[y].append((ys, ye, x, xs, xe))
+        if f == a.dovetails:
+            for u, us, ue, v in ((x, xs, xe, y), (y, ys, ye, x)):
+                if u in L: TAKE[(u, "h" if us <= 1000 else "t" if ue >= L[u] - 1000 else "m")].add(v)
+def taken(c, x):   # c dovetails into an end of x that another chain of x's group already continues: [those chains]
+    return [y for e in "ht" if c in TAKE[(x, e)] for y in TAKE[(x, e)] if y != c and grp.get(y) == grp.get(x) and grp.get(x) != "unassigned"]
+def bubble_arm(c):   # the group chain c is the other-haplotype arm of, or None
+    for x in GL[c]:
+        for y in taken(c, x):
+            if any(o == y for _, _, o, _, _ in IB[c]): return y
+    return None
+WD = collections.defaultdict(list)
+if a.depthWindows:
+    for l in open(a.depthWindows):
+        if l[0] == "#": continue
+        s = l.split("\t")
+        if s[0] in L: WD[s[0]].append((int(s[1]), int(s[2]), float(s[3])))
+def wdepth(c, x, y):
+    v = sorted(d for s, e, d in WD[c] if s < y and e > x)
+    return v[len(v) // 2] if v else None
+def copy_of(c):   # a placed chain c duplicates (one haplotype's sequence twice), or None
+    if not (a.depthWindows and a.hap): return None
+    by = collections.defaultdict(list)
+    for s, e, o, os_, oe in IB[c]: by[o].append((s, e, os_, oe))
+    for o, bl in by.items():
+        if grp.get(o, "unassigned") == "unassigned": continue
+        n = f = 0
+        for s, e, _, _ in sorted(bl):
+            s = max(s, f)
+            if e > s: n += e - s; f = e
+        if n < a.copyFrac * L[c]: continue
+        dc = wdepth(c, min(b[0] for b in bl), max(b[1] for b in bl)); do = wdepth(o, min(b[2] for b in bl), max(b[3] for b in bl))
+        if dc is not None and do is not None and dc + do < a.copyDepth * a.hap: return o
+    return None
 def covered(c, g):
     n = e = 0
     for x, y, o in sorted(BL[c]):
@@ -111,6 +180,8 @@ for rnd in range(1, a.rounds + 1):
             out.append((c, L[c], ch, "unassigned", "collapsed", n, r, rnd)); blocked.add(c); on[c] = ch; continue
         if BL and all(covered(c, g) >= a.redundant for g in groups_of[ch]):
             out.append((c, L[c], ch, "unassigned", "redundant", n, r, rnd)); blocked.add(c); on[c] = ch; continue
+        if copy_of(c):
+            out.append((c, L[c], ch, "unassigned", "copy", n, r, rnd)); blocked.add(c); on[c] = ch; continue
         gs = [g for g in groups_of[ch] if not any(grp.get(x) == g for x in allele[c])]
         if not gs: out.append((c, L[c], ch, "unassigned", "allele_in_every_group", n, r, rnd)); blocked.add(c); continue
         ex = [x for x in allele[c] if grp.get(x) in groups_of[ch] and grp.get(x) not in gs]
@@ -119,11 +190,25 @@ for rnd in range(1, a.rounds + 1):
             call = "allele_of_arbitrary" if ex and all(how.get(x) in ("arbitrary", "allele_of_arbitrary") for x in ex) else "allele"
         if len(gs) > 1:
             u = sorted(((sum(m for o, m in U[c].items() if grp.get(o) == g), g) for g in gs), reverse=True)
-            gl = [g for g in gs if any(grp.get(x) == g for x in GL[c])]
+            gl = [g for g in gs if any(grp.get(x) == g and not taken(c, x) for x in GL[c])]
+            arm = bubble_arm(c) if a.dovetails else None
+            ag = [g for g in gs if arm and g != grp[arm]]
             if u[0][0] >= a.minLinks and u[0][0] >= a.ratio * max(u[1][0], 1): gs, call = [u[0][1]], "hic"
+            elif len(ag) == 1: gs, call = ag, "bubble_arm"
             elif len(gl) == 1: gs, call = gl, "graph"
             else: gs, call = [min(gs, key=lambda g: (placed_bp[g], g))], "arbitrary"
+        if a.dovetails and call in ("arbitrary", "allele_of_arbitrary") and all(any(grp.get(x) == g for x in GL[c]) for g in groups_of[ch]):
+            out.append((c, L[c], ch, "unassigned", "fork", n, r, rnd)); blocked.add(c); on[c] = ch; continue
         grp[c] = gs[0]; placed_bp[gs[0]] += L[c]; how[c] = call; out.append((c, L[c], ch, gs[0], call, n, r, rnd))
+if a.dovetails:   # graph calls again once every round is done: chains go longest first, so a shorter chain placed later in the other group
+                 # can link to the same chain (in a trial, a chain whose start both haplotypes run into). A graph call that now
+                 # links to every group of its chromosome is a fork. Shortest first, as below.
+    idx = {x[0]: i for i, x in enumerate(out)}
+    for c in sorted((x[0] for x in out if x[4] == "graph"), key=lambda c: (L[c], c)):
+        x = out[idx[c]]
+        if all(any(grp.get(y) == g for y in GL[c]) for g in groups_of[x[2]]):
+            placed_bp[grp[c]] -= L[c]; grp[c] = "unassigned"; on[c] = x[2]
+            out[idx[c]] = (c, x[1], x[2], "unassigned", "fork", x[5], x[6], x[7])
 if BL:   # again once every round is done: a copy placed after the chain can make it redundant. Shortest first, and a chain unassigned here
          # stops covering others, so two copies of one sequence are not both dropped.
     idx = {x[0]: i for i, x in enumerate(out)}

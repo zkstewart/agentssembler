@@ -123,7 +123,7 @@ Only `pairs.tsv.gz` and `pairs.rescued.tsv.gz` are read later, by any stage or r
 | File | Stage |
 |---|---|
 | `chain_breaks.tsv`; `hub_cores.d04.tsv` **[C]** (collapsed hubs on the chains D04 breaks, from stage 04's mapping, which also gets `07_chains2/depth.*`) | 05, read at D04 |
-| `alleles.pairs.tsv`, `alleles.blocks.tsv`, `chain_stats.tsv`, `chain_repeat.tsv`, `end_links.tsv`, `shared.candidates.txt` | 06 |
+| `alleles.pairs.tsv`, `alleles.blocks.tsv`, `alleles.dovetails.tsv` (identical end overlaps: graph links, not alleles), `chain_stats.tsv`, `chain_repeat.tsv`, `end_links.tsv`, `shared.candidates.txt` | 06 |
 | `hub_cores.tsv` **[C]**: chains classed single-copy with a 2x core of unique reads, the unitig-boundary breaks that free it, and whether it is breakable | 06, read at D06 |
 | `groups.tsv`, `groups.chroms.tsv`, `groups.shared.tsv` **[C]**, `groups.dosage.tsv` **[C]** (above ploidy 2, and only if a shared chain is in fewer haplotypes than its chromosome has), `hic_group.log`, `shared.txt` **[C]**, `eval_groups.txt` **[ref]**, `chain_forks.txt` **[C]**; `groups.rescued.tsv` and `groups.hic.tsv` (grouping before the rescue) **[set: hic_allele_rescue]**, or `rescue_preview/` and `rescue_preview.txt` (what it would place) when off; `genes_placed.txt`, `genes_placed.tsv` **[opt: compleasm]** | 07, read at D05 |
 | `final.tsv`, `final.chroms.tsv`, `final.shared.tsv` **[C]**, `final.dosage.tsv` **[C]** | 08, the groups after `edits/group_edits.tsv` |
