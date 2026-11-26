@@ -22,6 +22,7 @@ else
 fi
 BA=(--order "$O" --agp $D/chains.agp --links $D/end_links.tsv --choices $D/choices.tsv --stats $D/chain_stats.tsv --names $T/names.tsv --telomeres $D/telomeres.tsv --unitigs 00_inputs/unitigs.fasta --extraUnplaced $T/repeat_chains.fasta --minWithin "$AS_MIN_WITHIN")
 [ -s 12_broken/connector_chains.tsv ] && BA+=(--connectors 12_broken/connector_chains.tsv)
+grep -q $'\toverlap:' $D/order_links.tsv 2>/dev/null && BA+=(--curated $D/order_links.tsv)   # hand-made overlap joins (D10)
 printf '%s\n' "${BA[@]}" > $D/build_args.txt
 step $D/pre/$AS_SAMPLE.junctions.tsv python3 "$S/build_scaffolds.py" "${BA[@]}" --out $D/pre/$AS_SAMPLE
 # Hi-C gaps a swap of two chains between homologs would close, on the pre-build: a swap is a group edit and `reset 08_bridges`, cheapest now (D16, D13)

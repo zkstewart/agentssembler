@@ -59,7 +59,7 @@ Everything else is written by a stage, and **must not be edited by hand**.
 | `edits/chain_breaks.txt` | D04, D06 | |
 | `edits/shared.txt` | D14 | Replaces the whole candidate list. Collapsed samples only |
 | `edits/group_edits.tsv` | D05, D06, D07, D14 | |
-| `edits/order_links.tsv` | D07, D09, D10 | The type column is free text: `telomere_tip`, `curated`, `ttt` ([TANGLES](TANGLES.md)) |
+| `edits/order_links.tsv` | D07, D09, D10 | The type column is free text: `telomere_tip`, `curated`, `ttt` ([TANGLES](TANGLES.md)), except `overlap:N`: an end overlap the graph lacks, joined with no gap after a sequence check ([D10](decisions/D10_curation.md)) |
 | `edits/order_edits.tsv` | D09 | |
 | `edits/names.tsv` | stage 10 | Replaces the automatic names |
 | `edits/accepted_tails.tsv` | D16 | Rows copied unchanged from `12_shared/tails.tsv` |

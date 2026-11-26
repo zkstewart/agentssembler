@@ -15,6 +15,10 @@ Junctions:
   read     reads join the ends but no graph overlap: gap, left to read filling
   hic      Hi-C order only: gap of --gap Ns, type U
 
+--curated (12_shared/order_links.tsv) adds hand-made links of type overlap:N (edits/order_links.tsv, D10): an end overlap
+of N bp that the graph lacks, such as an identical dovetail from alleles.dovetails.tsv. It joins as direct only if the
+N bp match at >= 99.8% identity without gaps; otherwise the log says so and the junction stays a gap.
+
 Names and direction are conventions only: names come from the table given with --names, and a pseudochromosome is
 written in the direction of its name's reference when --flip lists it.
 
@@ -33,6 +37,7 @@ p.add_argument("--telomeres", help="telomeres.py output for the chains")
 p.add_argument("--connectors", help="connector_chains.tsv: chains restored only as bridge paths; unused ones are not written anywhere")
 p.add_argument("--extraUnplaced", help="FASTA of further unplaced sequence, copied as is")
 p.add_argument("--tails", help="make_tails.py output: end, group, path written outward from the end")
+p.add_argument("--curated", help="order_links.tsv: rows of type overlap:N join as direct after a sequence check")
 a = p.parse_args()
 fl = {"+": "-", "-": "+"}
 
@@ -49,7 +54,7 @@ for l in open(a.names):
     g, n, f = l.rstrip().split("\t"); names[g] = n
     if f == "flip": flips.add(g)
 
-ov = {}; rd = {}
+ov = {}; rd = {}; curated = set()   # curated: curated overlap joins, checked against the sequence
 for l in open(a.links):
     if l[0] == "#": continue
     x, y, r, q, o = l.rstrip().split("\t"); k = frozenset((x, y)); ov[k] = int(o); rd[k] = int(r)
@@ -61,7 +66,7 @@ for l in open(a.choices):
 def junction(c1, o1, c2, o2):
     '''kind, and the path (oriented chains) between two chains in the scaffold'''
     e1 = c1 + o1; e2 = c2 + fl[o2]; k = frozenset((e1, e2))
-    if ov.get(k, -1) >= a.minOverlap: return "direct", []
+    if ov.get(k, -1) >= a.minOverlap or k in curated: return "direct", []
     if k in bridge:
         x, y, pth = bridge[k]
         if x == e1: return "bridge", [(z[:-1], z[-1]) for z in pth]
@@ -85,6 +90,40 @@ def tel_out(x, xs):
     call = tel.get(x["c"], "--")
     if x is xs[0] and (call[0] if x["o"] == "+" else call[1]) == "T": return True
     return x is xs[-1] and (call[1] if x["o"] == "+" else call[0]) == "T"
+U = {}; n = None
+for l in open(a.unitigs):
+    if l[0] == ">": n = l[1:].split()[0]; U[n] = []
+    else: U[n].append(l.strip())
+for k in U: U[k] = "".join(U[k])
+tr = str.maketrans("ACGTNacgtn", "TGCANtgcan"); rc = lambda s: s.translate(tr)[::-1]
+
+def chain_seq(c, o):
+    return "".join(U[r[0]][r[1] - 1:r[2]] if r[3] == "+" else rc(U[r[0]][r[1] - 1:r[2]]) for r in (rows[c] if o == "+" else [[r[0], r[1], r[2], fl[r[3]]] for r in reversed(rows[c])]))
+if a.curated:
+    for l in open(a.curated):
+        if l[0] == "#" or not l.strip(): continue
+        s = l.rstrip("\n").split("\t")
+        if len(s) < 3 or not s[2].startswith("overlap:"): continue
+        x, y, n = s[0], s[1], int(s[2].split(":")[1]); k = frozenset((x, y))
+        if ov.get(k, -1) >= a.minOverlap: continue
+        left = chain_seq(x[:-1], x[-1])[-n:]; right = chain_seq(y[:-1], fl[y[-1]])[:n]
+        same = sum(p == q for p, q in zip(left.upper(), right.upper())) / n if len(left) == len(right) == n else 0
+        print(f"curated overlap {x} {y} {n} bp: identity {same:.4f}", "joined" if same >= 0.998 else "not joined, left as a gap")
+        if same >= 0.998: ov[k] = n; curated.add(k)
+
+def oriented(c, o):
+    if o == "+": return [r[:] for r in rows[c]]
+    return [[r[0], r[1], r[2], fl[r[3]]] for r in reversed(rows[c])]
+def trim(rs, k, what):
+    '''remove k bp from the start of an oriented list of components'''
+    while k > 0 and rs:
+        r = rs[0]; n = r[2] - r[1] + 1
+        if k >= n: rs.pop(0); k -= n; continue
+        if r[3] == "+": r[1] += k
+        else: r[2] -= k
+        k = 0
+    return rs
+
 # Keep linked components that contain a chain placed with confidence
 plan = {}
 for g, xs in order.items():
@@ -101,25 +140,6 @@ for g, xs in order.items():
             if ok: keep.append(x)
     plan[g] = keep
 
-U = {}; n = None
-for l in open(a.unitigs):
-    if l[0] == ">": n = l[1:].split()[0]; U[n] = []
-    else: U[n].append(l.strip())
-for k in U: U[k] = "".join(U[k])
-tr = str.maketrans("ACGTNacgtn", "TGCANtgcan"); rc = lambda s: s.translate(tr)[::-1]
-
-def oriented(c, o):
-    if o == "+": return [r[:] for r in rows[c]]
-    return [[r[0], r[1], r[2], fl[r[3]]] for r in reversed(rows[c])]
-def trim(rs, k, what):
-    '''remove k bp from the start of an oriented list of components'''
-    while k > 0 and rs:
-        r = rs[0]; n = r[2] - r[1] + 1
-        if k >= n: rs.pop(0); k -= n; continue
-        if r[3] == "+": r[1] += k
-        else: r[2] -= k
-        k = 0
-    return rs
 
 tails = {}
 if a.tails:

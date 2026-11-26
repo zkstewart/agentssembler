@@ -784,6 +784,23 @@ class T(unittest.TestCase):
             open(f"{d}/l.tsv", "w").write(links.replace("P+\tY-\t0\tNA\t50000\n", ""))   # Y cannot take X's place: no swap
             run("review/rescue_swaps.py", f"{d}/j.tsv", f"{d}/l.tsv", f"{d}/b.tsv", f"{d}/o.tsv")
             self.assertEqual([l for l in open(f"{d}/o.tsv") if l[0] != "#"], [])
+    def test_build_curated_overlap(self):
+        # A ends with the 30 bp that B starts with, and the graph has no link: overlap:30 joins them with no gap, a wrong length does not
+        import random; random.seed(1); q = lambda n: "".join(random.choice("ACGT") for _ in range(n))
+        x, sh, y = q(70), q(30), q(70)
+        with tempfile.TemporaryDirectory() as d:
+            open(f"{d}/u.fa", "w").write(f">uA\n{x + sh}\n>uB\n{sh + y}\n")
+            open(f"{d}/c.agp", "w").write("A\t1\t100\t1\tW\tuA\t1\t100\t+\nB\t1\t100\t1\tW\tuB\t1\t100\t+\n")
+            open(f"{d}/o.tsv", "w").write("#h\ng1\t1\tA\t+\t.\t.\t.\t0\ng1\t2\tB\t+\t.\t.\t.\t0\n")
+            open(f"{d}/l.tsv", "w").write("#h\n"); open(f"{d}/ch.tsv", "w").write("#h\n")
+            open(f"{d}/s.tsv", "w").write("A\t100\t1000\nB\t100\t1000\n"); open(f"{d}/n.tsv", "w").write("g1\tchr1\tkeep\n")
+            args = ["--order", f"{d}/o.tsv", "--agp", f"{d}/c.agp", "--links", f"{d}/l.tsv", "--choices", f"{d}/ch.tsv", "--stats", f"{d}/s.tsv",
+                    "--names", f"{d}/n.tsv", "--unitigs", f"{d}/u.fa", "--out", f"{d}/b", "--curated", f"{d}/cur.tsv"]
+            for n, want in ((30, x + sh + y), (31, x + sh + "N" * 100 + sh + y)):
+                open(f"{d}/cur.tsv", "w").write(f"#h\nA+\tB-\toverlap:{n}\treason\n")
+                o = run("build_scaffolds.py", *args)
+                self.assertEqual(o.returncode, 0, o.stderr)
+                self.assertEqual(open(f"{d}/b.fasta").read().split("\n")[1], want)
     def test_homolog_direction(self):
         # u1 and u2 align forward (unitig strand +), but u2 lies reversed in s_h2: s_h2 is written in reverse against s_h1
         with tempfile.TemporaryDirectory() as d:
