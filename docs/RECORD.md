@@ -20,7 +20,7 @@ Other documents name these genomes rather than count them.
 |---|---|---|---|---|---|
 | 13Q010 | 3, 9 | 27x | false | The graph-first build; ploidy 3; organelle decoys; gene sets across translocations | [`examples/13Q010`](../examples/README.md) |
 | WatsonsChoice | 2, 9 | 28x | true | `hap_first` grouping; read correction against raw reads; the raw-read join audit | [`examples/WatsonsChoice`](../examples/README.md) |
-| Busk | 2, 9 | 62x | true | The first run made by following the guides; connectors | [`examples/Busk`](../examples/README.md) |
+| Busk | 2, 9 | 62x | true | The first run made by following the guides; connectors. Rebuilt 2026 with 0.3.7: the Hi-C allele rescue at 62x, identical end overlaps | [`examples/Busk`](../examples/README.md) |
 | GammaCitrus | 2, 9 | – | true | Tangles, TTT and lost-route forks | Kept outside the repository (confidential) |
 | irma | – | – | – | Hi-C density only ([SETTINGS](SETTINGS.md)) | – |
 | 292 | 2, 9 | 84x | true | Hi-C allele rescue, collapsed hubs, unlocalized scaffolds, genes on the unitigs | Not yet adopted |
@@ -81,6 +81,36 @@ Both earlier genomes were rebuilt with connectors and adopted. WatsonsChoice wen
 - **Haplotype numbers change.** Most 13Q010 scaffolds were renumbered (old chr7_h3 is new chr7_h1), though the content is the same. Map names by shared unitigs before comparing builds, and warn anyone with annotation keyed to old names.
 
 A tip path whose junction reads are all MAPQ 0, because the tip is near-identical to another placed copy, is a user choice, not an automatic placement. On 13Q010 the user chose to place one (chain0136, chain0183 at chr5_h2), accepting possible mosaicism: it completed 17 genes to three copies and gave chr5_h2 its second telomere.
+
+## Busk rebuilt with 0.3.6 and 0.3.7 (2026-11)
+
+A regression test of the current process on the same inputs, and a new build to adopt. The run on main 0.3.6 finished, and its D13 raised a fault in the Hi-C allele rescue. The fix (0.3.7) was trialled in a second work directory, made after the run was complete, as D13 asks. The user adopted the trial's fifth pass.
+
+| | First build | 0.3.6 run | 0.3.7, adopted |
+|---|---|---|---|
+| Placed | 615.3 Mb | 614.5 Mb | 616.1 Mb |
+| Unplaced | 11.9 Mb | 26.0 Mb | 24.3 Mb, with 2.01 Mb of it as unlocalized scaffolds |
+| Gaps | 7 | 17 | 12 |
+| Contigs, contig N50 | –, 34.47 Mb | 35, 33.12 Mb | 30, 33.12 Mb |
+| Telomeric ends | 34 of 36 | 34 of 36 | 34 of 36 |
+| compleasm complete | 99.68%, 99.71% | 99.50%, 99.32% | 99.68%, 99.68% |
+| Gene copies short of 2 | – | 33, in 26 genes | 18, in 11 genes |
+
+The first build did not run the Hi-C allele rescue, which places chains Hi-C alone cannot. On Busk it was on from D04 (96 allele-paired chains, 17.5 Mb, with unique Hi-C under 0.1 x the median). Most of the extra gaps of the 0.3.6 run against the first build sit at chains it placed: 7 of 18 gap edges before raw reads.
+
+| # | What happened | Result if followed as written | Change |
+|---|---|---|---|
+| 1 | The rescue read identical end overlaps (de 0) between chains as alleles. They are graph continuations of one haplotype, so they pushed a chain into the opposite haplotype. 3 chains with unique Hi-C showed it (Hi-C 3.4-14.8x the other way); about 40 more had such overlaps | Six rescue calls corrected by hand at D06 | `allele_table.py` sets the overlaps apart as dovetails; the rescue calls `graph`, `bubble_arm`, `fork` and `copy` ([D04](decisions/D04_chimeric_chains.md)). The fix alone reproduced all six hand corrections |
+| 2 | Taking dovetails out of the blocks also took them out of the rescue's redundancy test | Trial pass 1: 21 gaps, chains made of placed sequence placed as alleles | Dovetails count towards redundant |
+| 3 | A `graph` call was decided before a shorter chain on the other haplotype was placed, though both haplotypes run into the chain | Trial pass 2: a chr4_h2 gap, contig N50 30.18 Mb | Graph calls tested again after the last round; one that links every group is a `fork` |
+| 4 | Identical copies of placed chains (de 0) were placed opposite them as alleles. Three of four were homozygous stretches, which sum to 1.55-1.85x by window depth; only one summed under 1x | Hand edits, which would have unplaced three real alleles | `copy` decided by summed depth, under 1.25x haplotype depth |
+| 5 | `with:` in group edits resolves to the target's group before any edits. chain0099 `with:chain0050` went to chain0050's old group, since chain0050 is itself moved by an edit | A chain on the wrong homolog, caught in the pre-build | Name a chain that is not moved ([D06](decisions/D06_wrong_group.md)) |
+| 6 | A `curated` order link sets order and orientation only. The builder merges sequence only on graph overlaps of 5 kb or more. A 40 kb identical overlap outside the graph, and graph overlaps of 2.6 and 3.5 kb, were each left on both sides of a gap | A 40 kb duplication on chr4_h1, which I first reported as a closed gap; 3.5 kb duplicated in the 0.3.6 run | Order links of type `overlap:N`, checked against the sequence and joined ([D10](decisions/D10_curation.md)) |
+| 7 | `review/weak_placed.py` crashed on shared copies (lengths keyed with `.gNN`) | No D09 review of placed weak chains | Fixed |
+
+Where the process held: `hub_cores.d04.tsv` showed the chain0061 hub at D04, before groups (the first build found it at D06), and the satellite ledger at D06 grouped the same telomeric chains. TTT could not solve the chr7_h2 tangle (151 unitigs, 19.2 Mb, two anchors; no feasible solution once 106 connections were banned), so the user placed chain0099 on its 14 of 14 raw read tails, and the remaining 6.16 Mb of the tangle stays unplaced.
+
+The user also placed two chains of a homozygous stretch on chr4_h1 (chain0148, chain0131), identical to chain0188 and chain0207 on chr4_h2 and summing about 2x with them. They close a Hi-C gap and add h1 copies of five genes. Reads cannot tell the two copies apart, so the placement rests on the graph path.
 
 ## Experiments
 
@@ -298,3 +328,4 @@ Stage 04 sets high-copy chains aside (`07_chains2/repeat_chains.txt`), and the c
 - A report line read `homolog fraction 0.0000` on every genome until Busk, because of a parser bug. A value that exact should have looked wrong sooner.
 - I said `break_chain.py` cuts anywhere, so `hub_cores.py` suggested breaks inside unitigs that the stage would have refused. On 292, 12 of 15 suggested breaks were of that kind.
 - A report alarm I added for those hubs used its list before creating it, and would have stopped the stage 05 report whenever a breakable hub existed.
+- On the Busk rebuild I reported a chr4_h1 gap as closed by a curated link without reading the junction table. The gap had moved, with a 40 kb overlap on both sides of it, and the user had already agreed to adopt the build. Read `13_scaffold/*.junctions.tsv` at every hand-made join.

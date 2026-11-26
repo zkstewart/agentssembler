@@ -37,17 +37,17 @@ Real hand decisions from 13Q010, WatsonsChoice and Busk, to show the form and th
 
 ## Busk (diploid, 9 chromosomes, 62x per haplotype)
 
-The first genome decided by following the guides, not by replaying earlier decisions: 7 gaps, contig N50 34.47 Mb. Where that exposed problems in the process is in [RECORD](../docs/RECORD.md).
+The first genome decided by following the guides, not by replaying earlier decisions. This is the 2026 rebuild with 0.3.7: 12 gaps, 30 contigs, contig N50 33.12 Mb, 616.1 Mb placed, compleasm complete per haplotype 99.68%. The first build had 7 gaps and contig N50 34.47 Mb; where each build exposed problems in the process is in [RECORD](../docs/RECORD.md).
 
 | Decision | Outcome | File |
 |---|---|---|
 | D01 | `hap_depth` 62, `repeat_depth` 273, `collapsed` true | |
-| D03 | 2 of 523 joins broken by rule, 3 weak joins kept | |
-| D04 | 2 fork breaks | `Busk/chain_breaks.txt` |
-| D06, D14 | Group edits, each with a reason | `Busk/group_edits.tsv` |
-| D09, D10 | Two chains unplaced; three curated links where Hi-C was near a tie | `Busk/order_edits.tsv`, `Busk/order_links.tsv` |
-| D16 | 4 candidates, none placed | |
-| D11, D18 | 0 fills from corrected reads; 1 raw overlap closure, passing audit | |
-| D12 | No inverted block over 400 kb; 2 translocation candidates and 1 dosage run not supported | `Busk/sv_calls.tsv` |
-| D13 | The user adopted the assembly as it stands, and left chain0099 unplaced | |
+| D03 | 2 of 522 joins broken by rule, 3 weak joins kept | |
+| D04 | No chimeras; 1 hub break, seen in `hub_cores.d04.tsv` before grouping. Hi-C allele rescue on | `Busk/chain_breaks.txt` |
+| D06, D14 | Group edits, each with a reason: three telomeric satellites, five short hubs shared, and the user's placements from D13 | `Busk/group_edits.tsv` |
+| D09, D10 | A chain's two shared copies unplaced; three `overlap:N` links, two graph overlaps under the 5 kb cut and one identical overlap outside the graph | `Busk/order_edits.tsv`, `Busk/order_links.tsv` |
+| D16 | 5 candidates, none placed; TTT found no solution for the chr7_h2 tangle | |
+| D11, D18 | 0 fills from corrected reads; no raw-read join needed | |
+| D12 | A rearrangement on chr8 against the reference, on both haplotypes (high); 2 candidates not supported; 2 size differences | `Busk/sv_calls.tsv` |
+| D13 | The user adopted the rebuild with a code fix (identical end overlaps are graph links), placed chain0099, and closed a chr4_h1 gap through a homozygous path | |
 | | Sites for the human review | `Busk/curation_targets.tsv` |

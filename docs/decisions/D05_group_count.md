@@ -15,7 +15,7 @@
 **Independent support to report:**
 
 - With `hap_first`, a cliff in merge scores right after the target (WatsonsChoice: 114.8 to 38.9). Groups pair clearly by allelic bp (7.4-30.8 Mb against at most 0.1 Mb for the next group).
-- The cliff can be absent. On Busk (`...20:15.5 19:8.5 18:7.1 17:6.8`) the last merges were no better than the next, while pairing still left no doubt (16-30 Mb allelic against at most 0.3 Mb for the next group). A missing cliff is a reason to look, and the allele pairing is the stronger test.
+- The cliff can be absent. On Busk (`...22:17.1 21:16.9 20:16.6 19:9.3 18:6.6 17:6.5`) the drop came at 20 to 19, and the last merge, to 18 groups, scored no better than the next (6.6 against 6.5), while pairing still left no doubt (16.3-30.3 Mb allelic against at most 0.3 Mb for the next group). A missing cliff is a reason to look, and the allele pairing is the stronger test.
 - Bridges and links falling within one group (13Q010: 33/33 and 38/42).
 - No group with more than 2 telomeric ends.
 - With `hap_first` above ploidy 2, the log prints `set` lines in place of `pair` lines: the allelic bp of the weakest pair inside each set, and the best to any group outside it. A `WARNING` on a set means it holds fewer haplotypes than `ploidy`.

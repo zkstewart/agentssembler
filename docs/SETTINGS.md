@@ -104,10 +104,10 @@ A chain is low-information when its Hi-C reads rarely place uniquely, as in a sa
 | 13Q010 | 5,595 | 0.125 | 727 |
 | irma | 5,446 | 0.129 | 708 |
 | WatsonsChoice | 4,699 | 0.149 | 611 |
-| Busk | 23,267 | 0.030 | 3,025 |
+| Busk | 22,951 | 0.030 | 2,984 |
 
 - **On the first three it changes nothing:** no seed chain, and at most 2 chains of 20 kb or more (0.2 Mb), cross the threshold.
-- **On Busk it moves 10 chains (3.2 Mb) below it.** The seven of 100 kb or more have a median repeat fraction of 0.56, against 0.04 above. They are satellite-rich chains that cleared 700 on library depth alone. This rests on one deep library: it is the reason for the ruler, and its only test.
+- **On Busk it moves 11 chains (3.2 Mb) below it** (2026 rebuild; 10 in the first). The seven of 100 kb or more have a median repeat fraction of 0.56, against 0.04 above. They are satellite-rich chains that cleared 700 on library depth alone. This rests on one deep library: it is the reason for the ruler, and its only test.
 - **Measured once,** when stage 06 finishes, and kept in `state/hic_density.json`. `reset` to stage 06 or earlier measures it again. A build that had grouped before this existed keeps 700.
 - **The stage 06 report** gives H and the threshold, and raises an alarm when H is under 2,350 (half the lowest run so far).
 - **Within-chain density is not long-range density.** The share of pairs over 100 kb apart ran from 5% (irma) to 38% (WatsonsChoice), so this ruler is not right for the pair minimums and `link_bonus`. They stay fixed.

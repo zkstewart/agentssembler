@@ -12,6 +12,7 @@
 
 - **Sequence set aside must stay in the Hi-C target, as decoys.** Otherwise organelle reads land on nuclear insertions as if unique and merge chromosomes. RECORD: "Organelle Hi-C on nuclear insertions (13Q010)". Built into stage 05; the signal is in [D05](decisions/D05_group_count.md).
 - **Near-identical haplotypes are near-identical to Hi-C too.** Hi-C can name the chromosome of such a chain but rarely its haplotype, and it cannot phase arms or place a near-exact copy. RECORD: "Phasing arms", "Allele-aware Hi-C for hard unplaced chains", "Hi-C allele rescue and collapsed hubs (292)". Acts through [D04](decisions/D04_chimeric_chains.md) and [D15](decisions/D15_arm_phase.md).
+- **An identical overlap is a graph link, not an allele.** Near-identical haplotypes make de 0 overlaps common, and reading them as allele pairs puts a chain on the haplotype opposite the one it continues. RECORD: "Busk rebuilt with 0.3.6 and 0.3.7 (2026-11)". Acts through [D04](decisions/D04_chimeric_chains.md).
 - **Where neither the graph nor Hi-C can tell alleles apart, the choice is the user's.** RECORD: "Hi-C allele rescue and collapsed hubs (292)". Acts through rescue swaps at [D16](decisions/D16_tails.md) and [D13](decisions/D13_user_decisions.md).
 
 ## Reads
@@ -23,5 +24,6 @@
 
 - **A rebuild changes more than the gaps:** orientation between Hi-C-only gaps, which satellite stacks are placed, and haplotype numbers. RECORD: "What rebuilding with connectors changed". Acts through [D12](decisions/D12_sv_calls.md).
 - **A low per-haplotype gene score can be numbering.** Haplotype numbers are arbitrary across chromosomes, so with translocations "all h1 scaffolds" is not one set. RECORD: "Gene sets across translocations (13Q010)". Acts through `validate/complement_genes.py`.
+- **An edit is done when the built junction shows it.** An order link sets order, not a join; a group edit resolves against the groups before edits. RECORD: "Busk rebuilt with 0.3.6 and 0.3.7 (2026-11)". Acts through [D06](decisions/D06_wrong_group.md) and [D10](decisions/D10_curation.md).
 - **An automated label is a claim, not a check.** Several were wrong in ways only the evidence behind them showed. RECORD: "Automated labels that were wrong".
 - **A result that looks exact or too good is a question about the test.** Every significant fix began with a result that looked wrong while every command had succeeded. RECORD: "Errors made while building this". Acts through [AGENTS](../AGENTS.md).

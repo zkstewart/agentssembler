@@ -1,3 +1,3 @@
 #chain	action	group	where	orientation	reason
-chain0244	unplace	.	.	.	47 kb, 15 pairs to g15 and 46 elsewhere, no link, no position information
-chain0255	unplace	.	.	.	26 kb, 27 pairs to g15 and 130 elsewhere, no link, no position information
+chain0092.g03	unplace	.	.	.	D09: shared copy placed at rank 1 outside chain0003's telomere; no Hi-C (664 pairs, 2.3 vs 2.1/Mb g14/g03, orientation_llr 0.1), repeat 0.56, graph links only to unassigned chains
+chain0092.g14	unplace	.	.	.	D09: same chain as chain0092.g03, no Hi-C to place it (orientation_llr 20,000 is from neighbours, position by 73 links); graph links only to unassigned chains

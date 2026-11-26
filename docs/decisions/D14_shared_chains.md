@@ -12,7 +12,7 @@
 
 `chain0175  shared  with:<a chain of that chromosome>  Interior depth 64.6x; Hi-C to chr3 5.23x next chromosome (32,356 pairs), no separation between g17 and g18; 13 complete genes; graph-linked hub of the chr3 gap`
 
-On Busk five short hubs (190-340 kb) had medians of 71-84x, depth class `specific`, with 50-130 kb overlaps at each end and 125-145x in between. The auto-candidates missed them, because class comes from the median. The report lists such chains from the middle third of their windows, **which only nominates them**.
+On Busk five short hubs (190-335 kb) had medians of 64-88x, depth class `specific`, with long overlaps at each end and interiors of 27-119 kb at 125-156x (`hub_depth.py`). The auto-candidates missed them, because class comes from the median. The report lists such chains from the middle third of their windows, **which only nominates them**.
 
 **Then run `scripts/review/hub_depth.py`, and require real interior.** I first promoted seven on window depth, then reversed two: chain0171 and chain0206 had 4.7 and 4.4 kb outside graph overlaps, and about 360 Hi-C pairs. A depth over that little sequence says nothing. The five kept had 27-119 kb. Unassigned chains can still serve as bridge arms, so leaving one out loses little. Read degree too: chain0108 is tied in Hi-C but has degree 1,1 and depth about 60-88x, and was left alone.
 

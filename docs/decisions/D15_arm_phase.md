@@ -15,9 +15,9 @@
 
 **With `settings.raw_phase_early`, the same test runs at stage 10, on the pre-build** (`12_shared/phase_reads.pre.tsv`), so a `conflict` can be looked at here, before the build, rather than at D18. It costs a raw-read mapping (about 2.5 h on 292), so it is off by default; turn it on when an earlier build of the sample had conflicting arms, or when many arms are arbitrary.
 
-**After raw reads, some of these are no longer unknown.** `17_raw_reads/phase_reads.tsv` counts reads linking an arm to specific sequence, on its own scaffold (`cis`) and on the homolog (`trans`). Report `confirmed` separately from `arbitrary`. On Busk reads spoke at 16 of 32 arbitrary junctions and on WatsonsChoice at 28 of 102, so most stay unknown: specific sequence is typically hundreds of kb from the arm. A `conflict` is a prompt to look. **No arm has been swapped on this evidence,** and no route for doing so has been built.
+**After raw reads, some of these are no longer unknown.** `17_raw_reads/phase_reads.tsv` counts reads linking an arm to specific sequence, on its own scaffold (`cis`) and on the homolog (`trans`). Report `confirmed` separately from `arbitrary`. On WatsonsChoice reads spoke at 28 of 102 arbitrary junctions and on the first Busk build at 16 of 32, so most stay unknown: specific sequence is typically hundreds of kb from the arm. The 2026 Busk rebuild had fewer, 18, and raw reads confirmed 16 (1 thin, 1 with no reads). A `conflict` is a prompt to look. **No arm has been swapped on this evidence,** and no route for doing so has been built.
 
-**Hi-C cannot help here.** On Busk 99.6% of Hi-C records on arm chains are exact ties between copies, with only 293 of 3.17 M showing any margin, so no filter or competitive mapping can recover them. Connectors have no Hi-C pairs at all, because they are restored after Hi-C mapping.
+**Hi-C cannot help here.** On the first Busk build 99.6% of Hi-C records on arm chains are exact ties between copies, with only 293 of 3.17 M showing any margin, so no filter or competitive mapping can recover them. Connectors have no Hi-C pairs at all, because they are restored after Hi-C mapping.
 
 **Two checks:**
 
