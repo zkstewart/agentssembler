@@ -44,6 +44,7 @@ Three things look like mistakes and are not:
 | `reports/` | driver | `STAGE.md` per finished stage. `02_map_unitigs.md` and `01_inputs.md` are short by design (`01_inputs.md` gives compleasm on the unitigs) |
 | `logs/` | driver | `STAGE.log` per stage, appended on each run |
 | `archive/` | `reset` | Only after a `reset`. See [Re-running](#re-running) |
+| `CLEANED.tsv` | `scripts/cleanup/clean_work.py` | Only after a cleanup: each deleted file with its size, checksum and rule ([CLEANUP](CLEANUP.md)) |
 | `ttt/` | you | Only if TTT was used at D16: tangles, boundary files, coverage, the read GAF and runs ([TANGLES](TANGLES.md)). `reset` leaves it alone |
 | `00_inputs/` to `17_raw_reads/` | stages | Below |
 
@@ -116,7 +117,7 @@ Three rounds of chains. Each round has `chains.agp`, `chains.fasta`, `chains.fas
 
 `chains.fasta` and `chains.fasta.fai` (symlinks to `08_final_chains/`), `decoys.txt`, `targets.fasta` (chains plus `decoy_*` unitigs) with its bwa index (`.amb`, `.ann`, `.bwt`, `.pac`, `.sa`), `bwa_index.log`, `bwa.log`, `samblaster.log`, `HiC.bam`, `pairs.tsv.gz` with `pairs.log` (pairs kept and why the rest were dropped; earlier builds also have `HiC.filtered.bam`); `alleles08.pairs.tsv`, `alleles08.blocks.tsv` (alleles of these chains), `pairs.rescued.tsv.gz` (pairs with an allele-ambiguous end), `rescue.log`; `rescue_signal.txt` and `rescue_signal.tsv` (Hi-C-blind chains, read at D04).
 
-Only `pairs.tsv.gz` and `pairs.rescued.tsv.gz` are read later, by any stage or review script. When it was linked in from another build, nothing else is here. `HiC.bam` is large (8 GB on 292). It only saves the remap if stage 05 is ever re-run with other filters; an older build's `HiC.filtered.bam` can be remade from it. Deleting either is the user's call; say what was deleted in `README.md`.
+Only `pairs.tsv.gz` and `pairs.rescued.tsv.gz` are read later, by any stage or review script. When it was linked in from another build, nothing else is here. `HiC.bam` is large (8 GB on 292). It only saves the remap if stage 05 is ever re-run with other filters; an older build's `HiC.filtered.bam` can be remade from it. Deleting either is the user's call; say what was deleted in `README.md`. To free disk after a run, use [CLEANUP](CLEANUP.md), which deletes the BAM and the other rebuildable files and can remake them.
 
 ## `10_groups/` (stages 05 to 08)
 
@@ -216,7 +217,7 @@ A fill writes six files from one prefix: `.agp`, `.fills.fasta`, `.report.tsv`, 
 **Within a work directory, use `agentssembler reset WORK STAGE`.** It moves that stage's outputs, and those of every later stage, to `archive/<YYYYmmdd_HHMMSS>/` under their own paths, with the decisions they informed in `archive/<...>/decisions/`. Costly mappings stay in place unless `--remap`. Then `run` rebuilds under the usual names.
 
 - **Do not make `12_shared_v2/`, `15_final_v3/` or the like by hand.** Stages read and write fixed paths, so a suffixed folder is invisible to them, and a reader cannot tell which one is current.
-- **`archive/` is the record of what a re-run replaced.** Compare groups by chain against it after any reset above stage 07 (T19). It can be large. Delete it only when the user agrees, and write in `README.md` what was reset, why, and that the archive was deleted.
+- **`archive/` is the record of what a re-run replaced.** Compare groups by chain against it after any reset above stage 07 (T19). It can be large: [CLEANUP](CLEANUP.md) removes the rebuildable files inside it. Delete the folder itself only when the user agrees, and write in `README.md` what was reset, why, and that the archive was deleted.
 - **A reset archives both hand tables**, `16_validate/sv/sv_calls.tsv` and `16_validate/curation_targets.tsv`, and stage 15 starts new ones with the header only. Its report names the archived copies. **Treat them as a list to re-check, not rows to restore:** a re-run can change coordinates and haplotype numbers ([D12](decisions/D12_sv_calls.md)). Only when nothing before stage 15 was reset are the final files the same, and a row may be carried over once you have confirmed that.
 - **To try something that changes the method**, such as a setting that alters the chains, make a second work directory beside the first with `init`, and link the reusable mappings in before `run` ([PROCESS.md](PROCESS.md), "Reusing mappings"). Name it for what differs, and say in both `README.md` files which is current. Do this only for a trial the user has agreed to after the run (AGENTS.md, "One output, then proposals"). The D16 tangle check, TTT included, is not such a trial: it runs in the work directory itself.
 - **To keep the output of a `run` command**, redirect it into `logs/`, for example `logs/run.06.out`. The driver does not do this.

@@ -68,6 +68,8 @@ Ask at [D13](docs/decisions/D13_user_decisions.md): which assembly to adopt, how
 
 A full disk can crash the machine, especially when the work disk is a virtual disk on another drive, as under WSL: `df` inside then overstates free space. Set `compute.guard_path` to the host drive, for example `/mnt/d`. Mappings stop when free space falls below `compute.min_free_gb`. Never write raw reads to an uncompressed FASTA: stage 13 streams them.
 
+To free disk after a run, at the user's request, use [docs/CLEANUP.md](docs/CLEANUP.md): it deletes only files that can be remade, and records them.
+
 Do not use `pkill -f PATTERN` from a command containing that pattern: it kills your own shell. Find the PID with `pgrep`, then `kill` it.
 
 Read [docs/TRAPS.md](docs/TRAPS.md) before starting. It is short, and every entry cost real time.

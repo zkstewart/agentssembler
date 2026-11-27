@@ -19,7 +19,7 @@ class T(unittest.TestCase):
     def test_no_hard_coding(self):
         pat = re.compile(r"/home/|research/genomes|13Q010|WatsonsChoice|00_inputs|16_validate/|\bBusk\b")
         for f in SCRIPTS + glob.glob(f"{R}/stages/*.sh"):
-            if f.endswith("lib.sh"): continue
+            if f.endswith("lib.sh") or "/scripts/cleanup/" in f: continue   # these know the work directory layout, as the stages do
             for i, l in enumerate(open(f), 1):
                 if f.endswith(".sh"): continue
                 self.assertIsNone(pat.search(l), f"{f}:{i}: {l.strip()[:80]}")
@@ -314,6 +314,39 @@ class T(unittest.TestCase):
             open(f"{d}/09_hic_map/rescue_signal.txt", "w").write("Hi-C-blind: 41 chains\nALARM: 8.4 Mb of allele-paired chains have almost no unique Hi-C.\n")
             o, a = r.r_hic(d, {"ploidy": 2}, {}); self.assertEqual(len(a), 1)
             o, a = r.r_hic(d, {"ploidy": 3}, {}); self.assertEqual(a, []); self.assertTrue(any("diploids only" in x for x in o))
+    def test_cleanup_rules(self):
+        # clean_work.py finds exactly the rebuildable files (archive-only ones only in archive/), never a regression seed or compared file
+        sys.path.insert(0, f"{R}/scripts/cleanup"); import clean_work as cw, yaml
+        L = "lin_odb12"; env = {"AS_SAMPLE": "S", "AS_LINEAGE": L, "AS_COMPLEASM": sys.executable, "AS_HIC_R1": __file__, "AS_HIC_R2": __file__}
+        go = ["09_hic_map/HiC.bam", "09_hic_map/targets.fasta"] + [f"09_hic_map/targets.fasta.{x}" for x in ("amb", "ann", "bwt", "pac", "sa")] + \
+             [f"{d}/{L}/{f}" for d in ("01_genes", "16_validate/compleasm/h1", "16_validate/compleasm/h1_unloc", "16_validate/compleasm/unplaced") for f in cw.LINEAGE_FILES] + \
+             ["12_shared/pre/target.fasta", "17_raw_reads/fill/in.fasta", "17_raw_reads/fill/h1/in.fasta", "17_raw_reads/fill/candidate.fasta", "13_scaffold/bridges/reads.fasta"]
+        archOnly = ["13_scaffold/target.fasta", "14_readfill/h1/in.fasta", "14_readfill/target.h1.fasta"]
+        keep = ["09_hic_map/pairs.tsv.gz", "09_hic_map/pairs.rescued.tsv.gz", "09_hic_map/decoys.txt", "09_hic_map/chains.fasta", "09_hic_map/alleles08.pairs.tsv",
+                "00_inputs/unitigs.fasta", "12_shared/pre/S.fasta", "12_shared/pre/S.unplaced.fasta", "13_scaffold/S.graph.fasta", "13_scaffold/S.graph.unplaced.fasta", "13_scaffold/S.graph.agp",
+                "15_final/S.final.fasta", "15_final/S.final.unplaced.fasta", "15_final_raw/S.final.agp", "15_final_raw/S.final.fasta", "15_final_raw/S.final.unplaced.fasta", "16_validate/unloc/S.unloc.fasta", "17_raw_reads/fill/candidate.agp", "17_raw_reads/fill/fills.fasta",
+                "14_readfill/fills.fasta", "17_raw_reads/fill/h1/names.txt", "14_readfill/h1/names.txt", "13_scaffold/bridges/ids.txt", "16_validate/compleasm/tmp/hap1.fasta",
+                "16_validate/compleasm/odd/" + L + "/miniprot_output.gff", "16_validate/compleasm/odd/" + L + "/full_table_busco_format.tsv"] + \
+               [f"{d}/{L}/full_table_busco_format.tsv" for d in ("01_genes", "16_validate/compleasm/h1", "16_validate/compleasm/h1_unloc", "16_validate/compleasm/unplaced")]
+        for sp in glob.glob(f"{R}/tests/specs/*.yaml"):
+            with open(sp) as fh: y = yaml.safe_load(fh)
+            keep += list((y.get("seed") or {})) + [r[0] for r in y.get("compare", [])]
+        keep = [k.replace("13Q010", "S").replace("WatsonsChoice", "S") for k in keep]
+        with tempfile.TemporaryDirectory() as w:
+            arch = f"{w}/archive/20260101_000000"
+            for b in (w, arch):
+                for f in set(go + archOnly + keep):
+                    os.makedirs(os.path.dirname(f"{b}/{f}"), exist_ok=True)
+                    with open(f"{b}/{f}", "w") as fh: fh.write(">x\nA\n")
+            env["AS_READS"] = f"{w}/00_inputs/unitigs.fasta"
+            found, kept = cw.candidates(w, env, cw.RULES, False)
+            got = sorted(os.path.relpath(c.p(f), w) for c, r, f, n in found)
+            want = sorted(go + [f"archive/20260101_000000/{f}" for f in go + archOnly])
+            self.maxDiff = None; self.assertEqual(sorted(set(want) - set(got)), []); self.assertEqual(sorted(set(got) - set(want)), [])
+            for k in keep: self.assertNotIn(k, got)
+            os.remove(f"{w}/09_hic_map/decoys.txt")   # a missing source keeps what it would remake
+            found, kept = cw.candidates(w, env, cw.RULES, True)
+            self.assertNotIn("09_hic_map/HiC.bam", [f for c, r, f, n in found]); self.assertIn("09_hic_map/HiC.bam", [p for p, why in kept])
     def test_hic_report_hub_alarm(self):
         # stage 05 report with one breakable and one inside hub core, and no other stage 05 files
         sys.path.insert(0, R)

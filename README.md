@@ -159,6 +159,7 @@ Thus, `agentssembler` is *not* meant to be a tool that is used for decades to co
 | [docs/HPC.md](docs/HPC.md) | Running a mapping on another machine and putting it in place | Only if mapping elsewhere |
 | [docs/TANGLES.md](docs/TANGLES.md) | D16's tangle check: lost-route forks, and TTT for small tangles | At D16 |
 | [docs/SCRIPTS.md](docs/SCRIPTS.md) | Every script | When a guide names a script |
+| [docs/CLEANUP.md](docs/CLEANUP.md) | Which files a finished work directory can lose, and the script that deletes and remakes them | When the user asks to free disk |
 | [docs/LESSONS.md](docs/LESSONS.md) | Principles the genomes taught, each linked to its evidence and its rule | Development record: not needed for a run |
 | [docs/RECORD.md](docs/RECORD.md) | The evidence behind the process, genome by genome: experiments, numbers, errors | Development record: not needed for a run |
 | [docs/IMPROVING.md](docs/IMPROVING.md) | What comes next: ideas not yet tried, open questions, what is out of scope or not worth repeating | Development record; at D13, before proposing a trial |
