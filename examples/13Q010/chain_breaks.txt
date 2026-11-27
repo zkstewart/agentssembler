@@ -1,1 +1,3 @@
-chain0010 15784630
+# D04. Chains to break. Fields split by whitespace; anything after the two fields is ignored.
+# chain position reason
+chain0011 15784630 D04 chimera: partner_cos 0.476 (trans 8376/9524), 8 reads 0 at MAPQ>=20, flanks 10-12x; right part utg000060l 1.58 Mb (old build chain0010 15784630)

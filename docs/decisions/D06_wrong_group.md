@@ -1,11 +1,11 @@
 # D06. Is a chain in the wrong group?
 
-**Read:** the sizes and alarms in `reports/07_group.md`, `10_groups/eval_groups.txt` (an alarm, never a reason), `scripts/review/group_profile.py`, `scripts/review/weak_placed.py`.
+**Read:** the sizes and alarms in `reports/07_group.md`, `10_groups/eval_groups.txt` (an alarm, never a reason), `scripts/review/group_profile.py` (give it `09_hic_map/pairs.tsv.gz`: with the rescue's `pairs.rescued.tsv.gz` it reports false `OTHER_CHROM` rows, 18 on 13Q010), `scripts/review/weak_placed.py`.
 
 **Signals:**
 
 - A large chain whose group disagrees with its allele conflicts or with Hi-C.
-- A group far larger than its siblings. On 13Q010, satellite chains chain0056 and chain0091 stacked on one chr8 group (48.2 Mb against 39.1 and 34.1).
+- A group far larger than its siblings. On 13Q010, satellite chains such as chain0055 and chain0090 (repeat fraction 0.85 and 0.69) stack on one chr8 group (48.2 Mb against 39.1 and 34.1). There the stack is held by graph bridges, and the build keeps it; check it in Juicebox.
 - A high-copy chain passing because its density to one group is still highest. WatsonsChoice chain0184 (262x) had 26,032 pairs inside g03 and 97,601 outside it. **Read pairs outside the group as well as the best group, and check class `high` chains before ordering.**
 
 **Subtelomeric satellite blocks.** Busk has several such chains, 0.75-3.7 Mb with repeat fraction 0.57-0.70 at the telomeric ends on the 2026 rebuild (0.8-8 Mb and up to 0.77 in the first), most of them with a telomere at one end; they align to several chromosomes at 3-7% divergence, so their allele conflicts are ignored and their reference hits mean little. Hi-C reaches them only thinly, and a group can look right by density while holding a false member. Work through the ends:

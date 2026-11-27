@@ -101,7 +101,7 @@ A chain is low-information when its Hi-C reads rarely place uniquely, as in a sa
 
 | Build | H (pairs/Mb) | 700 as a share of H | 0.13 x H |
 |---|---|---|---|
-| 13Q010 | 5,595 | 0.125 | 727 |
+| 13Q010 | 5,655 | 0.124 | 735 |
 | irma | 5,446 | 0.129 | 708 |
 | WatsonsChoice | 4,699 | 0.149 | 611 |
 | Busk | 22,951 | 0.030 | 2,984 |

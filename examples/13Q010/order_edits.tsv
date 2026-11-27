@@ -1,2 +1,2 @@
 #chain	action	group	where	orientation	reason
-chain0192	unplace	.	.	.	D09 revisited: 174 kb, depth 5.5 (a fifth of haplotype), repeat fraction 0.83, no graph link to either neighbour, placed on 15 Hi-C pairs between two gaps
+chain0191	unplace	.	.	.	D09: 174 kb, depth 5.5 (a fifth of haplotype), repeat fraction 0.83, no graph link, placed 10/12 in g02 on 15 Hi-C pairs (orientation_llr 0.3); same chain and reason as the old build (chain0192)

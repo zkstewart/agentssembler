@@ -36,7 +36,7 @@ WatsonsChoice reproduced the adopted `15_final_v3` AGP and FASTA index, and its 
 - **GammaCitrus `10_groups/chain_forks.txt`:** the same 100 fork rows. Rows to chains in no group are now labelled `ungrouped`, not `same_group` or `other`, and there is a new `break_at` column.
 - **GammaCitrus `12_shared/arm_usage.tsv`:** the same 112 rows in a different order.
 - **The new stage 10 scan ran only on GammaCitrus,** since it needs a collapsed sample. It wrote `12_shared/chain_forks.tsv` with 12 `LOST` pairs and raised the stage 10 alarm. 13Q010 does not exercise it.
-- **13Q010's inputs are mostly gone.** Its corrected reads exist only gzipped elsewhere, and its raw BAM and Hi-C reads are deleted. `init` refuses a missing input, so the run used a local copy of the spec with empty Hi-C stand-ins. That is safe because `09_hic_map/pairs.tsv.gz` is seeded, so stage 05 maps nothing. The WatsonsChoice saved build is deleted, so that spec cannot run.
+- **13Q010's inputs are mostly gone.** Its corrected reads exist only gzipped elsewhere, and its raw BAM and Hi-C reads are deleted. `init` refuses a missing input, so the run used a local copy of the spec with empty Hi-C stand-ins. That is safe because `09_hic_map/pairs.tsv.gz` is seeded, so stage 05 maps nothing. The WatsonsChoice saved build is deleted, so that spec cannot run. 13Q010's inputs were later restored, and the 2026 rebuild ran from them in full ([RECORD](RECORD.md)).
 
 Differences understood:
 

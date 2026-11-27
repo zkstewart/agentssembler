@@ -11,12 +11,12 @@ Record the check in the reason even when nothing is done, for example: `Tangle c
 
 **Read:** `12_shared/tails.tsv`, `12_shared/tail_report.tsv`, `12_shared/tail_checks.tsv`.
 
-**`make_tails.py` labels are not safety checks.** It tests a path's copy limit, repeat class and chromosome, per chain. On 13Q010, chain0256 was labelled `only`, and all three chr5 haplotypes already hold it at 92-99.9%. Placing it would make a fourth copy in a triploid.
+**`make_tails.py` labels are not safety checks.** It tests a path's copy limit, repeat class and chromosome, per chain. On 13Q010, chain0257 was labelled `only`, and all three chr5 haplotypes already hold a copy of it (`tail_checks.tsv`: `copy_on_receiver,no_free_slot`). Placing it would make a fourth copy in a triploid.
 
 **Run these tests on each arm** (`tail_checks.tsv` holds the first three):
 
-1. **Is it already placed?** A near-exact copy on the receiving scaffold is a false duplication (13Q010 chain0269: 81% an exact copy of the scaffold it would join). Copies on every haplotype of the chromosome mean no free slot.
-2. **Is the budget shared?** Near-identical candidates draw on one budget. Sum their depths and compare with haplotype depth. 13Q010 chain0207 and chain0214 are 100% identical over 85% and sum to about one copy.
+1. **Is it already placed?** A near-exact copy on the receiving scaffold is a false duplication (13Q010 chain0204: a full copy on the scaffold it would join, `copy_on_receiver` 1.0). Copies on every haplotype of the chromosome mean no free slot.
+2. **Is the budget shared?** Near-identical candidates draw on one budget. Sum their depths and compare with haplotype depth. 13Q010 telomeric tips chain0221 and chain0255 are 99.8% identical over all of chain0255 and sum to about one copy (9.4 and 16.7x at 27x).
 3. **Is it an allele?** In a set, alleles align with each other at the sample's usual divergence over most of their length. Arms identical over most of their length are the same sequence, unless summed depth shows more than one copy.
 4. **Do reads cross the join?** Measured after placement (`16_validate/tail_joins.tsv`). No MAPQ >= 20 reads means the join rests on the graph link alone.
 5. **Does it add anything?** Count genes missing from the receiving haplotype, as well as genes on the arm.
@@ -26,11 +26,11 @@ Record the check in the reason even when nothing is done, for example: `Tangle c
 **Risks to weigh, besides mosaicism:**
 
 - False duplication inflates length and duplicated gene counts, and can look like copy-number variation. This is the largest.
-- Thin position evidence: one overlap, often little Hi-C (5 of 8 13Q010 tails have one pair or none).
+- Thin position evidence: one overlap, often little Hi-C (2 of 3 13Q010 tails have no Hi-C pair, the third 4).
 - An arbitrary placement looks as trustworthy as a phased one downstream, so haplotype comparisons can report assignment choices as differences.
-- No gain: on 13Q010 none of the 7 genes on tails was missing from the haplotype that would receive it.
+- No gain: on 13Q010 the 3 tails carry no genes, and in the first builds none of the 7 genes on tails was missing from the haplotype that would receive it.
 
-**This is the user's call when in doubt.** On 13Q010, the user chose not to place the six that passed, to minimise assembly risk. On WatsonsChoice, 47 were placed (7.06 Mb distinct, 27 arbitrary), none had a copy of 30% or more on its own scaffold within 2 Mb, and all joins had reads, 7 of them with none at q20.
+**This is the user's call when in doubt.** On 13Q010, the user chose not to place the six that passed in the first builds, to minimise assembly risk, and on the 0.3.7 rebuild left the one that passed unplaced (chain0209, no genes, 2 q20 read tails into it from a gap, and a second graph link to another chromosome's tip path). On WatsonsChoice, 47 were placed (7.06 Mb distinct, 27 arbitrary), none had a copy of 30% or more on its own scaffold within 2 Mb, and all joins had reads, 7 of them with none at q20.
 
 **Edit:** copy accepted rows from `12_shared/tails.tsv` to `edits/accepted_tails.tsv` unchanged, and give the reasoning in the decision. Then `run`.
 

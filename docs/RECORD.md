@@ -18,7 +18,7 @@ Other documents name these genomes rather than count them.
 
 | Genome | Ploidy, chromosomes | Haplotype depth | `collapsed` | What it tested first | Decisions |
 |---|---|---|---|---|---|
-| 13Q010 | 3, 9 | 27x | false | The graph-first build; ploidy 3; organelle decoys; gene sets across translocations | [`examples/13Q010`](../examples/README.md) |
+| 13Q010 | 3, 9 | 27x | false | The graph-first build; ploidy 3; organelle decoys; gene sets across translocations. Rebuilt 2026 with 0.3.7 as the regression test for ploidy above 2 | [`examples/13Q010`](../examples/README.md) |
 | WatsonsChoice | 2, 9 | 28x | true | `hap_first` grouping; read correction against raw reads; the raw-read join audit | [`examples/WatsonsChoice`](../examples/README.md) |
 | Busk | 2, 9 | 62x | true | The first run made by following the guides; connectors. Rebuilt 2026 with 0.3.7: the Hi-C allele rescue at 62x, identical end overlaps | [`examples/Busk`](../examples/README.md) |
 | GammaCitrus | 2, 9 | – | true | Tangles, TTT and lost-route forks | Kept outside the repository (confidential) |
@@ -111,6 +111,31 @@ The first build did not run the Hi-C allele rescue, which places chains Hi-C alo
 Where the process held: `hub_cores.d04.tsv` showed the chain0061 hub at D04, before groups (the first build found it at D06), and the satellite ledger at D06 grouped the same telomeric chains. TTT could not solve the chr7_h2 tangle (151 unitigs, 19.2 Mb, two anchors; no feasible solution once 106 connections were banned), so the user placed chain0099 on its 14 of 14 raw read tails, and the remaining 6.16 Mb of the tangle stays unplaced.
 
 The user also placed two chains of a homozygous stretch on chr4_h1 (chain0148, chain0131), identical to chain0188 and chain0207 on chr4_h2 and summing about 2x with them. They close a Hi-C gap and add h1 copies of five genes. Reads cannot tell the two copies apart, so the placement rests on the graph path.
+
+## 13Q010 rebuilt with 0.3.7 (2026-11)
+
+A regression test of ploidy above 2 on the restored inputs, and a new build to adopt. The run on main 0.3.7 reached D13 with the earlier build's gaps and contig N50. The user chose to place the chr5_h2 start path again, which needed a reset from 08_bridges, and adopted that build.
+
+| | Connector build | 0.3.7, first pass | 0.3.7, adopted |
+|---|---|---|---|
+| Placed | – | 936.5 Mb | 937.6 Mb |
+| Unplaced | – | 25.5 Mb, 247 sequences | 24.3 Mb, 245 sequences |
+| Gaps | 32 | 32 | 32 |
+| Contigs, contig N50 | –, 24.68 Mb | 59, 24.68 Mb | 59, 24.68 Mb |
+| Telomeric ends | 49 of 54 | 49 of 54 | 50 of 54 |
+| compleasm complete per set | 99.32%, 99.50%, 98.82% | 99.22%, 98.86%, 99.47% | 99.22%, 99.50%, 99.47% |
+| Gene copies short of 3 | – | 69, in 54 genes | 51, in 36 genes |
+
+Where ploidy 3 held: the depth histogram had one peak at 27x; grouping was chromosome-first into 27 groups, three per chromosome, with no edits; the weak-join rule and D04 found the same chimeric join (8 reads, none at MAPQ 20 or more); every SV call of the connector build reproduced at the same coordinates, and one was added, the chr8 rearrangement against the reference shared by all three haplotypes, as on Busk. The complete-per-set reading across translocations is still needed: per haplotype number, h1 and h3 are 88.77% and 83.53%.
+
+| # | What happened | Result if followed as written | Change |
+|---|---|---|---|
+| 1 | Stage 15 writes unlocalized scaffolds at ploidy 2 only, but D13 called them part of every handover | On the first pass, 21 genes short on the scaffolds and complete in unplaced sequence had no route into the assembly | [D13](decisions/D13_user_decisions.md) says ploidy 2 only |
+| 2 | `group_profile.py` given `pairs.rescued.tsv.gz`, the first pairs file listed | 18 false `OTHER_CHROM` rows at D06 | [D06](decisions/D06_wrong_group.md) names `pairs.tsv.gz` |
+| 3 | `sv_flanks.py` given the final AGP and scaffold pairs | Zero pairs at every flank | [D12](decisions/D12_sv_calls.md) names `identity.agp` |
+| 4 | chain0124 (1.45 Mb, chr7_h1 by Hi-C), kept at D09, was unplaced by the builder as `hic_not_decisive` | None: the builder's call matched the evidence (orientation undecided) | None; it is a curation target |
+
+The chr5_h2 start path (chain0182, chain0135, connector chain8011; 1.19 Mb) is placed by graph alone: chain0135 is near-identical to the chr5 block at the start of chr7_h1, so no q20 read crosses its joins. It completed 18 genes to three copies and gave chr5_h2 its start telomere.
 
 ## Experiments
 
@@ -329,3 +354,4 @@ Stage 04 sets high-copy chains aside (`07_chains2/repeat_chains.txt`), and the c
 - I said `break_chain.py` cuts anywhere, so `hub_cores.py` suggested breaks inside unitigs that the stage would have refused. On 292, 12 of 15 suggested breaks were of that kind.
 - A report alarm I added for those hubs used its list before creating it, and would have stopped the stage 05 report whenever a breakable hub existed.
 - On the Busk rebuild I reported a chr4_h1 gap as closed by a curated link without reading the junction table. The gap had moved, with a 40 kb overlap on both sides of it, and the user had already agreed to adopt the build. Read `13_scaffold/*.junctions.tsv` at every hand-made join.
+- On the 13Q010 rebuild I wrote into a re-recorded D11 that a length alarm had cleared; chr5_h2 was still 3.6 Mb short of its longest homolog. In the same pass I wrote that no other group's order had changed before diffing the orders.

@@ -2,7 +2,7 @@
 
 **Read:** `07_chains2/joins.verify.tsv`, `07_chains2/ont_vs_chains.paf.gz.log` and the stage report. Check first that the self-alignment finished (`06_chains/chains_self.paf.gz.log`): an incomplete `chains_self.paf.gz` undermines round 2.
 
-**The rule, applied automatically:** fewer than 3 spanning reads breaks the join. It removed 1 of 1,035 joins on 13Q010.
+**The rule, applied automatically:** fewer than 3 spanning reads breaks the join. It removed 1 of 1,033 joins on 13Q010.
 
 **Decide:** look at joins under 10 reads, for their MAPQ >= 20 count and local depth.
 

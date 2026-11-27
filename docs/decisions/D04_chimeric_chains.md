@@ -11,8 +11,8 @@
 
 **Examples:**
 
-- **Broken.** 13Q010 chain0010 at 15.78 Mb: `partner_cos` 0.48, no MAPQ >= 20 reads (8 at any MAPQ), low depth, and the two sides contact different chromosomes. The 1.65 Mb chain0010b was a chr9 piece on a chr6 chain.
-- **Not broken.** 13Q010 chain0005 and chain0016 top the `cross_ratio` list, but they are satellite. On WatsonsChoice six chains showed `cross_ratio` 0 with a 100-170 kb tail, and no break was justified.
+- **Broken.** 13Q010 chain0011 at 15.78 Mb (chain0010 in the first builds): `partner_cos` 0.48 with 8,376 and 9,524 `trans` pairs, no MAPQ >= 20 reads (8 at any MAPQ), flank depth 10-12x against 27x, and the two sides contact different chromosomes. The 1.65 Mb chain0011b was a chr9 piece on a chr6 chain.
+- **Not broken.** 13Q010 chain0055 has `cross_ratio` 0 at 14 joins and chain0117 at 7, but they are satellite (repeat fraction 0.85 and 0.72). chain0117 even passed both signals at 1.08 Mb (`partner_cos` 0.796, 3 of 11 reads at MAPQ >= 20): with 26-324 `trans` per side and `partner_cos` 0.72-0.85 at every join, its Hi-C is thin along the whole chain, with no change of partners at one point. On WatsonsChoice six chains showed `cross_ratio` 0 with a 100-170 kb tail, and no break was justified.
 
 - **Not broken.** In the first Busk build (the 2026 rebuild had no candidates): chain0037 at 5.06 and 5.16 Mb: `partner_cos` 0.43-0.48 with plenty of `trans`, but 46-54 reads at MAPQ >= 20. Reads overrule Hi-C. Busk chain0021 at 5.91 Mb had 44 reads, 2 at MAPQ >= 20, `partner_cos` 0.71, and no clear change of partner, so no break either.
 

@@ -6,12 +6,12 @@
 
 **Leave unplaced when** the link is weak or conflicting, or when competing tips remain unresolved.
 
-**Ask the user when** every read at the junction is MAPQ 0, because the tip is near-identical to another placed copy. The placement then rests on the graph alone and may be mosaic ([D13](D13_user_decisions.md)). On 13Q010 the user chose to place one such path, which completed 17 genes to three copies and gave the scaffold its second telomere.
+**Ask the user when** every read at the junction is MAPQ 0, because the tip is near-identical to another placed copy. The placement then rests on the graph alone and may be mosaic ([D13](D13_user_decisions.md)). On 13Q010 the user chose, in two builds, to place one such path (chain0135 and chain0182 at chr5_h2, 1.29 Mb with a connector): it carries 19 genes otherwise short of three copies and gives the scaffold its second telomere.
 
 **Examples:**
 
 - **Accepted.** 13Q010 chain0221 to g16 via chain0139+.
-- **Left unplaced.** 13Q010 chain0182 and chain0265. chain0182 is a subtelomeric repeat shared among chromosome ends: raw reads later confirmed that its anchors are unreliable.
+- **Left unplaced.** 13Q010 chain0255, the competing tip on chain0139+: it lies inside chain0221 at 0.19% divergence, and their depths sum to one haplotype (9.4 and 16.7x), so it is one tip assembled twice. chain0266 links an end that already carries a telomere (surplus).
 - **Competing tips with Hi-C.** WatsonsChoice chain0530 and chain0539 both link to chain0305 with a telomere at the far end. Each went to a haplotype on 7 pairs. Report how thin that is.
 - **Surplus.** WatsonsChoice chain0563 would be a third telomeric end in g14, so it was unplaced.
 

@@ -4,19 +4,21 @@ Real hand decisions from 13Q010, WatsonsChoice and Busk, to show the form and th
 
 ## 13Q010 (triploid, 9 chromosomes, 27x per haplotype)
 
-32 gaps, contig N50 24.68 Mb. This is a rebuild of an earlier adopted build, and haplotype numbers differ between the two: `sv_calls.tsv` gives the earlier name for each call. **`13Q010/sv_calls.tsv` and `13Q010/curation_targets.tsv` predate the templates** in `config/handover_templates/` and use other columns: take the reasoning from them, and the columns from the template or from the Busk and WatsonsChoice tables.
+The 2026 rebuild with 0.3.7, and the regression test for ploidy above 2: 27 scaffolds, 937.6 Mb placed, 32 gaps, 59 contigs, contig N50 24.68 Mb, telomeric ends 50 of 54, compleasm complete per set (best numbering, across the translocations) 99.22%, 99.50%, 99.47%. Gaps and contig N50 match the earlier adopted build; chain names and haplotype numbers do not. Where each build exposed problems in the process is in [RECORD](../docs/RECORD.md).
 
 | Decision | Outcome | File |
 |---|---|---|
 | D01 | `hap_depth` 27, `repeat_depth` 120, `collapsed` false | |
-| D04 | `chain0010 15784630`: two signals agreed | `13Q010/chain_breaks.txt` |
-| D05, D06 | Groups wrong on the first pass (chr1 with chr2, chr9 split): chloroplast Hi-C reads on nuclear plastid insertions. Fixed by decoys in stage 05, not by edits | |
-| D07 | chain0222 telomere tip attached; a 1.16 Mb tip path (chain0136, chain0183) left for the user, who chose to place it at D13 | `13Q010/group_edits.tsv`, `13Q010/order_links.tsv` |
+| D03 | The weak-join rule removed 1 of 1,033 joins and missed the worst, which D04 broke | |
+| D04 | `chain0011 15784630`: two signals agreed (the earlier build's break). Hi-C allele rescue left off: 0.9% of chain sequence | `13Q010/chain_breaks.txt` |
+| D05, D06 | 27 groups, three per chromosome, chromosome-first; no edits. The reference alarm (chr5 in four groups) is the chr2/chr5 translocation | |
+| D07 | chain0221 telomere tip attached by graph; a 1.29 Mb graph-only tip path (chain0135, chain0182, MAPQ 0 throughout) left for the user, who chose at D13 to place it, as in the earlier build | `13Q010/group_edits.tsv`, `13Q010/order_links.tsv` |
 | D09 | A satellite chain with no graph link, placed on 15 Hi-C pairs between two gaps, unplaced | `13Q010/order_edits.tsv` |
-| D10 | The earlier build's hand link `chain0129+ chain0081+` (Hi-C near a tie) is now a graph bridge through a connector; no curation needed | |
-| D16 | No tails placed: two false copies found, the rest added no missing genes. The user chose minimal risk | `13Q010/arm_copies.tsv` |
-| D18 | A join the earlier build rejected was re-tested and kept | `13Q010/join_changes.tsv` |
-| D12 | SV calls with evidence, one new inversion | `13Q010/sv_calls.tsv` |
+| D10 | No hand links: the earlier build's link `chain0129+ chain0081+` is a graph bridge through a connector | |
+| D16 | 3 candidates, none placed: none carries a short gene; one the user chose to leave unplaced | |
+| D18 | 2 raw-read joins audited, both kept, one with trim cover 1.0 at 99.05% | |
+| D12 | 7 translocations, 4 haplotype-specific inversions, a chr8 rearrangement against the reference shared by all three haplotypes; every call of the earlier build reproduced | `13Q010/sv_calls.tsv` |
+| D13 | The user adopted the build, placed the chr5_h2 start path, and left one tail unplaced | |
 | | Sites for the human review | `13Q010/curation_targets.tsv` |
 
 ## WatsonsChoice (diploid, 9 chromosomes, 28x per haplotype)
