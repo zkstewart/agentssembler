@@ -303,6 +303,17 @@ class T(unittest.TestCase):
                                        "c2_h2\t8\tright\t4\tunplaced_c\t4\t1\t1\t2\t+\t0\t4\n")
             T = r.tail_alarms(f"{d}/t.tsv")
             self.assertEqual(len(T), 3); self.assertIn("14 of 14", T[0]); self.assertIn("duplicates placed", T[1]); self.assertIn("c2_h2:8 right -> c", T[1]); self.assertIn("1 gap edges", T[2])
+    def test_rescue_diploid_only(self):
+        # the Hi-C allele rescue is refused above ploidy 2 (13Q010 trial), and the stage 05 report does not suggest it there
+        sys.path.insert(0, R)
+        from agentssembler import cli, report as r
+        self.assertIsNone(cli.rescue_refused(2, True)); self.assertIsNone(cli.rescue_refused(3, False)); self.assertIsNone(cli.rescue_refused(4, "false"))
+        self.assertIn("diploids only", cli.rescue_refused(3, True)); self.assertIn("diploids only", cli.rescue_refused(4, "true"))
+        with tempfile.TemporaryDirectory() as d:
+            os.makedirs(f"{d}/09_hic_map")
+            open(f"{d}/09_hic_map/rescue_signal.txt", "w").write("Hi-C-blind: 41 chains\nALARM: 8.4 Mb of allele-paired chains have almost no unique Hi-C.\n")
+            o, a = r.r_hic(d, {"ploidy": 2}, {}); self.assertEqual(len(a), 1)
+            o, a = r.r_hic(d, {"ploidy": 3}, {}); self.assertEqual(a, []); self.assertTrue(any("diploids only" in x for x in o))
     def test_hic_report_hub_alarm(self):
         # stage 05 report with one breakable and one inside hub core, and no other stage 05 files
         sys.path.insert(0, R)

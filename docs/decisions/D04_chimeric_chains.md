@@ -28,6 +28,8 @@
 
 ## Also at D04: the Hi-C allele rescue
 
+**Diploids only.** Above ploidy 2 leave it off, whatever the signal: since 0.3.8 `decide --set` and `run` refuse it there, and the reports no longer suggest it. On 13Q010 (triploid) its chromosome calls held, but 10 of 19 haplotype calls were wrong and the build gained no gene ([RECORD](../RECORD.md#13q010-rebuilt-with-037-2026-11)). Two of three haplotypes are often identical over a stretch, so exclusion leaves two groups and arbitrary balance picks one. A chain that continues into such a stretch reads as its allele. A bubble arm links two chains of one group and goes there by `graph`.
+
 Read `09_hic_map/rescue_signal.txt`. Its Hi-C-blind chains have an allele partner, almost no unique Hi-C, and many pairs with an allele-ambiguous end: grouping will leave them unassigned however good the rest is. When they are a large share (the report's alarm: 1% of chain sequence or more), or carry many genes, record D04 with `--set hic_allele_rescue=true` and say why. This is the cheapest point: the setting acts in stages 06-08.
 
 - Repeat chains are Hi-C-blind too (chain0091 on 292: 74% repeat). The rescue leaves chains over half repeat alone, so they do not count for it.

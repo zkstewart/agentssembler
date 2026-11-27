@@ -108,7 +108,9 @@ def r_hic(w, c, s):
     if os.path.exists(rs):
         L_ = open(rs).read().splitlines(); out += ["Hi-C allele rescue signal (09_hic_map/rescue_signal.txt, D04):"] + [x for x in L_ if not x.startswith("ALARM")]
         on = isinstance(s, dict) and s.get("hic_allele_rescue")
-        al += [x[len("ALARM: "):] + f" The setting is now {'on' if on else 'off'}." for x in L_ if x.startswith("ALARM")]
+        if c and int(c["ploidy"]) > 2:
+            out.append(f"The rescue is for diploids only, so it stays off at ploidy {c['ploidy']} (D04); these chains are for D16 and D13.")
+        else: al += [x[len("ALARM: "):] + f" The setting is now {'on' if on else 'off'}." for x in L_ if x.startswith("ALARM")]
     return out, al
 def r_evidence(w, c, s):
     L = fai(f"{w}/12_broken/chains.fasta.fai"); K = collections.Counter(r[6] for r in rows(f"{w}/11_ont_chains/chain_class.tsv")); B = collections.Counter()
@@ -182,10 +184,10 @@ def r_group(w, c, s):
         for r in RS: k[r[4]].append(r[0])
         out.append("Rescue left unassigned (10_groups/groups.rescued.tsv): " + "; ".join(f"{x} {len(v)} ({', '.join(v[:10])}{' ...' if len(v) > 10 else ''})" for x, v in sorted(k.items()))
                    + ". collapsed: a breakable 2x unique-read core, both haplotypes, for D06 to break (10_groups/hub_cores.tsv). redundant: a near-copy of sequence every group already holds.")
-    for f, lab in ((f"{w}/10_groups/rescue_preview.txt", "Rescue preview (hic_allele_rescue off; what it would place, in 10_groups/rescue_preview/)"), (f"{w}/10_groups/genes_placed.txt", "Genes in the groups")):
+    for f, lab in ((f"{w}/10_groups/rescue_preview.txt", "Rescue preview (hic_allele_rescue off; what it would place, in 10_groups/rescue_preview/" + ("; diploids only, so not an option here" if int(c["ploidy"]) > 2 else "") + ")"), (f"{w}/10_groups/genes_placed.txt", "Genes in the groups")):
         if os.path.exists(f): out.append(f"{lab}: " + " ".join(open(f).read().split()))
     gp = f"{w}/10_groups/genes_placed.txt"
-    if os.path.exists(gp) and not (s.get("hic_allele_rescue") if isinstance(s, dict) else False):
+    if os.path.exists(gp) and int(c["ploidy"]) <= 2 and not (s.get("hic_allele_rescue") if isinstance(s, dict) else False):
         m = re.search(r"short genes made whole: (\d+) of (\d+)", open(gp).read())
         if m and int(m.group(1)) >= max(10, 0.1 * int(m.group(2))):
             al.append(f"The Hi-C allele rescue would make {m.group(1)} of {m.group(2)} short genes whole (10_groups/genes_placed.txt). If D04 did not settle it, decide now: "

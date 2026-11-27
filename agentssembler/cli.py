@@ -41,6 +41,13 @@ def settings(w):
     for d in decisions(w).values(): s.update(d.get("set") or {})
     return s
 SCALE_AT = 36e6      # mean chromosome length of the citrus genomes the fixed windows were chosen on: four builds measured 35.0 to 37.1 Mb
+RESCUE_MAX_PLOIDY = 2   # the Hi-C allele rescue's haplotype calls failed above this: 13Q010 (ploidy 3), 10 of 19 placements wrong, no gene gained (D04)
+def rescue_refused(ploidy, value):
+    """The message refusing hic_allele_rescue on at this ploidy, or None."""
+    if str(value).lower() == "true" and int(ploidy) > RESCUE_MAX_PLOIDY:
+        return (f"hic_allele_rescue is for diploids only (ploidy here {ploidy}): above ploidy 2 its haplotype calls place copies of one haplotype "
+                "as another and bubble arms on the wrong homolog. Leave it off (docs/decisions/D04_chimeric_chains.md).")
+    return None
 def length_scale(w, compute=False):
     """How long this sample's chromosomes are, relative to citrus. Seed length, chimera windows and bin sizes are chromosome-scale and are
     multiplied by it. Mean chromosome length is chain bp over chromosomes x ploidy, so it is known once stage 04 is done, and it is kept in
@@ -110,7 +117,10 @@ def active(w, cond):
     if cond == "collapsed": return str(settings(w).get("collapsed")).lower() == "true"
     raise ValueError(cond)
 def stage_env(w):
-    c = cfg(w); s = settings(w); i = c["inputs"]; t = dict(TOOLS); t.update(c.get("tools") or {}); comp = c.get("compute") or {}; bus = c.get("compleasm") or {}
+    c = cfg(w); s = settings(w); i = c["inputs"]
+    m = rescue_refused(c["ploidy"], s["hic_allele_rescue"])
+    if m: sys.exit(m + " Set by config.yaml or a decision file: record the decision again without it.")
+    t = dict(TOOLS); t.update(c.get("tools") or {}); comp = c.get("compute") or {}; bus = c.get("compleasm") or {}
     abspath = lambda p: os.path.abspath(p) if p else ""
     e = dict(os.environ); e.update(AS_WORK=w, AS_REPO=REPO, AS_SAMPLE=str(c["sample"]), AS_CHROMS=str(c["chromosomes"]), AS_PLOIDY=str(c["ploidy"]),
         AS_UNITIGS=abspath(i["unitigs_fasta"]), AS_GFA=abspath(i["unitigs_gfa"]), AS_READS=abspath(i["corrected_reads"]), AS_HIC_R1=abspath(i["hic_r1"]), AS_HIC_R2=abspath(i["hic_r2"]),
@@ -244,6 +254,9 @@ def cmd_decide(a):
         s = dict(settings(w)); s.update(vals)
         for k in ("hap_depth", "repeat_depth", "collapsed"):
             if s.get(k) is None: sys.exit(f"D01 must set {k}: --set {k}=VALUE")
+    if "hic_allele_rescue" in vals:
+        m = rescue_refused(cfg(w)["ploidy"], vals["hic_allele_rescue"])
+        if m: sys.exit(m)
     rec = dict(decision=a.decision, by=a.by, when=now(), reason=a.reason, set=vals or None, edits={})
     for f in sorted(glob.glob(f"{w}/edits/*")):
         if os.path.getsize(f): rec["edits"][os.path.basename(f)] = hashlib.md5(open(f, "rb").read()).hexdigest()

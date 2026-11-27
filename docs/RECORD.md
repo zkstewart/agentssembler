@@ -137,6 +137,17 @@ Where ploidy 3 held: the depth histogram had one peak at 27x; grouping was chrom
 
 The chr5_h2 start path (chain0182, chain0135, connector chain8011; 1.19 Mb) is placed by graph alone: chain0135 is near-identical to the chr5 block at the start of chr7_h1, so no q20 read crosses its joins. It completed 18 genes to three copies and gave chr5_h2 its start telomere.
 
+The Hi-C allele rescue was trialled at the user's request, in a copy of the adopted build with D04 `--set hic_allele_rescue=true`. It placed 19 chains, 2.6 Mb, each in the one homolog group lacking its sequence. The order checks then failed 10 of them:
+- 6 lay outside a telomere or brought a surplus one.
+- 4 broke a graph link between two chains of one group, two of them bubble arms.
+
+Most were identical over 65-131 kb to a chain on another homolog, with depths summing to one haplotype: one haplotype's sequence twice. The `copy` rule missed them because the identical stretch covered under 0.8 of the chain. Of the other 9:
+- 7 sat where the build without the rescue already had the same chain as a graph bridge.
+- chain0238 split a Hi-C gap into two.
+- chain0183 left a 321 kb neighbour unplaced.
+
+At D11 the trial had the same 33 gaps, 0.2 Mb less placed, and no gene gained. The rescue is now diploid only, and from 0.3.8 the driver refuses it above ploidy 2 ([D04](decisions/D04_chimeric_chains.md)). Unassign rejected rescue chains with group edits and `reset 08_bridges`, not D09 unplaces: a chain unplaced after stage 08 stays out of the bridges it would form, which cost the trial's first pass a gap.
+
 ## Experiments
 
 ### Why reads stop at gaps
